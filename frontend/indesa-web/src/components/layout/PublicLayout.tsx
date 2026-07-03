@@ -1,7 +1,7 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, LayoutDashboard, LockKeyhole, Menu, Search, X } from "lucide-react";
+import { ArrowRight, LayoutDashboard, LockKeyhole, Mail, Menu, MessageCircle, Phone, Search, X } from "lucide-react";
 import { useState } from "react";
 import { formatCurrency, getInitials } from "@/lib/utils";
 import { mockProductos } from "@/lib/mockCatalog";
@@ -14,6 +14,8 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [headerSearch, setHeaderSearch] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isSocialMenuOpen, setIsSocialMenuOpen] = useState(false);
+  const whatsappUrl = "https://wa.me/50222223333?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20la%20renta%20de%20maquinaria.";
 
   const navLinks = [
     { href: "/", label: "Inicio" },
@@ -282,6 +284,58 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       </header>
 
       <main className="flex-1 flex flex-col">{children}</main>
+
+      <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3">
+        <div
+          className={`w-72 overflow-hidden rounded-md border bg-white shadow-2xl transition-all duration-300 ${
+            isSocialMenuOpen
+              ? "translate-y-0 opacity-100"
+              : "pointer-events-none translate-y-3 opacity-0"
+          }`}
+        >
+          <div className="border-b px-4 py-3">
+            <div className="text-sm font-bold text-foreground">Contacto rápido</div>
+            <div className="text-xs text-muted-foreground">Cotiza o resuelve dudas con INDESA.</div>
+          </div>
+          <div className="p-2">
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold transition-colors hover:bg-primary/5 hover:text-primary"
+              onClick={() => setIsSocialMenuOpen(false)}
+            >
+              <MessageCircle className="h-4 w-4 text-primary" />
+              WhatsApp
+            </a>
+            <a
+              href="tel:+50222223333"
+              className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold transition-colors hover:bg-primary/5 hover:text-primary"
+              onClick={() => setIsSocialMenuOpen(false)}
+            >
+              <Phone className="h-4 w-4 text-primary" />
+              Llamar
+            </a>
+            <a
+              href="mailto:info@indesa.com.gt"
+              className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold transition-colors hover:bg-primary/5 hover:text-primary"
+              onClick={() => setIsSocialMenuOpen(false)}
+            >
+              <Mail className="h-4 w-4 text-primary" />
+              Correo
+            </a>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={() => setIsSocialMenuOpen((current) => !current)}
+          aria-label={isSocialMenuOpen ? "Cerrar redes sociales" : "Abrir redes sociales"}
+          className="inline-flex h-14 items-center gap-3 rounded-full bg-primary px-5 font-semibold text-white shadow-xl shadow-primary/25 transition-all duration-200 hover:-translate-y-1 hover:bg-primary/90 hover:shadow-2xl"
+        >
+          {isSocialMenuOpen ? <X className="h-5 w-5" /> : <MessageCircle className="h-5 w-5" />}
+          Redes
+        </button>
+      </div>
 
       <footer className="border-t bg-muted/40 py-12">
         <div className="container mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">

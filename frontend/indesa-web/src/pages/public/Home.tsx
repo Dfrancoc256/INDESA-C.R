@@ -251,18 +251,11 @@ export function Home() {
                       </Badge>
                     </div>
 
-                    <div className="absolute inset-x-3 bottom-3 grid grid-cols-2 gap-2 transition-transform duration-300 group-hover:-translate-y-1">
-                      <Button asChild size="sm" className="gap-1.5 bg-green-600 text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-green-700 hover:shadow-md">
-                        <a href={buildWhatsAppUrl(producto)} target="_blank" rel="noreferrer">
-                          <MessageCircle className="h-4 w-4" />
-                          WhatsApp
-                        </a>
-                      </Button>
+                    <div className="absolute inset-x-3 bottom-3 transition-transform duration-300 group-hover:-translate-y-1">
                       <Button
                         type="button"
                         size="sm"
-                        variant="secondary"
-                        className="gap-1.5 bg-white text-foreground shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-md"
+                        className="w-full gap-1.5 bg-primary text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-md"
                         onClick={() => openReservaModal(producto)}
                         disabled={agotado}
                       >
