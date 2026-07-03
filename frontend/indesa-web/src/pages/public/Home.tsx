@@ -254,7 +254,7 @@ export function Home() {
                     </div>
 
                     <div className="absolute inset-x-3 bottom-3 grid grid-cols-2 gap-2 transition-transform duration-300 group-hover:-translate-y-1">
-                      <Button asChild size="sm" className="gap-1.5 bg-[#25D366] text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1ebe5d] hover:text-white hover:shadow-md">
+                      <Button asChild size="sm" variant="secondary" className="gap-1.5 bg-white text-[#128C4A] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/95 hover:text-[#128C4A] hover:shadow-md">
                         <a href={buildWhatsAppUrl(producto)} target="_blank" rel="noreferrer">
                           <FaWhatsapp className="h-4 w-4" />
                           WhatsApp
