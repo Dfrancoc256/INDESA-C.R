@@ -229,8 +229,9 @@ export function Home() {
               const agotado = (producto.cantidad ?? 0) <= 0;
 
               return (
-                <Card key={producto.id} className="group relative overflow-hidden border bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10">
+                <Card key={producto.id} className="group relative overflow-hidden border bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:scale-[1.01] hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10">
                   <span className="absolute inset-x-0 top-0 z-10 h-1 origin-left scale-x-0 bg-primary transition-transform duration-300 group-hover:scale-x-100" />
+                  <span className="pointer-events-none absolute -left-1/2 top-0 z-20 h-full w-1/3 -skew-x-12 bg-white/20 opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100" />
                   <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
                     {producto.imagen_url ? (
                       <img
@@ -253,7 +254,7 @@ export function Home() {
                     </div>
 
                     <div className="absolute inset-x-3 bottom-3 grid grid-cols-2 gap-2 transition-transform duration-300 group-hover:-translate-y-1">
-                      <Button asChild size="sm" variant="secondary" className="gap-1.5 bg-white text-primary shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/95 hover:text-primary hover:shadow-md">
+                      <Button asChild size="sm" className="gap-1.5 bg-[#25D366] text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1ebe5d] hover:text-white hover:shadow-md">
                         <a href={buildWhatsAppUrl(producto)} target="_blank" rel="noreferrer">
                           <FaWhatsapp className="h-4 w-4" />
                           WhatsApp
