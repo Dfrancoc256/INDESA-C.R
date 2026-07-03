@@ -1,0 +1,381 @@
+import { useGetProducto, useCreateReserva, getGetProductoQueryKey } from "@workspace/api-client-react";
+import { useEffect, useState } from "react";
+import { useParams, Link } from "wouter";
+import { formatCurrency, getInitials } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { ArrowLeft, CheckCircle2, AlertTriangle, BadgeCheck, HardHat, Package, ShieldCheck } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { mockProductos } from "@/lib/mockCatalog";
+
+const reservaSchema = z.object({
+  cliente_nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
+  cliente_email: z.string().email("Correo electrónico inválido"),
+  cliente_telefono: z.string().min(8, "El teléfono debe tener al menos 8 dígitos"),
+  cantidad: z.coerce.number().min(1, "La cantidad mínima es 1"),
+  notas: z.string().optional()
+});
+
+type ReservaValues = z.infer<typeof reservaSchema>;
+
+export function ProductoDetalle() {
+  const { id } = useParams<{ id: string }>();
+  const productoId = parseInt(id || "0");
+  const { toast } = useToast();
+  const [reservaExitoso, setReservaExitoso] = useState(false);
+  const [imageFailed, setImageFailed] = useState(false);
+
+  const { data: producto, isLoading } = useGetProducto(productoId, {
+    query: { enabled: productoId > 0, queryKey: getGetProductoQueryKey(productoId) }
+  });
+  const productoActual = producto ?? mockProductos.find((item) => item.id === productoId);
+
+  const productoView = productoActual as
+    | (typeof productoActual & {
+        imagenUrl?: string | null;
+        categoriaNombre?: string | null;
+      })
+    | undefined;
+  const imageSrc = productoView?.imagen_url ?? productoView?.imagenUrl ?? "";
+  const categoriaNombre = productoView?.categoria_nombre ?? productoView?.categoriaNombre ?? "Maquinaria";
+  const cantidadDisponible = productoActual?.cantidad ?? 0;
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [imageSrc]);
+
+  const form = useForm<ReservaValues>({
+    resolver: zodResolver(reservaSchema),
+    defaultValues: {
+      cliente_nombre: "",
+      cliente_email: "",
+      cliente_telefono: "",
+      cantidad: 1,
+      notas: ""
+    },
+  });
+
+  const reservaMutation = useCreateReserva({
+    mutation: {
+      onSuccess: () => {
+        setReservaExitoso(true);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      },
+      onError: (err: any) => {
+        toast({ 
+          variant: "destructive", 
+          title: "Error al reservar", 
+          description: err?.message || "Hubo un problema al procesar su solicitud. Intente más tarde." 
+        });
+      }
+    }
+  });
+
+  const onSubmit = (data: ReservaValues) => {
+    if (!productoActual) return;
+    
+    // Validar stock antes de enviar
+    if (productoActual.cantidad !== null && productoActual.cantidad !== undefined && data.cantidad > productoActual.cantidad) {
+      form.setError("cantidad", {
+        type: "manual",
+        message: `Solo hay ${productoActual.cantidad} unidades disponibles`
+      });
+      return;
+    }
+
+    reservaMutation.mutate({ 
+      data: {
+        producto_id: productoActual.id,
+        ...data
+      } 
+    });
+  };
+
+  if (isLoading && !productoActual) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 animate-pulse">
+          <div className="bg-gray-200 aspect-square rounded-lg"></div>
+          <div className="space-y-6">
+            <div className="h-10 bg-gray-200 rounded w-3/4"></div>
+            <div className="h-6 bg-gray-200 rounded w-1/4"></div>
+            <div className="h-32 bg-gray-200 rounded w-full"></div>
+            <div className="h-12 bg-gray-200 rounded w-1/3"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!productoActual) {
+    return (
+      <div className="container mx-auto px-4 py-20 text-center">
+        <h2 className="text-3xl font-bold mb-4">Producto no encontrado</h2>
+        <p className="text-muted-foreground mb-8">El producto que busca no existe o ya no está disponible.</p>
+        <Button asChild>
+          <Link href="/catalogo">Volver al catálogo</Link>
+        </Button>
+      </div>
+    );
+  }
+
+  const stockAgotado = productoActual.cantidad === 0;
+
+  return (
+    <div className="bg-gray-50 min-h-screen pb-20">
+      <div className="bg-white border-b py-4">
+        <div className="container mx-auto px-4 md:px-8">
+          <Link href="/catalogo" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Volver al catálogo
+          </Link>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 md:px-8 py-8 md:py-12">
+        {reservaExitoso ? (
+          <div className="max-w-2xl mx-auto bg-white p-8 md:p-12 rounded-lg border shadow-sm text-center">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 text-green-600 mb-6">
+              <CheckCircle2 className="h-10 w-10" />
+            </div>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">¡Reserva Confirmada!</h2>
+            <p className="text-lg text-gray-600 mb-8">
+              Su solicitud para <strong>{productoActual.nombre}</strong> ha sido recibida correctamente. 
+              Un asesor se comunicará con usted para coordinar disponibilidad, operador y condiciones de uso.
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center gap-4">
+              <Button asChild size="lg">
+                <Link href="/catalogo">Seguir explorando</Link>
+              </Button>
+              <Button asChild variant="outline" size="lg">
+                <Link href="/">Ir al inicio</Link>
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* Imagen y Detalles Visuales */}
+            <div className="space-y-6">
+              <div className="aspect-[4/3] bg-white rounded-xl border flex items-center justify-center relative overflow-hidden shadow-sm">
+                {imageSrc && !imageFailed ? (
+                  <img 
+                    src={imageSrc}
+                    alt={productoActual.nombre} 
+                    className="w-full h-full object-cover"
+                    onError={() => setImageFailed(true)}
+                  />
+                ) : (
+                  <div className="text-6xl font-bold text-gray-300">
+                    {getInitials(productoActual.nombre)}
+                  </div>
+                )}
+                {productoActual.disponibilidad === "pocas_unidades" && (
+                  <div className="absolute top-4 right-4">
+                    <Badge variant="warning" className="text-sm shadow-sm py-1 px-3">Pocas Unidades</Badge>
+                  </div>
+                )}
+                {productoActual.disponibilidad === "agotado" && (
+                  <div className="absolute top-4 right-4">
+                    <Badge variant="destructive" className="text-sm shadow-sm py-1 px-3">Agotado</Badge>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-white p-4 rounded-lg border flex items-start gap-3">
+                  <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-sm">Equipo revisado</h4>
+                    <p className="text-xs text-muted-foreground mt-1">Inspección previa antes de cada servicio</p>
+                  </div>
+                </div>
+                <div className="bg-white p-4 rounded-lg border flex items-start gap-3">
+                  <HardHat className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-semibold text-sm">Operador incluido</h4>
+                    <p className="text-xs text-muted-foreground mt-1">El costo contempla personal capacitado para manejar la maquinaria</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Info y Formulario */}
+            <div className="flex flex-col">
+              <div className="mb-8">
+                <div className="text-sm font-semibold tracking-wider text-primary uppercase mb-2">
+                  {categoriaNombre}
+                </div>
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+                  {productoActual.nombre}
+                </h1>
+                <div className="text-4xl font-bold text-gray-900 mb-2">
+                  {formatCurrency(productoActual.precio)}
+                </div>
+                <p className="text-sm font-medium text-muted-foreground mb-6">
+                  Precio con operador incluido. La coordinación final depende del lugar, horario y tipo de trabajo.
+                </p>
+                {productoActual.descripcion && (
+                  <div className="prose prose-sm md:prose-base text-gray-600 max-w-none">
+                    <p>{productoActual.descripcion}</p>
+                  </div>
+                )}
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  <div className="rounded-lg border bg-white p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      <BadgeCheck className="h-4 w-4 text-primary" />
+                      Disponibilidad
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      {cantidadDisponible > 0
+                        ? `${cantidadDisponible} unidad${cantidadDisponible === 1 ? "" : "es"} disponible${cantidadDisponible === 1 ? "" : "s"}`
+                        : "Sin unidades disponibles por el momento"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border bg-white p-4">
+                    <div className="flex items-center gap-2 text-sm font-semibold">
+                      <HardHat className="h-4 w-4 text-primary" />
+                      Servicio operado
+                    </div>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      INDESA coordina la maquinaria con la persona capacitada para su operación.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <Card className="flex-1 border-primary/20 shadow-md">
+                <CardContent className="p-6 md:p-8">
+                  <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                    <Package className="h-5 w-5 text-primary" /> Solicitar Reserva
+                  </h3>
+
+                  {stockAgotado ? (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                      <AlertTriangle className="h-10 w-10 text-red-500 mx-auto mb-3" />
+                      <h4 className="text-lg font-bold text-red-900 mb-2">Producto Agotado</h4>
+                      <p className="text-red-700 mb-4">
+                        Lo sentimos, actualmente no contamos con existencias de este producto.
+                      </p>
+                      <Button asChild variant="outline" className="border-red-300 text-red-800 hover:bg-red-100">
+                        <Link href="/contacto">Consultar próxima disponibilidad</Link>
+                      </Button>
+                    </div>
+                  ) : (
+                    <Form {...form}>
+                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="cliente_nombre"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Nombre Completo *</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Ej. Juan Pérez" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          <FormField
+                            control={form.control}
+                            name="cliente_telefono"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Teléfono *</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Ej. 55554444" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div className="md:col-span-2">
+                            <FormField
+                              control={form.control}
+                              name="cliente_email"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Correo Electrónico *</FormLabel>
+                                  <FormControl>
+                                    <Input type="email" placeholder="juan@ejemplo.com" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          <div>
+                            <FormField
+                              control={form.control}
+                              name="cantidad"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Cantidad *</FormLabel>
+                                  <FormControl>
+                                    <Input 
+                                      type="number" 
+                                      min="1" 
+                                      max={productoActual.cantidad || undefined}
+                                      {...field} 
+                                    />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                        </div>
+
+                        <FormField
+                          control={form.control}
+                          name="notas"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Comentarios adicionales (Opcional)</FormLabel>
+                              <FormControl>
+                                <Textarea 
+                                placeholder="Ubicación de trabajo, horario estimado, tipo de operación o datos de facturación." 
+                                  className="resize-none h-24"
+                                  {...field} 
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <div className="pt-4">
+                          <Button 
+                            type="submit" 
+                            size="lg" 
+                            className="w-full h-14 text-lg font-bold"
+                            disabled={reservaMutation.isPending}
+                          >
+                            {reservaMutation.isPending ? "Procesando..." : "Confirmar Reserva"}
+                          </Button>
+                          <p className="text-center text-xs text-muted-foreground mt-4">
+                            Al confirmar, un asesor se comunicará para coordinar operador, horario y condiciones del servicio.
+                          </p>
+                        </div>
+                      </form>
+                    </Form>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

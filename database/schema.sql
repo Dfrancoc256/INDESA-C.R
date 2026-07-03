@@ -1,0 +1,81 @@
+CREATE TABLE roles (
+  id SERIAL PRIMARY KEY,
+  nombre TEXT NOT NULL UNIQUE,
+  descripcion TEXT,
+  permisos TEXT[] NOT NULL DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE usuarios (
+  id SERIAL PRIMARY KEY,
+  nombre TEXT NOT NULL,
+  apellido TEXT,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  role_id INTEGER NOT NULL REFERENCES roles(id),
+  activo BOOLEAN NOT NULL DEFAULT TRUE,
+  last_login TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE categorias (
+  id SERIAL PRIMARY KEY,
+  nombre TEXT NOT NULL,
+  descripcion TEXT,
+  activa BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE productos (
+  id SERIAL PRIMARY KEY,
+  nombre TEXT NOT NULL,
+  descripcion TEXT,
+  categoria_id INTEGER REFERENCES categorias(id),
+  precio NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  imagen_url TEXT,
+  activo BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE inventario (
+  id SERIAL PRIMARY KEY,
+  producto_id INTEGER NOT NULL UNIQUE REFERENCES productos(id) ON DELETE CASCADE,
+  cantidad INTEGER NOT NULL DEFAULT 0,
+  stock_minimo INTEGER NOT NULL DEFAULT 5,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE reservas (
+  id SERIAL PRIMARY KEY,
+  cliente_nombre TEXT NOT NULL,
+  cliente_email TEXT NOT NULL,
+  cliente_telefono TEXT NOT NULL,
+  producto_id INTEGER NOT NULL REFERENCES productos(id),
+  cantidad INTEGER NOT NULL,
+  estado TEXT NOT NULL DEFAULT 'pendiente',
+  notas TEXT,
+  whatsapp_enviado BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE movimientos_inventario (
+  id SERIAL PRIMARY KEY,
+  producto_id INTEGER NOT NULL REFERENCES productos(id),
+  tipo TEXT NOT NULL,
+  cantidad INTEGER NOT NULL,
+  motivo TEXT,
+  usuario_id INTEGER REFERENCES usuarios(id),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE refresh_tokens (
+  id SERIAL PRIMARY KEY,
+  usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  revoked BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);

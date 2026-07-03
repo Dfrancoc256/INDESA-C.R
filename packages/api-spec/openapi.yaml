@@ -1,0 +1,1106 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: INDESA - Catálogo y Reservas API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Autenticación y sesión
+  - name: productos
+    description: Gestión de productos del catálogo
+  - name: categorias
+    description: Gestión de categorías
+  - name: inventario
+    description: Gestión de inventario
+  - name: reservas
+    description: Gestión de reservas de clientes
+  - name: usuarios
+    description: Administración de usuarios
+  - name: roles
+    description: Roles del sistema
+  - name: dashboard
+    description: Resúmenes y estadísticas
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # ─── AUTH ────────────────────────────────────────────────────────────────────
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Iniciar sesión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Sesión iniciada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Credenciales inválidas
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Cerrar sesión
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Sesión cerrada
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Obtener usuario autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Usuario actual
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UsuarioMe"
+        "401":
+          description: No autenticado
+
+  /auth/refresh:
+    post:
+      operationId: refreshToken
+      tags: [auth]
+      summary: Renovar access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshInput"
+      responses:
+        "200":
+          description: Token renovado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Refresh token inválido o expirado
+
+  # ─── CATEGORÍAS ──────────────────────────────────────────────────────────────
+  /categorias:
+    get:
+      operationId: listCategorias
+      tags: [categorias]
+      summary: Listar categorías activas
+      responses:
+        "200":
+          description: Lista de categorías
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Categoria"
+    post:
+      operationId: createCategoria
+      tags: [categorias]
+      summary: Crear categoría
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoriaInput"
+      responses:
+        "201":
+          description: Categoría creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Categoria"
+
+  /categorias/{id}:
+    put:
+      operationId: updateCategoria
+      tags: [categorias]
+      summary: Actualizar categoría
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CategoriaInput"
+      responses:
+        "200":
+          description: Categoría actualizada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Categoria"
+    delete:
+      operationId: deleteCategoria
+      tags: [categorias]
+      summary: Eliminar categoría
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Categoría eliminada
+
+  # ─── PRODUCTOS ───────────────────────────────────────────────────────────────
+  /productos:
+    get:
+      operationId: listProductos
+      tags: [productos]
+      summary: Listar productos del catálogo público
+      parameters:
+        - name: categoria_id
+          in: query
+          schema:
+            type: integer
+        - name: busqueda
+          in: query
+          schema:
+            type: string
+        - name: disponibilidad
+          in: query
+          schema:
+            type: string
+            enum: [disponible, pocas_unidades, agotado]
+        - name: orden
+          in: query
+          schema:
+            type: string
+            enum: [nombre_asc, nombre_desc, precio_asc, precio_desc]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Lista paginada de productos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductosPaginados"
+    post:
+      operationId: createProducto
+      tags: [productos]
+      summary: Crear producto
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductoInput"
+      responses:
+        "201":
+          description: Producto creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Producto"
+
+  /productos/{id}:
+    get:
+      operationId: getProducto
+      tags: [productos]
+      summary: Obtener detalle de un producto
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Producto encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Producto"
+        "404":
+          description: Producto no encontrado
+    put:
+      operationId: updateProducto
+      tags: [productos]
+      summary: Actualizar producto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductoInput"
+      responses:
+        "200":
+          description: Producto actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Producto"
+    delete:
+      operationId: deleteProducto
+      tags: [productos]
+      summary: Dar de baja un producto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Producto dado de baja
+
+  /productos/{id}/toggle:
+    patch:
+      operationId: toggleProducto
+      tags: [productos]
+      summary: Activar/desactivar producto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Estado actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Producto"
+
+  # ─── INVENTARIO ──────────────────────────────────────────────────────────────
+  /inventario:
+    get:
+      operationId: listInventario
+      tags: [inventario]
+      summary: Listar inventario completo
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista de inventario
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventarioItem"
+
+  /inventario/{productoId}:
+    get:
+      operationId: getInventario
+      tags: [inventario]
+      summary: Obtener inventario de un producto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Inventario del producto
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventarioItem"
+    put:
+      operationId: updateInventario
+      tags: [inventario]
+      summary: Actualizar stock de un producto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventarioInput"
+      responses:
+        "200":
+          description: Inventario actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventarioItem"
+
+  /inventario/{productoId}/movimientos:
+    get:
+      operationId: getMovimientosInventario
+      tags: [inventario]
+      summary: Historial de movimientos de un producto
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Lista de movimientos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MovimientoInventario"
+
+  # ─── RESERVAS ────────────────────────────────────────────────────────────────
+  /reservas:
+    post:
+      operationId: createReserva
+      tags: [reservas]
+      summary: Crear reserva de cliente (público)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReservaInput"
+      responses:
+        "201":
+          description: Reserva creada
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reserva"
+        "400":
+          description: Sin stock suficiente
+        "404":
+          description: Producto no encontrado
+    get:
+      operationId: listReservas
+      tags: [reservas]
+      summary: Listar todas las reservas (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: estado
+          in: query
+          schema:
+            type: string
+            enum: [pendiente, confirmada, entregada, cancelada]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Lista paginada de reservas
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReservasPaginadas"
+
+  /reservas/{id}:
+    get:
+      operationId: getReserva
+      tags: [reservas]
+      summary: Obtener detalle de una reserva
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Detalle de la reserva
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reserva"
+
+  /reservas/{id}/estado:
+    patch:
+      operationId: updateReservaEstado
+      tags: [reservas]
+      summary: Actualizar estado de una reserva
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReservaEstadoInput"
+      responses:
+        "200":
+          description: Estado actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reserva"
+
+  # ─── USUARIOS ────────────────────────────────────────────────────────────────
+  /usuarios:
+    get:
+      operationId: listUsuarios
+      tags: [usuarios]
+      summary: Listar usuarios administrativos
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista de usuarios
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Usuario"
+    post:
+      operationId: createUsuario
+      tags: [usuarios]
+      summary: Crear usuario administrativo
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsuarioInput"
+      responses:
+        "201":
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Usuario"
+
+  /usuarios/{id}:
+    put:
+      operationId: updateUsuario
+      tags: [usuarios]
+      summary: Actualizar usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UsuarioUpdate"
+      responses:
+        "200":
+          description: Usuario actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Usuario"
+    delete:
+      operationId: deleteUsuario
+      tags: [usuarios]
+      summary: Eliminar usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Usuario eliminado
+
+  /usuarios/{id}/password:
+    put:
+      operationId: resetUsuarioPassword
+      tags: [usuarios]
+      summary: Restablecer contraseña de usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PasswordResetInput"
+      responses:
+        "200":
+          description: Contraseña restablecida
+
+  /usuarios/{id}/toggle:
+    patch:
+      operationId: toggleUsuario
+      tags: [usuarios]
+      summary: Activar/desactivar usuario
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Estado actualizado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Usuario"
+
+  # ─── ROLES ───────────────────────────────────────────────────────────────────
+  /roles:
+    get:
+      operationId: listRoles
+      tags: [roles]
+      summary: Listar roles disponibles
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista de roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Rol"
+
+  # ─── DASHBOARD ───────────────────────────────────────────────────────────────
+  /dashboard/resumen:
+    get:
+      operationId: getDashboardResumen
+      tags: [dashboard]
+      summary: Resumen general del sistema
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Métricas del sistema
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardResumen"
+
+  /dashboard/reservas-recientes:
+    get:
+      operationId: getReservasRecientes
+      tags: [dashboard]
+      summary: Últimas reservas recibidas
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Lista de reservas recientes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Reserva"
+
+  /dashboard/stock-bajo:
+    get:
+      operationId: getProductosStockBajo
+      tags: [dashboard]
+      summary: Productos con stock bajo o agotado
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Productos críticos de stock
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventarioItem"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    # ─── AUTH ─────────────────────────────────────────────────────────────────
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+
+    RefreshInput:
+      type: object
+      required: [refresh_token]
+      properties:
+        refresh_token:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [access_token, refresh_token, usuario]
+      properties:
+        access_token:
+          type: string
+        refresh_token:
+          type: string
+        expires_in:
+          type: integer
+        usuario:
+          $ref: "#/components/schemas/UsuarioMe"
+
+    UsuarioMe:
+      type: object
+      required: [id, nombre, email, rol]
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+        apellido:
+          type: ["string", "null"]
+        email:
+          type: string
+        rol:
+          $ref: "#/components/schemas/Rol"
+
+    # ─── ROLES ────────────────────────────────────────────────────────────────
+    Rol:
+      type: object
+      required: [id, nombre]
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+        descripcion:
+          type: ["string", "null"]
+        permisos:
+          type: array
+          items:
+            type: string
+
+    # ─── CATEGORÍAS ───────────────────────────────────────────────────────────
+    Categoria:
+      type: object
+      required: [id, nombre, activa]
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+        descripcion:
+          type: ["string", "null"]
+        activa:
+          type: boolean
+
+    CategoriaInput:
+      type: object
+      required: [nombre]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+        descripcion:
+          type: string
+        activa:
+          type: boolean
+
+    # ─── PRODUCTOS ────────────────────────────────────────────────────────────
+    Producto:
+      type: object
+      required: [id, nombre, activo, categoria_id, precio]
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+        descripcion:
+          type: ["string", "null"]
+        categoria_id:
+          type: integer
+        categoria_nombre:
+          type: ["string", "null"]
+        precio:
+          type: number
+        imagen_url:
+          type: ["string", "null"]
+        activo:
+          type: boolean
+        cantidad:
+          type: ["integer", "null"]
+        stock_minimo:
+          type: ["integer", "null"]
+        disponibilidad:
+          type: string
+          enum: [disponible, pocas_unidades, agotado]
+
+    ProductoInput:
+      type: object
+      required: [nombre, categoria_id, precio]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+        descripcion:
+          type: string
+        categoria_id:
+          type: integer
+        precio:
+          type: number
+          minimum: 0
+        imagen_url:
+          type: string
+        activo:
+          type: boolean
+        stock_inicial:
+          type: integer
+          minimum: 0
+        stock_minimo:
+          type: integer
+          minimum: 0
+
+    ProductosPaginados:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Producto"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    # ─── INVENTARIO ───────────────────────────────────────────────────────────
+    InventarioItem:
+      type: object
+      required: [producto_id, cantidad, stock_minimo, disponibilidad]
+      properties:
+        producto_id:
+          type: integer
+        producto_nombre:
+          type: ["string", "null"]
+        categoria_nombre:
+          type: ["string", "null"]
+        cantidad:
+          type: integer
+        stock_minimo:
+          type: integer
+        disponibilidad:
+          type: string
+          enum: [disponible, pocas_unidades, agotado]
+        updated_at:
+          type: string
+          format: date-time
+
+    InventarioInput:
+      type: object
+      required: [cantidad, motivo]
+      properties:
+        cantidad:
+          type: integer
+          minimum: 0
+        stock_minimo:
+          type: integer
+          minimum: 0
+        motivo:
+          type: string
+
+    MovimientoInventario:
+      type: object
+      required: [id, producto_id, tipo, cantidad, created_at]
+      properties:
+        id:
+          type: integer
+        producto_id:
+          type: integer
+        tipo:
+          type: string
+          enum: [entrada, salida, ajuste]
+        cantidad:
+          type: integer
+        motivo:
+          type: ["string", "null"]
+        usuario_nombre:
+          type: ["string", "null"]
+        created_at:
+          type: string
+          format: date-time
+
+    # ─── RESERVAS ─────────────────────────────────────────────────────────────
+    ReservaInput:
+      type: object
+      required: [cliente_nombre, cliente_email, cliente_telefono, producto_id, cantidad]
+      properties:
+        cliente_nombre:
+          type: string
+          minLength: 1
+        cliente_email:
+          type: string
+          format: email
+        cliente_telefono:
+          type: string
+        producto_id:
+          type: integer
+        cantidad:
+          type: integer
+          minimum: 1
+        notas:
+          type: string
+
+    ReservaEstadoInput:
+      type: object
+      required: [estado]
+      properties:
+        estado:
+          type: string
+          enum: [pendiente, confirmada, entregada, cancelada]
+        notas:
+          type: string
+
+    Reserva:
+      type: object
+      required: [id, cliente_nombre, cliente_email, cliente_telefono, producto_id, cantidad, estado, created_at]
+      properties:
+        id:
+          type: integer
+        cliente_nombre:
+          type: string
+        cliente_email:
+          type: string
+        cliente_telefono:
+          type: string
+        producto_id:
+          type: integer
+        producto_nombre:
+          type: ["string", "null"]
+        cantidad:
+          type: integer
+        estado:
+          type: string
+          enum: [pendiente, confirmada, entregada, cancelada]
+        notas:
+          type: ["string", "null"]
+        whatsapp_enviado:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ReservasPaginadas:
+      type: object
+      required: [data, total, page, limit]
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reserva"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    # ─── USUARIOS ─────────────────────────────────────────────────────────────
+    Usuario:
+      type: object
+      required: [id, nombre, email, role_id, activo]
+      properties:
+        id:
+          type: integer
+        nombre:
+          type: string
+        apellido:
+          type: ["string", "null"]
+        email:
+          type: string
+        role_id:
+          type: integer
+        rol_nombre:
+          type: ["string", "null"]
+        activo:
+          type: boolean
+        last_login:
+          type: ["string", "null"]
+        created_at:
+          type: string
+          format: date-time
+
+    UsuarioInput:
+      type: object
+      required: [nombre, email, password, role_id]
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+        apellido:
+          type: string
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        role_id:
+          type: integer
+
+    UsuarioUpdate:
+      type: object
+      properties:
+        nombre:
+          type: string
+          minLength: 1
+        apellido:
+          type: string
+        email:
+          type: string
+          format: email
+        role_id:
+          type: integer
+
+    PasswordResetInput:
+      type: object
+      required: [nueva_password]
+      properties:
+        nueva_password:
+          type: string
+          minLength: 8
+
+    # ─── DASHBOARD ────────────────────────────────────────────────────────────
+    DashboardResumen:
+      type: object
+      required: [total_productos, total_reservas, reservas_pendientes, productos_agotados]
+      properties:
+        total_productos:
+          type: integer
+        total_reservas:
+          type: integer
+        reservas_pendientes:
+          type: integer
+        reservas_confirmadas:
+          type: integer
+        reservas_entregadas:
+          type: integer
+        productos_agotados:
+          type: integer
+        productos_pocas_unidades:
+          type: integer
+        total_usuarios:
+          type: integer

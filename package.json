@@ -1,0 +1,19 @@
+{
+  "name": "indesa-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --parallel --filter @indesa/api-server --filter @indesa/web dev",
+    "dev:backend": "pnpm --filter @indesa/api-server dev",
+    "dev:frontend": "pnpm --filter @indesa/web dev",
+    "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "typecheck": "pnpm run typecheck:packages && pnpm -r --if-present run typecheck",
+    "typecheck:packages": "tsc --build"
+  },
+  "devDependencies": {
+    "prettier": "^3.8.4",
+    "typescript": "~5.9.3"
+  },
+  "packageManager": "pnpm@11.7.0"
+}

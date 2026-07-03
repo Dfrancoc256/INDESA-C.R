@@ -1,0 +1,19 @@
+# Dependencias
+node_modules/
+**/node_modules/
+
+# Builds
+dist/
+**/dist/
+
+# Variables de entorno privadas
+.env
+.env.local
+!.env.example
+
+# IDE / editor
+.vs/
+.vscode/
+
+# Archivos generados
+*.tsbuildinfo

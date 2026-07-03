@@ -1,0 +1,14 @@
+packages:
+  - backend/*
+  - frontend/*
+  - packages/*
+
+allowBuilds:
+  bcrypt: true
+  esbuild: true
+
+autoInstallPeers: false
+
+onlyBuiltDependencies:
+  - bcrypt
+  - esbuild
