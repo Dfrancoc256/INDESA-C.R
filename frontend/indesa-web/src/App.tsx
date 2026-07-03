@@ -42,6 +42,16 @@ function Redirect({ to }: { to: string }) {
   return null;
 }
 
+function ScrollToTop() {
+  const [location] = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [location]);
+
+  return null;
+}
+
 function PublicRoutes() {
   return (
     <Switch>
@@ -135,6 +145,7 @@ function App() {
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
           <AuthProvider>
+            <ScrollToTop />
             <Router />
           </AuthProvider>
         </WouterRouter>

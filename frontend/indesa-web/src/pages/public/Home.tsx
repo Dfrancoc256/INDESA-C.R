@@ -117,6 +117,17 @@ export function Home() {
     return () => window.clearInterval(timer);
   }, []);
 
+  const scrollToCatalog = () => {
+    const catalogSection = document.getElementById("catalogo-productos");
+    if (!catalogSection) return;
+
+    const headerOffset = 112;
+    const top = catalogSection.getBoundingClientRect().top + window.scrollY - headerOffset;
+
+    window.scrollTo({ top, behavior: "smooth" });
+    window.history.replaceState(null, "", "#catalogo-productos");
+  };
+
   const openReservaModal = (producto: HomeProduct) => {
     setSelectedProduct(producto);
     setReservaForm({ ...emptyReservaForm, cantidad: producto.cantidad > 0 ? "1" : "0" });
@@ -166,13 +177,16 @@ export function Home() {
               {heroSlides[activeSlide].description}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button asChild size="lg" className="h-12 px-6 text-base shadow-lg transition-all duration-200 hover:-translate-y-0.5">
-                <Link href="#catalogo-productos">
-                  Ver Catálogo <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
+              <Button
+                type="button"
+                size="lg"
+                onClick={scrollToCatalog}
+                className="h-12 px-6 text-base shadow-lg transition-all duration-200 hover:-translate-y-0.5"
+              >
+                Ver Catálogo <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
               <Button asChild size="lg" variant="outline" className="h-12 bg-white/10 px-6 text-base text-white border-white/30 backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/20 hover:text-white">
-                <Link href="/reservar">Formulario Completo</Link>
+                <Link href="/reservar">Reservar</Link>
               </Button>
             </div>
             <div className="mt-8 flex items-center gap-3">
@@ -214,30 +228,31 @@ export function Home() {
               const agotado = (producto.cantidad ?? 0) <= 0;
 
               return (
-                <Card key={producto.id} className="group overflow-hidden border bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+                <Card key={producto.id} className="group relative overflow-hidden border bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10">
+                  <span className="absolute inset-x-0 top-0 z-10 h-1 origin-left scale-x-0 bg-primary transition-transform duration-300 group-hover:scale-x-100" />
                   <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
                     {producto.imagen_url ? (
                       <img
                         src={producto.imagen_url}
                         alt={producto.nombre}
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-[0.4deg]"
                       />
                     ) : (
-                      <div className="flex h-full w-full items-center justify-center bg-gray-100 text-4xl font-bold text-gray-300">
+                      <div className="flex h-full w-full items-center justify-center bg-gray-100 text-4xl font-bold text-gray-300 transition-transform duration-500 group-hover:scale-105">
                         {getInitials(producto.nombre)}
                       </div>
                     )}
 
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent opacity-95" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-90 transition-opacity duration-300 group-hover:opacity-75" />
 
-                    <div className="absolute left-3 top-3">
-                      <Badge className={agotado ? "bg-destructive text-white" : "bg-white text-foreground hover:bg-white"}>
+                    <div className="absolute left-3 top-3 transition-transform duration-300 group-hover:-translate-y-0.5">
+                      <Badge className={agotado ? "bg-destructive text-white shadow-sm" : "bg-white text-foreground shadow-sm hover:bg-white"}>
                         {getDisponibilidadLabel(producto)}
                       </Badge>
                     </div>
 
-                    <div className="absolute inset-x-3 bottom-3 grid grid-cols-2 gap-2">
-                      <Button asChild size="sm" className="gap-1.5 bg-green-600 text-white hover:bg-green-700">
+                    <div className="absolute inset-x-3 bottom-3 grid grid-cols-2 gap-2 transition-transform duration-300 group-hover:-translate-y-1">
+                      <Button asChild size="sm" className="gap-1.5 bg-green-600 text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-green-700 hover:shadow-md">
                         <a href={buildWhatsAppUrl(producto)} target="_blank" rel="noreferrer">
                           <MessageCircle className="h-4 w-4" />
                           WhatsApp
@@ -247,7 +262,7 @@ export function Home() {
                         type="button"
                         size="sm"
                         variant="secondary"
-                        className="gap-1.5 bg-white text-foreground hover:bg-white/90"
+                        className="gap-1.5 bg-white text-foreground shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-md"
                         onClick={() => openReservaModal(producto)}
                         disabled={agotado}
                       >
@@ -257,19 +272,19 @@ export function Home() {
                     </div>
                   </div>
 
-                  <CardHeader className="p-4 pb-2">
+                  <CardHeader className="p-4 pb-2 transition-transform duration-300 group-hover:-translate-y-0.5">
                     <div className="mb-1 text-xs text-muted-foreground">{producto.categoria_nombre}</div>
-                    <CardTitle className="line-clamp-2 text-lg leading-tight" title={producto.nombre}>
+                    <CardTitle className="line-clamp-2 text-lg leading-tight transition-colors duration-300 group-hover:text-primary" title={producto.nombre}>
                       {producto.nombre}
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="p-4 pt-0">
+                  <CardContent className="p-4 pt-0 transition-transform duration-300 group-hover:-translate-y-0.5">
                     <p className="mb-4 line-clamp-2 min-h-10 text-sm text-muted-foreground">
                       {producto.descripcion}
                     </p>
                     <div className="flex items-center justify-between gap-3">
                       <div className="text-xl font-bold text-primary">{formatCurrency(producto.precio)}</div>
-                      <Link href={`/producto/${producto.id}`} className="text-sm font-semibold text-muted-foreground transition-colors hover:text-primary">
+                      <Link href={`/producto/${producto.id}`} className="text-sm font-semibold text-muted-foreground transition-all duration-200 hover:text-primary group-hover:translate-x-1">
                         Detalle
                       </Link>
                     </div>

@@ -81,7 +81,11 @@ export function Catalogo() {
                   <Input 
                     placeholder="¿Qué maquinaria buscas?"
                     value={busqueda}
-                    onChange={(e) => setBusqueda(e.target.value)}
+                    onChange={(e) => {
+                      setBusqueda(e.target.value);
+                      setSearchQuery(e.target.value);
+                      setPage(1);
+                    }}
                     className="w-full"
                   />
                 </form>
@@ -164,43 +168,45 @@ export function Catalogo() {
               <div className="space-y-8">
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {productosPagina.map(producto => (
-                    <Card key={producto.id} className="group overflow-hidden flex flex-col hover-elevate transition-shadow duration-300">
+                    <Card key={producto.id} className="group relative flex overflow-hidden flex-col border bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10">
+                      <span className="absolute inset-x-0 top-0 z-10 h-1 origin-left scale-x-0 bg-primary transition-transform duration-300 group-hover:scale-x-100" />
                       <div className="aspect-square relative bg-gray-100 overflow-hidden">
                         {producto.imagen_url ? (
                           <img 
                             src={producto.imagen_url} 
                             alt={producto.nombre}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
+                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-[0.4deg]" 
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-gray-300 bg-gray-100">
+                          <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-gray-300 bg-gray-100 transition-transform duration-500 group-hover:scale-105">
                             {getInitials(producto.nombre)}
                           </div>
                         )}
+                        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                         {producto.disponibilidad === "pocas_unidades" && (
-                          <div className="absolute top-2 right-2">
+                          <div className="absolute top-2 right-2 transition-transform duration-300 group-hover:-translate-y-0.5">
                             <Badge variant="warning" className="shadow-sm">Pocas Unidades</Badge>
                           </div>
                         )}
                         {producto.disponibilidad === "agotado" && (
-                          <div className="absolute top-2 right-2">
+                          <div className="absolute top-2 right-2 transition-transform duration-300 group-hover:-translate-y-0.5">
                             <Badge variant="destructive" className="shadow-sm">Agotado</Badge>
                           </div>
                         )}
                       </div>
-                      <CardHeader className="p-4 pb-2">
+                      <CardHeader className="p-4 pb-2 transition-transform duration-300 group-hover:-translate-y-0.5">
                         <div className="text-xs text-muted-foreground mb-1">{producto.categoria_nombre}</div>
-                        <CardTitle className="text-lg leading-tight h-12" title={producto.nombre}>
+                        <CardTitle className="text-lg leading-tight h-12 transition-colors duration-300 group-hover:text-primary" title={producto.nombre}>
                           <span className="line-clamp-2">{producto.nombre}</span>
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="p-4 pt-0 flex-1">
+                      <CardContent className="p-4 pt-0 flex-1 transition-transform duration-300 group-hover:-translate-y-0.5">
                         <div className="text-2xl font-bold text-primary mb-2">
                           {formatCurrency(producto.precio)}
                         </div>
                       </CardContent>
                       <CardFooter className="p-4 pt-0">
-                        <Button asChild className="w-full" variant="outline">
+                        <Button asChild className="w-full transition-all duration-200 group-hover:border-primary group-hover:text-primary hover:-translate-y-0.5 hover:shadow-md" variant="outline">
                           <Link href={`/producto/${producto.id}`}>Ver Detalles</Link>
                         </Button>
                       </CardFooter>

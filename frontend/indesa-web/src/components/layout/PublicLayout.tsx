@@ -3,6 +3,8 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, LayoutDashboard, LockKeyhole, Menu, Search, X } from "lucide-react";
 import { useState } from "react";
+import { formatCurrency, getInitials } from "@/lib/utils";
+import { mockProductos } from "@/lib/mockCatalog";
 import logoIndesa from "@/assets/logo-indesa-lockup.png";
 import logoIndesaCompleto from "@/assets/logo-indesa-transparent.png";
 
@@ -11,6 +13,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [headerSearch, setHeaderSearch] = useState("");
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
 
   const navLinks = [
     { href: "/", label: "Inicio" },
@@ -31,6 +34,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
     const query = headerSearch.trim();
     setIsMobileMenuOpen(false);
+    setIsSearchFocused(false);
 
     if (!query) {
       setLocation("/catalogo");
@@ -39,6 +43,90 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
     setLocation(`/catalogo?buscar=${encodeURIComponent(query)}`);
   };
+
+  const normalizedSearch = headerSearch.trim().toLowerCase();
+  const searchSuggestions = normalizedSearch
+    ? mockProductos
+        .filter((producto) => producto.activo !== false)
+        .filter((producto) =>
+          `${producto.nombre} ${producto.descripcion ?? ""} ${producto.categoria_nombre ?? ""} ${producto.id}`
+            .toLowerCase()
+            .includes(normalizedSearch)
+        )
+        .slice(0, 5)
+    : [];
+  const showSearchSuggestions = isSearchFocused && Boolean(normalizedSearch);
+
+  const goToProduct = (producto: (typeof mockProductos)[number]) => {
+    setHeaderSearch(producto.nombre);
+    setIsSearchFocused(false);
+    setIsMobileMenuOpen(false);
+    setLocation(`/producto/${producto.id}`);
+  };
+
+  const goToCatalogSearch = () => {
+    const query = headerSearch.trim();
+    setIsSearchFocused(false);
+    setIsMobileMenuOpen(false);
+    setLocation(query ? `/catalogo?buscar=${encodeURIComponent(query)}` : "/catalogo");
+  };
+
+  const searchSuggestionList = (
+    <div className="absolute inset-x-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-md border bg-white shadow-xl">
+      <div className="border-b px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">
+        Coincidencias
+      </div>
+      {searchSuggestions.length > 0 ? (
+        <div className="max-h-80 overflow-y-auto py-1">
+          {searchSuggestions.map((producto) => (
+            <button
+              key={producto.id}
+              type="button"
+              onMouseDown={(event) => {
+                event.preventDefault();
+                goToProduct(producto);
+              }}
+              className="flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-primary/5"
+            >
+              <div className="h-12 w-14 shrink-0 overflow-hidden rounded-md bg-muted">
+                {producto.imagen_url ? (
+                  <img src={producto.imagen_url} alt={producto.nombre} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center text-sm font-bold text-muted-foreground">
+                    {getInitials(producto.nombre)}
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold text-foreground">{producto.nombre}</div>
+                <div className="truncate text-xs text-muted-foreground">
+                  {producto.categoria_nombre} · {producto.descripcion}
+                </div>
+              </div>
+              <div className="hidden shrink-0 text-sm font-bold text-primary sm:block">
+                {formatCurrency(producto.precio)}
+              </div>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="px-3 py-4 text-sm text-muted-foreground">
+          No encontramos coincidencias exactas.
+        </div>
+      )}
+      <button
+        type="button"
+        onMouseDown={(event) => {
+          event.preventDefault();
+          goToCatalogSearch();
+        }}
+        className="flex w-full items-center justify-between border-t px-3 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary/5"
+      >
+        Ver resultados en catálogo
+        <ArrowRight className="h-4 w-4" />
+      </button>
+    </div>
+  );
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background font-sans">
@@ -52,25 +140,30 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             />
           </Link>
 
-          <form
-            onSubmit={handleHeaderSearch}
-            className="hidden xl:flex h-11 w-full max-w-[390px] items-center rounded-md border border-border bg-white shadow-sm transition-all duration-200 focus-within:border-primary focus-within:shadow-md"
-          >
-            <Search className="ml-3 h-4 w-4 shrink-0 text-muted-foreground" />
-            <input
-              type="search"
-              value={headerSearch}
-              onChange={(event) => setHeaderSearch(event.target.value)}
-              placeholder="¿Qué maquinaria buscas?"
-              aria-label="Buscar maquinaria"
-              className="h-full min-w-0 flex-1 bg-transparent px-3 text-sm font-medium outline-none placeholder:text-muted-foreground"
-            />
-            <button
-              type="submit"
-              className="mr-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"
-            >
-              Buscar
-            </button>
+          <form onSubmit={handleHeaderSearch} className="relative hidden w-full max-w-[430px] xl:block">
+            <div className="flex h-11 items-center rounded-md border border-border bg-white shadow-sm transition-all duration-200 focus-within:border-primary focus-within:shadow-md">
+              <Search className="ml-3 h-4 w-4 shrink-0 text-muted-foreground" />
+              <input
+                type="search"
+                value={headerSearch}
+                onChange={(event) => setHeaderSearch(event.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => window.setTimeout(() => setIsSearchFocused(false), 120)}
+                onKeyDown={(event) => {
+                  if (event.key === "Escape") setIsSearchFocused(false);
+                }}
+                placeholder="¿Qué maquinaria buscas?"
+                aria-label="Buscar maquinaria"
+                className="h-full min-w-0 flex-1 bg-transparent px-3 text-sm font-medium outline-none placeholder:text-muted-foreground"
+              />
+              <button
+                type="submit"
+                className="mr-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"
+              >
+                Buscar
+              </button>
+            </div>
+            {showSearchSuggestions && searchSuggestionList}
           </form>
 
           {/* Desktop Nav */}
@@ -128,19 +221,27 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         {/* Mobile Nav */}
         {isMobileMenuOpen && (
           <div className="md:hidden border-b bg-background/95 px-4 py-4 shadow-md backdrop-blur">
-            <form onSubmit={handleHeaderSearch} className="mb-4 flex h-11 items-center rounded-md border bg-white shadow-sm">
-              <Search className="ml-3 h-4 w-4 shrink-0 text-muted-foreground" />
-              <input
-                type="search"
-                value={headerSearch}
-                onChange={(event) => setHeaderSearch(event.target.value)}
-                placeholder="¿Qué maquinaria buscas?"
-                aria-label="Buscar maquinaria"
-                className="h-full min-w-0 flex-1 bg-transparent px-3 text-sm font-medium outline-none placeholder:text-muted-foreground"
-              />
-              <button type="submit" className="mr-1 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
-                Buscar
-              </button>
+            <form onSubmit={handleHeaderSearch} className="relative mb-4">
+              <div className="flex h-11 items-center rounded-md border bg-white shadow-sm">
+                <Search className="ml-3 h-4 w-4 shrink-0 text-muted-foreground" />
+                <input
+                  type="search"
+                  value={headerSearch}
+                  onChange={(event) => setHeaderSearch(event.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => window.setTimeout(() => setIsSearchFocused(false), 120)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Escape") setIsSearchFocused(false);
+                  }}
+                  placeholder="¿Qué maquinaria buscas?"
+                  aria-label="Buscar maquinaria"
+                  className="h-full min-w-0 flex-1 bg-transparent px-3 text-sm font-medium outline-none placeholder:text-muted-foreground"
+                />
+                <button type="submit" className="mr-1 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
+                  Buscar
+                </button>
+              </div>
+              {showSearchSuggestions && searchSuggestionList}
             </form>
             <nav className="flex flex-col gap-2">
               {navLinks.map((link) => (
