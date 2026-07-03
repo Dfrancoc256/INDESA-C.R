@@ -35,16 +35,34 @@ type ReservaFormState = {
   cliente_email: string;
   cliente_telefono: string;
   cantidad: string;
+  fecha_inicio: string;
+  fecha_fin: string;
   notas: string;
 };
 
+function getTodayDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getDiasReserva(fechaInicio: string, fechaFin: string) {
+  const inicio = new Date(`${fechaInicio}T00:00:00`);
+  const fin = new Date(`${fechaFin}T00:00:00`);
+  const diff = fin.getTime() - inicio.getTime();
+
+  if (Number.isNaN(diff) || diff < 0) return 1;
+  return Math.floor(diff / 86_400_000) + 1;
+}
+
 const whatsappPhone = "50222223333";
+const todayDate = getTodayDate();
 
 const emptyReservaForm: ReservaFormState = {
   cliente_nombre: "",
   cliente_email: "",
   cliente_telefono: "",
   cantidad: "1",
+  fecha_inicio: todayDate,
+  fecha_fin: todayDate,
   notas: "",
 };
 
@@ -89,6 +107,7 @@ function buildWhatsAppUrl(producto: HomeProduct, form?: ReservaFormState) {
   if (form) {
     lines.push(
       `Cantidad solicitada: ${form.cantidad || "1"}`,
+      `Fechas: ${form.fecha_inicio} al ${form.fecha_fin}`,
       `Nombre: ${form.cliente_nombre || "Pendiente"}`,
       `Teléfono: ${form.cliente_telefono || "Pendiente"}`,
       `Correo: ${form.cliente_email || "Pendiente"}`
@@ -114,6 +133,7 @@ export function Home() {
     orden: "nombre_asc",
   });
   const productosCatalogo = productosResponse?.data ?? [];
+  const diasReserva = getDiasReserva(reservaForm.fecha_inicio, reservaForm.fecha_fin);
 
   const reservaMutation = useCreateReserva({
     mutation: {
@@ -163,6 +183,8 @@ export function Home() {
         cliente_email: reservaForm.cliente_email,
         cliente_telefono: reservaForm.cliente_telefono,
         cantidad: Number(reservaForm.cantidad) || 1,
+        fecha_inicio: reservaForm.fecha_inicio,
+        fecha_fin: reservaForm.fecha_fin,
         notas: reservaForm.notas || undefined,
       },
     }, {
@@ -476,6 +498,38 @@ export function Home() {
                     required
                   />
                 </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="home-reserva-fecha-inicio">Inicio</label>
+                  <Input
+                    id="home-reserva-fecha-inicio"
+                    type="date"
+                    min={todayDate}
+                    value={reservaForm.fecha_inicio}
+                    onChange={(event) => {
+                      const nextInicio = event.target.value;
+                      setReservaForm((current) => ({
+                        ...current,
+                        fecha_inicio: nextInicio,
+                        fecha_fin: current.fecha_fin < nextInicio ? nextInicio : current.fecha_fin,
+                      }));
+                    }}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="home-reserva-fecha-fin">Fin</label>
+                  <Input
+                    id="home-reserva-fecha-fin"
+                    type="date"
+                    min={reservaForm.fecha_inicio || todayDate}
+                    value={reservaForm.fecha_fin}
+                    onChange={(event) => setReservaForm((current) => ({ ...current, fecha_fin: event.target.value }))}
+                    required
+                  />
+                </div>
+                <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary sm:col-span-2">
+                  Reserva por {diasReserva} día{diasReserva === 1 ? "" : "s"}.
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -484,7 +538,7 @@ export function Home() {
                   id="home-reserva-notas"
                   value={reservaForm.notas}
                   onChange={(event) => setReservaForm((current) => ({ ...current, notas: event.target.value }))}
-                  placeholder="Fecha estimada, ubicación del trabajo, horario o cualquier detalle adicional."
+                  placeholder="Ubicación del trabajo, horario o cualquier detalle adicional."
                   className="min-h-24"
                 />
               </div>

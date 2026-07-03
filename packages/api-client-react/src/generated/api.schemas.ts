@@ -166,6 +166,8 @@ export interface ReservaInput {
   producto_id: number;
   /** @minimum 1 */
   cantidad: number;
+  fecha_inicio: string;
+  fecha_fin: string;
   notas?: string;
 }
 
@@ -203,6 +205,9 @@ export interface Reserva {
   /** @nullable */
   producto_nombre?: string | null;
   cantidad: number;
+  fecha_inicio: string;
+  fecha_fin: string;
+  dias_reserva: number;
   estado: ReservaEstado;
   /** @nullable */
   notas?: string | null;
@@ -310,4 +315,3 @@ export const ListReservasEstado = {
   entregada: 'entregada',
   cancelada: 'cancelada',
 } as const;
-

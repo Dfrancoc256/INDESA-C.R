@@ -10,12 +10,12 @@ function calcularDisponibilidad(cantidad: number, stockMinimo: number): string {
 export async function findAllInventario() {
   const rows = await db
     .select({
-      productoId: inventarioTable.productoId,
-      productoNombre: productosTable.nombre,
-      categoriaNombre: categoriasTable.nombre,
+      producto_id: inventarioTable.productoId,
+      producto_nombre: productosTable.nombre,
+      categoria_nombre: categoriasTable.nombre,
       cantidad: inventarioTable.cantidad,
-      stockMinimo: inventarioTable.stockMinimo,
-      updatedAt: inventarioTable.updatedAt,
+      stock_minimo: inventarioTable.stockMinimo,
+      updated_at: inventarioTable.updatedAt,
     })
     .from(inventarioTable)
     .leftJoin(productosTable, eq(inventarioTable.productoId, productosTable.id))
@@ -24,19 +24,19 @@ export async function findAllInventario() {
 
   return rows.map((r) => ({
     ...r,
-    disponibilidad: calcularDisponibilidad(r.cantidad ?? 0, r.stockMinimo ?? 5),
+    disponibilidad: calcularDisponibilidad(r.cantidad ?? 0, r.stock_minimo ?? 5),
   }));
 }
 
 export async function findInventarioByProducto(productoId: number) {
   const rows = await db
     .select({
-      productoId: inventarioTable.productoId,
-      productoNombre: productosTable.nombre,
-      categoriaNombre: categoriasTable.nombre,
+      producto_id: inventarioTable.productoId,
+      producto_nombre: productosTable.nombre,
+      categoria_nombre: categoriasTable.nombre,
       cantidad: inventarioTable.cantidad,
-      stockMinimo: inventarioTable.stockMinimo,
-      updatedAt: inventarioTable.updatedAt,
+      stock_minimo: inventarioTable.stockMinimo,
+      updated_at: inventarioTable.updatedAt,
     })
     .from(inventarioTable)
     .leftJoin(productosTable, eq(inventarioTable.productoId, productosTable.id))
@@ -46,7 +46,7 @@ export async function findInventarioByProducto(productoId: number) {
 
   if (!rows[0]) return null;
   const r = rows[0];
-  return { ...r, disponibilidad: calcularDisponibilidad(r.cantidad ?? 0, r.stockMinimo ?? 5) };
+  return { ...r, disponibilidad: calcularDisponibilidad(r.cantidad ?? 0, r.stock_minimo ?? 5) };
 }
 
 export async function upsertInventario(productoId: number, cantidad: number, stockMinimo?: number) {
@@ -77,12 +77,12 @@ export async function decrementarStock(productoId: number, cantidad: number): Pr
 export async function findStockBajo() {
   const rows = await db
     .select({
-      productoId: inventarioTable.productoId,
-      productoNombre: productosTable.nombre,
-      categoriaNombre: categoriasTable.nombre,
+      producto_id: inventarioTable.productoId,
+      producto_nombre: productosTable.nombre,
+      categoria_nombre: categoriasTable.nombre,
       cantidad: inventarioTable.cantidad,
-      stockMinimo: inventarioTable.stockMinimo,
-      updatedAt: inventarioTable.updatedAt,
+      stock_minimo: inventarioTable.stockMinimo,
+      updated_at: inventarioTable.updatedAt,
     })
     .from(inventarioTable)
     .leftJoin(productosTable, eq(inventarioTable.productoId, productosTable.id))
@@ -91,7 +91,7 @@ export async function findStockBajo() {
 
   return rows.map((r) => ({
     ...r,
-    disponibilidad: calcularDisponibilidad(r.cantidad ?? 0, r.stockMinimo ?? 5),
+    disponibilidad: calcularDisponibilidad(r.cantidad ?? 0, r.stock_minimo ?? 5),
   }));
 }
 
@@ -111,12 +111,12 @@ export async function findMovimientosByProducto(productoId: number) {
   return db
     .select({
       id: movimientosTable.id,
-      productoId: movimientosTable.productoId,
+      producto_id: movimientosTable.productoId,
       tipo: movimientosTable.tipo,
       cantidad: movimientosTable.cantidad,
       motivo: movimientosTable.motivo,
-      usuarioNombre: usuariosTable.nombre,
-      createdAt: movimientosTable.createdAt,
+      usuario_nombre: usuariosTable.nombre,
+      created_at: movimientosTable.createdAt,
     })
     .from(movimientosTable)
     .leftJoin(usuariosTable, eq(movimientosTable.usuarioId, usuariosTable.id))

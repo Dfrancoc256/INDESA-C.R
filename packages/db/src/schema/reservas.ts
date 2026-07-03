@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { date, pgTable, serial, text, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { productosTable } from "./productos";
@@ -10,6 +10,9 @@ export const reservasTable = pgTable("reservas", {
   clienteTelefono: text("cliente_telefono").notNull(),
   productoId: integer("producto_id").notNull().references(() => productosTable.id),
   cantidad: integer("cantidad").notNull(),
+  fechaInicio: date("fecha_inicio").notNull(),
+  fechaFin: date("fecha_fin").notNull(),
+  diasReserva: integer("dias_reserva").notNull().default(1),
   estado: text("estado").notNull().default("pendiente"),
   notas: text("notas"),
   whatsappEnviado: boolean("whatsapp_enviado").notNull().default(false),

@@ -91,7 +91,9 @@ export function Dashboard() {
                         </TableCell>
                         <TableCell>
                           {reserva.producto_nombre}
-                          <div className="text-xs text-muted-foreground font-normal">Cant: {reserva.cantidad}</div>
+                          <div className="text-xs text-muted-foreground font-normal">
+                            Cant: {reserva.cantidad} · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <EstadoBadge estado={reserva.estado} />

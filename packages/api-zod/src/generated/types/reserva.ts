@@ -16,6 +16,9 @@ export interface Reserva {
   /** @nullable */
   producto_nombre?: string | null;
   cantidad: number;
+  fecha_inicio: Date;
+  fecha_fin: Date;
+  dias_reserva: number;
   estado: ReservaEstado;
   /** @nullable */
   notas?: string | null;

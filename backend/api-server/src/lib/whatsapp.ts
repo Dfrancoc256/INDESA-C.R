@@ -21,6 +21,9 @@ interface ReservaNotificacion {
   clienteTelefono: string;
   productoNombre: string;
   cantidad: number;
+  fechaInicio: string;
+  fechaFin: string;
+  diasReserva: number;
   reservaId: number;
 }
 
@@ -92,6 +95,8 @@ function construirMensaje(datos: ReservaNotificacion): string {
     "",
     "*Producto:*",
     `  ${datos.productoNombre} x ${datos.cantidad}`,
+    `  Días: ${datos.diasReserva}`,
+    `  Del: ${datos.fechaInicio} al ${datos.fechaFin}`,
     "",
     "Ingrese al panel administrativo para confirmar o gestionar esta reserva.",
   ].join("\n");

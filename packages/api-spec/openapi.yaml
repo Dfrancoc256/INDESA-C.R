@@ -943,7 +943,7 @@ components:
     # ─── RESERVAS ─────────────────────────────────────────────────────────────
     ReservaInput:
       type: object
-      required: [cliente_nombre, cliente_email, cliente_telefono, producto_id, cantidad]
+      required: [cliente_nombre, cliente_email, cliente_telefono, producto_id, cantidad, fecha_inicio, fecha_fin]
       properties:
         cliente_nombre:
           type: string
@@ -958,6 +958,12 @@ components:
         cantidad:
           type: integer
           minimum: 1
+        fecha_inicio:
+          type: string
+          format: date
+        fecha_fin:
+          type: string
+          format: date
         notas:
           type: string
 
@@ -973,7 +979,7 @@ components:
 
     Reserva:
       type: object
-      required: [id, cliente_nombre, cliente_email, cliente_telefono, producto_id, cantidad, estado, created_at]
+      required: [id, cliente_nombre, cliente_email, cliente_telefono, producto_id, cantidad, fecha_inicio, fecha_fin, dias_reserva, estado, created_at]
       properties:
         id:
           type: integer
@@ -989,6 +995,15 @@ components:
           type: ["string", "null"]
         cantidad:
           type: integer
+        fecha_inicio:
+          type: string
+          format: date
+        fecha_fin:
+          type: string
+          format: date
+        dias_reserva:
+          type: integer
+          minimum: 1
         estado:
           type: string
           enum: [pendiente, confirmada, entregada, cancelada]

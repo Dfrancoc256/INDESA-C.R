@@ -15,6 +15,16 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 
+function formatDateOnly(value?: string | Date | null) {
+  if (!value) return "Sin fecha";
+  const normalized = String(value).slice(0, 10);
+  return new Date(`${normalized}T00:00:00`).toLocaleDateString("es-GT", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 export function Reservas() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -178,7 +188,12 @@ export function Reservas() {
                     </TableCell>
                     <TableCell>
                       <div className="font-medium text-sm truncate max-w-[250px]">{reserva.producto_nombre}</div>
-                      <div className="text-xs text-muted-foreground">Cant: {reserva.cantidad} unid.</div>
+                      <div className="text-xs text-muted-foreground">
+                        Cant: {reserva.cantidad} unid. · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatDateOnly(reserva.fecha_inicio)} - {formatDateOnly(reserva.fecha_fin)}
+                      </div>
                     </TableCell>
                     <TableCell>
                       <EstadoBadge estado={reserva.estado} />
@@ -273,6 +288,14 @@ export function Reservas() {
                   <div className="font-medium">{reservaSeleccionada.producto_nombre}</div>
                   <div className="text-sm text-muted-foreground mt-1">
                     Cantidad solicitada: <span className="font-bold text-foreground">{reservaSeleccionada.cantidad} unidades</span>
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Período: <span className="font-bold text-foreground">
+                      {formatDateOnly(reservaSeleccionada.fecha_inicio)} - {formatDateOnly(reservaSeleccionada.fecha_fin)}
+                    </span>
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    Días apartados: <span className="font-bold text-foreground">{reservaSeleccionada.dias_reserva ?? 1}</span>
                   </div>
                 </div>
 

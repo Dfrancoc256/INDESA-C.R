@@ -4,6 +4,89 @@ import * as productosRepo from "../repositories/productos.repository";
 import { notificarReservaPorWhatsApp } from "../lib/whatsapp";
 import { logger } from "../lib/logger";
 
+type ReservaInput = {
+  clienteNombre?: string;
+  cliente_nombre?: string;
+  clienteEmail?: string;
+  cliente_email?: string;
+  clienteTelefono?: string;
+  cliente_telefono?: string;
+  productoId?: number;
+  producto_id?: number;
+  cantidad?: number;
+  fechaInicio?: string;
+  fecha_inicio?: string;
+  fechaFin?: string;
+  fecha_fin?: string;
+  diasReserva?: number;
+  dias_reserva?: number;
+  notas?: string;
+};
+
+type NormalizedReservaInput = {
+  clienteNombre: string;
+  clienteEmail: string;
+  clienteTelefono: string;
+  productoId: number;
+  cantidad: number;
+  fechaInicio: string;
+  fechaFin: string;
+  diasReserva: number;
+  notas?: string;
+};
+
+function toDateOnly(value: string | undefined, fieldName: string): string {
+  if (!value) {
+    throw Object.assign(new Error(`${fieldName} es obligatorio`), { status: 400 });
+  }
+
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    throw Object.assign(new Error(`${fieldName} no es una fecha válida`), { status: 400 });
+  }
+
+  return value.slice(0, 10);
+}
+
+function calcularDiasReserva(fechaInicio: string, fechaFin: string): number {
+  const inicio = new Date(`${fechaInicio}T00:00:00`);
+  const fin = new Date(`${fechaFin}T00:00:00`);
+  const diffMs = fin.getTime() - inicio.getTime();
+
+  if (diffMs < 0) {
+    throw Object.assign(new Error("La fecha final no puede ser anterior a la fecha inicial"), { status: 400 });
+  }
+
+  return Math.floor(diffMs / 86_400_000) + 1;
+}
+
+function normalizeReservaInput(data: ReservaInput): NormalizedReservaInput {
+  const fechaInicio = toDateOnly(data.fechaInicio ?? data.fecha_inicio, "fecha_inicio");
+  const fechaFin = toDateOnly(data.fechaFin ?? data.fecha_fin, "fecha_fin");
+  const diasReserva = calcularDiasReserva(fechaInicio, fechaFin);
+  const clienteNombre = data.clienteNombre ?? data.cliente_nombre;
+  const clienteEmail = data.clienteEmail ?? data.cliente_email;
+  const clienteTelefono = data.clienteTelefono ?? data.cliente_telefono;
+  const productoId = data.productoId ?? data.producto_id;
+  const cantidad = data.cantidad;
+
+  if (!clienteNombre || !clienteEmail || !clienteTelefono || !productoId || !cantidad) {
+    throw Object.assign(new Error("Datos incompletos para registrar la reserva"), { status: 400 });
+  }
+
+  return {
+    clienteNombre,
+    clienteEmail,
+    clienteTelefono,
+    productoId,
+    cantidad,
+    fechaInicio,
+    fechaFin,
+    diasReserva,
+    notas: data.notas,
+  };
+}
+
 export async function listReservas(params: { estado?: string; page?: number; limit?: number }) {
   return repo.findAllReservas(params);
 }
@@ -14,14 +97,9 @@ export async function getReserva(id: number) {
   return reserva;
 }
 
-export async function createReserva(data: {
-  clienteNombre: string;
-  clienteEmail: string;
-  clienteTelefono: string;
-  productoId: number;
-  cantidad: number;
-  notas?: string;
-}) {
+export async function createReserva(input: ReservaInput) {
+  const data = normalizeReservaInput(input);
+
   // Verificar que el producto existe y está activo
   const producto = await productosRepo.findProductoById(data.productoId);
   if (!producto || !producto.activo) {
@@ -47,6 +125,9 @@ export async function createReserva(data: {
     clienteTelefono: data.clienteTelefono,
     productoNombre: producto.nombre,
     cantidad: data.cantidad,
+    fechaInicio: data.fechaInicio,
+    fechaFin: data.fechaFin,
+    diasReserva: data.diasReserva,
     reservaId: reserva.id,
   }).then(async (enviado) => {
     if (enviado) {
@@ -63,12 +144,12 @@ export async function updateEstadoReserva(id: number, estado: string, notas?: st
 
   // Al confirmar reserva, decrementar stock
   if (estado === "confirmada" && reserva.estado === "pendiente") {
-    const decrementado = await inventarioRepo.decrementarStock(reserva.productoId, reserva.cantidad);
+    const decrementado = await inventarioRepo.decrementarStock(reserva.producto_id, reserva.cantidad);
     if (!decrementado) {
       throw Object.assign(new Error("Stock insuficiente para confirmar la reserva"), { status: 400 });
     }
     await inventarioRepo.createMovimiento({
-      productoId: reserva.productoId,
+      productoId: reserva.producto_id,
       tipo: "salida",
       cantidad: reserva.cantidad,
       motivo: `Reserva #${id} confirmada`,
@@ -77,11 +158,11 @@ export async function updateEstadoReserva(id: number, estado: string, notas?: st
 
   // Al cancelar reserva confirmada, devolver stock
   if (estado === "cancelada" && reserva.estado === "confirmada") {
-    const inv = await inventarioRepo.findInventarioByProducto(reserva.productoId);
+    const inv = await inventarioRepo.findInventarioByProducto(reserva.producto_id);
     if (inv) {
-      await inventarioRepo.upsertInventario(reserva.productoId, inv.cantidad + reserva.cantidad);
+      await inventarioRepo.upsertInventario(reserva.producto_id, inv.cantidad + reserva.cantidad);
       await inventarioRepo.createMovimiento({
-        productoId: reserva.productoId,
+        productoId: reserva.producto_id,
         tipo: "entrada",
         cantidad: reserva.cantidad,
         motivo: `Reserva #${id} cancelada — stock devuelto`,

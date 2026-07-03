@@ -14,5 +14,7 @@ export interface ReservaInput {
   producto_id: number;
   /** @minimum 1 */
   cantidad: number;
+  fecha_inicio: string;
+  fecha_fin: string;
   notas?: string;
 }

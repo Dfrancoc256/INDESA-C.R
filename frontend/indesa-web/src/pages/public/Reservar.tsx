@@ -20,10 +20,25 @@ const reservaGlobalSchema = z.object({
   cliente_telefono: z.string().min(8, "El teléfono debe tener al menos 8 dígitos"),
   producto_id: z.coerce.number().min(1, "Debe seleccionar un producto"),
   cantidad: z.coerce.number().min(1, "La cantidad mínima es 1"),
+  fecha_inicio: z.string().min(1, "Seleccione fecha de inicio"),
+  fecha_fin: z.string().min(1, "Seleccione fecha final"),
   notas: z.string().optional()
+}).refine((data) => data.fecha_fin >= data.fecha_inicio, {
+  path: ["fecha_fin"],
+  message: "La fecha final no puede ser anterior a la fecha inicial",
 });
 
 type ReservaGlobalValues = z.infer<typeof reservaGlobalSchema>;
+const todayDate = new Date().toISOString().slice(0, 10);
+
+function getDiasReserva(fechaInicio: string, fechaFin: string) {
+  const inicio = new Date(`${fechaInicio}T00:00:00`);
+  const fin = new Date(`${fechaFin}T00:00:00`);
+  const diff = fin.getTime() - inicio.getTime();
+
+  if (Number.isNaN(diff) || diff < 0) return 1;
+  return Math.floor(diff / 86_400_000) + 1;
+}
 
 export function Reservar() {
   const { toast } = useToast();
@@ -52,6 +67,8 @@ export function Reservar() {
       cliente_telefono: "",
       producto_id: productoPreseleccionado ? parseInt(productoPreseleccionado) : 0,
       cantidad: 1,
+      fecha_inicio: todayDate,
+      fecha_fin: todayDate,
       notas: ""
     },
   });
@@ -116,6 +133,7 @@ export function Reservar() {
 
     reservaMutation.mutate({ data });
   };
+  const diasReserva = getDiasReserva(form.watch("fecha_inicio"), form.watch("fecha_fin"));
 
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
@@ -235,6 +253,49 @@ export function Reservar() {
                           </FormItem>
                         )}
                       />
+
+                      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <FormField
+                          control={form.control}
+                          name="fecha_inicio"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Fecha de inicio *</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="date"
+                                  min={todayDate}
+                                  {...field}
+                                  onChange={(event) => {
+                                    field.onChange(event);
+                                    const fechaFin = form.getValues("fecha_fin");
+                                    if (fechaFin < event.target.value) {
+                                      form.setValue("fecha_fin", event.target.value);
+                                    }
+                                  }}
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="fecha_fin"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Fecha final *</FormLabel>
+                              <FormControl>
+                                <Input type="date" min={form.watch("fecha_inicio") || todayDate} {...field} />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                      <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
+                        Reserva por {diasReserva} día{diasReserva === 1 ? "" : "s"}.
+                      </div>
                     </div>
 
                     <div className="space-y-4 pt-6 mt-6 border-t">
