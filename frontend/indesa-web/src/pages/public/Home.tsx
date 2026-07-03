@@ -254,7 +254,7 @@ export function Home() {
                     </div>
 
                     <div className="absolute inset-x-3 bottom-3 grid grid-cols-2 gap-2 transition-transform duration-300 group-hover:-translate-y-1">
-                      <Button asChild size="sm" variant="secondary" className="gap-1.5 bg-white text-[#128C4A] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/95 hover:text-[#128C4A] hover:shadow-md">
+                      <Button asChild size="sm" variant="secondary" className="gap-1.5 bg-white text-[#00A884] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/95 hover:text-[#008f72] hover:shadow-md">
                         <a href={buildWhatsAppUrl(producto)} target="_blank" rel="noreferrer">
                           <FaWhatsapp className="h-4 w-4" />
                           WhatsApp
@@ -437,9 +437,9 @@ export function Home() {
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
-                <Button asChild type="button" variant="outline" className="gap-2">
+                <Button asChild type="button" variant="outline" className="gap-2 bg-white text-[#00A884] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/95 hover:text-[#008f72] hover:shadow-md">
                   <a href={buildWhatsAppUrl(selectedProduct)} target="_blank" rel="noreferrer">
-                    <MessageCircle className="h-4 w-4" />
+                    <FaWhatsapp className="h-4 w-4" />
                     Consultar por WhatsApp
                   </a>
                 </Button>
