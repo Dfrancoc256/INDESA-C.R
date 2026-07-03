@@ -1,15 +1,16 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, LayoutDashboard, LockKeyhole, Menu, X } from "lucide-react";
+import { ArrowRight, LayoutDashboard, LockKeyhole, Menu, Search, X } from "lucide-react";
 import { useState } from "react";
 import logoIndesa from "@/assets/logo-indesa-lockup.png";
 import logoIndesaCompleto from "@/assets/logo-indesa-transparent.png";
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [headerSearch, setHeaderSearch] = useState("");
 
   const navLinks = [
     { href: "/", label: "Inicio" },
@@ -25,9 +26,23 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
     return location === href || location.startsWith(`${href}/`);
   };
 
+  const handleHeaderSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    const query = headerSearch.trim();
+    setIsMobileMenuOpen(false);
+
+    if (!query) {
+      setLocation("/catalogo");
+      return;
+    }
+
+    setLocation(`/catalogo?buscar=${encodeURIComponent(query)}`);
+  };
+
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background font-sans">
-      <header className="sticky top-0 z-50 w-full border-b bg-background/95 shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
+      <header className="sticky top-0 z-50 w-full bg-background/95 shadow-sm backdrop-blur-xl supports-[backdrop-filter]:bg-background/80">
         <div className="container mx-auto flex h-20 items-center justify-between gap-4 px-4 md:h-[92px] md:px-8 lg:gap-8">
           <Link href="/" className="group flex h-16 w-[132px] min-w-0 shrink-0 items-center transition-transform duration-200 hover:-translate-y-0.5 sm:h-[72px] sm:w-[150px] md:w-[168px]">
             <img
@@ -37,8 +52,29 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             />
           </Link>
 
+          <form
+            onSubmit={handleHeaderSearch}
+            className="hidden xl:flex h-11 w-full max-w-[390px] items-center rounded-md border border-border bg-white shadow-sm transition-all duration-200 focus-within:border-primary focus-within:shadow-md"
+          >
+            <Search className="ml-3 h-4 w-4 shrink-0 text-muted-foreground" />
+            <input
+              type="search"
+              value={headerSearch}
+              onChange={(event) => setHeaderSearch(event.target.value)}
+              placeholder="¿Qué maquinaria buscas?"
+              aria-label="Buscar maquinaria"
+              className="h-full min-w-0 flex-1 bg-transparent px-3 text-sm font-medium outline-none placeholder:text-muted-foreground"
+            />
+            <button
+              type="submit"
+              className="mr-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"
+            >
+              Buscar
+            </button>
+          </form>
+
           {/* Desktop Nav */}
-          <nav className="hidden md:flex flex-1 items-center justify-center gap-8 lg:gap-12">
+          <nav className="hidden md:flex flex-1 items-center justify-center gap-8 lg:gap-10">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -92,6 +128,20 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         {/* Mobile Nav */}
         {isMobileMenuOpen && (
           <div className="md:hidden border-b bg-background/95 px-4 py-4 shadow-md backdrop-blur">
+            <form onSubmit={handleHeaderSearch} className="mb-4 flex h-11 items-center rounded-md border bg-white shadow-sm">
+              <Search className="ml-3 h-4 w-4 shrink-0 text-muted-foreground" />
+              <input
+                type="search"
+                value={headerSearch}
+                onChange={(event) => setHeaderSearch(event.target.value)}
+                placeholder="¿Qué maquinaria buscas?"
+                aria-label="Buscar maquinaria"
+                className="h-full min-w-0 flex-1 bg-transparent px-3 text-sm font-medium outline-none placeholder:text-muted-foreground"
+              />
+              <button type="submit" className="mr-1 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground">
+                Buscar
+              </button>
+            </form>
             <nav className="flex flex-col gap-2">
               {navLinks.map((link) => (
                 <Link
@@ -127,6 +177,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
         )}
+        <div className="h-1 w-full bg-primary shadow-[0_2px_10px_rgba(220,38,38,0.22)]" />
       </header>
 
       <main className="flex-1 flex flex-col">{children}</main>

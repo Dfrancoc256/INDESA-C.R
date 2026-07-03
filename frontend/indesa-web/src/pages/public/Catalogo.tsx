@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "wouter";
+import { useEffect, useState } from "react";
+import { Link, useLocation } from "wouter";
 import { formatCurrency, getInitials } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { mockCategorias, mockProductos } from "@/lib/mockCatalog";
 type CatalogOrder = "nombre_asc" | "nombre_desc" | "precio_asc" | "precio_desc";
 
 export function Catalogo() {
+  const [location] = useLocation();
   const [page, setPage] = useState(1);
   const [busqueda, setBusqueda] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -23,6 +24,15 @@ export function Catalogo() {
     setSearchQuery(busqueda);
     setPage(1);
   };
+
+  useEffect(() => {
+    const queryString = location.includes("?") ? location.split("?")[1] : window.location.search.slice(1);
+    const query = new URLSearchParams(queryString).get("buscar") ?? "";
+
+    setBusqueda(query);
+    setSearchQuery(query);
+    setPage(1);
+  }, [location]);
 
   const categoriasDisponibles = mockCategorias;
   const productosFiltrados = mockProductos
@@ -69,7 +79,7 @@ export function Catalogo() {
                 </h3>
                 <form onSubmit={handleSearch} className="flex gap-2">
                   <Input 
-                    placeholder="Nombre o ID..." 
+                    placeholder="¿Qué maquinaria buscas?"
                     value={busqueda}
                     onChange={(e) => setBusqueda(e.target.value)}
                     className="w-full"
