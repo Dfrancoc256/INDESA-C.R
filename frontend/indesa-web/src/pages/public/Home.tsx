@@ -21,6 +21,7 @@ import {
   Package,
   Shield,
 } from "lucide-react";
+import { FaWhatsapp } from "react-icons/fa";
 import { useEffect, useState, type FormEvent } from "react";
 import bannerTools from "@/assets/images/banner-tools.png";
 import bannerWarehouse from "@/assets/images/banner-warehouse.png";
@@ -251,11 +252,17 @@ export function Home() {
                       </Badge>
                     </div>
 
-                    <div className="absolute inset-x-3 bottom-3 transition-transform duration-300 group-hover:-translate-y-1">
+                    <div className="absolute inset-x-3 bottom-3 grid grid-cols-2 gap-2 transition-transform duration-300 group-hover:-translate-y-1">
+                      <Button asChild size="sm" variant="secondary" className="gap-1.5 bg-white text-primary shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/95 hover:text-primary hover:shadow-md">
+                        <a href={buildWhatsAppUrl(producto)} target="_blank" rel="noreferrer">
+                          <FaWhatsapp className="h-4 w-4" />
+                          WhatsApp
+                        </a>
+                      </Button>
                       <Button
                         type="button"
                         size="sm"
-                        className="w-full gap-1.5 bg-primary text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-md"
+                        className="gap-1.5 bg-primary text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-md"
                         onClick={() => openReservaModal(producto)}
                         disabled={agotado}
                       >

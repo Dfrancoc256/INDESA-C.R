@@ -2,7 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, LayoutDashboard, LockKeyhole, Mail, Menu, MessageCircle, Phone, Search, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { formatCurrency, getInitials } from "@/lib/utils";
 import { mockProductos } from "@/lib/mockCatalog";
 import logoIndesa from "@/assets/logo-indesa-lockup.png";
@@ -15,6 +15,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   const [headerSearch, setHeaderSearch] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isSocialMenuOpen, setIsSocialMenuOpen] = useState(false);
+  const socialMenuRef = useRef<HTMLDivElement | null>(null);
   const whatsappUrl = "https://wa.me/50222223333?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20la%20renta%20de%20maquinaria.";
 
   const navLinks = [
@@ -30,6 +31,30 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
     }
     return location === href || location.startsWith(`${href}/`);
   };
+
+  useEffect(() => {
+    if (!isSocialMenuOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (target && socialMenuRef.current?.contains(target)) return;
+      setIsSocialMenuOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsSocialMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isSocialMenuOpen]);
 
   const handleHeaderSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -285,7 +310,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
       <main className="flex-1 flex flex-col">{children}</main>
 
-      <div className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3">
+      <div ref={socialMenuRef} className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3">
         <div
           className={`w-72 overflow-hidden rounded-md border bg-white shadow-2xl transition-all duration-300 ${
             isSocialMenuOpen

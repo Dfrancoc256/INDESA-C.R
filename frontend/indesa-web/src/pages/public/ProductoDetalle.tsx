@@ -159,22 +159,24 @@ export function ProductoDetalle() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(390px,1fr)]">
             {/* Imagen y Detalles Visuales */}
-            <div className="space-y-6">
-              <div className="aspect-[4/3] bg-white rounded-xl border flex items-center justify-center relative overflow-hidden shadow-sm">
-                {imageSrc && !imageFailed ? (
-                  <img 
-                    src={imageSrc}
-                    alt={productoActual.nombre} 
-                    className="w-full h-full object-cover"
-                    onError={() => setImageFailed(true)}
-                  />
-                ) : (
-                  <div className="text-6xl font-bold text-gray-300">
-                    {getInitials(productoActual.nombre)}
-                  </div>
-                )}
+            <div className="space-y-4 lg:sticky lg:top-28">
+              <div className="relative overflow-hidden rounded-xl border bg-white shadow-md">
+                <div className="aspect-[16/11] max-h-[520px] w-full bg-gray-100 lg:aspect-[5/4]">
+                  {imageSrc && !imageFailed ? (
+                    <img
+                      src={imageSrc}
+                      alt={productoActual.nombre}
+                      className="h-full w-full object-cover"
+                      onError={() => setImageFailed(true)}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center text-6xl font-bold text-gray-300">
+                      {getInitials(productoActual.nombre)}
+                    </div>
+                  )}
+                </div>
                 {productoActual.disponibilidad === "pocas_unidades" && (
                   <div className="absolute top-4 right-4">
                     <Badge variant="warning" className="text-sm shadow-sm py-1 px-3">Pocas Unidades</Badge>
@@ -187,15 +189,15 @@ export function ProductoDetalle() {
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-white p-4 rounded-lg border flex items-start gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex items-start gap-3 rounded-lg border bg-white p-4 shadow-sm">
                   <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
                     <h4 className="font-semibold text-sm">Equipo revisado</h4>
                     <p className="text-xs text-muted-foreground mt-1">Inspección previa antes de cada servicio</p>
                   </div>
                 </div>
-                <div className="bg-white p-4 rounded-lg border flex items-start gap-3">
+                <div className="flex items-start gap-3 rounded-lg border bg-white p-4 shadow-sm">
                   <HardHat className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
                     <h4 className="font-semibold text-sm">Operador incluido</h4>
@@ -206,15 +208,15 @@ export function ProductoDetalle() {
             </div>
 
             {/* Info y Formulario */}
-            <div className="flex flex-col">
-              <div className="mb-8">
+            <div className="flex flex-col gap-6">
+              <div className="rounded-xl border bg-white p-6 shadow-sm md:p-7">
                 <div className="text-sm font-semibold tracking-wider text-primary uppercase mb-2">
                   {categoriaNombre}
                 </div>
-                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4 leading-tight">
+                <h1 className="text-3xl font-bold text-gray-900 mb-4 leading-tight md:text-4xl">
                   {productoActual.nombre}
                 </h1>
-                <div className="text-4xl font-bold text-gray-900 mb-2">
+                <div className="text-4xl font-bold text-gray-900 mb-2 md:text-5xl">
                   {formatCurrency(productoActual.precio)}
                 </div>
                 <p className="text-sm font-medium text-muted-foreground mb-6">
@@ -226,7 +228,7 @@ export function ProductoDetalle() {
                   </div>
                 )}
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-lg border bg-white p-4">
+                  <div className="rounded-lg border bg-gray-50 p-4">
                     <div className="flex items-center gap-2 text-sm font-semibold">
                       <BadgeCheck className="h-4 w-4 text-primary" />
                       Disponibilidad
@@ -237,7 +239,7 @@ export function ProductoDetalle() {
                         : "Sin unidades disponibles por el momento"}
                     </p>
                   </div>
-                  <div className="rounded-lg border bg-white p-4">
+                  <div className="rounded-lg border bg-gray-50 p-4">
                     <div className="flex items-center gap-2 text-sm font-semibold">
                       <HardHat className="h-4 w-4 text-primary" />
                       Servicio operado
@@ -249,11 +251,16 @@ export function ProductoDetalle() {
                 </div>
               </div>
 
-              <Card className="flex-1 border-primary/20 shadow-md">
-                <CardContent className="p-6 md:p-8">
-                  <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                    <Package className="h-5 w-5 text-primary" /> Solicitar Reserva
+              <Card className="flex-1 overflow-hidden border-primary/20 shadow-lg">
+                <div className="border-b bg-primary/5 px-6 py-5 md:px-7">
+                  <h3 className="flex items-center gap-2 text-xl font-bold">
+                    <Package className="h-5 w-5 text-primary" /> Solicitar reserva
                   </h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Completa tus datos y un asesor confirmará operador, horario y condiciones.
+                  </p>
+                </div>
+                <CardContent className="p-6 md:p-7">
 
                   {stockAgotado ? (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
@@ -268,8 +275,8 @@ export function ProductoDetalle() {
                     </div>
                   ) : (
                     <Form {...form}>
-                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                           <FormField
                             control={form.control}
                             name="cliente_nombre"
@@ -298,8 +305,8 @@ export function ProductoDetalle() {
                           />
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="md:col-span-2">
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-[1fr_180px]">
+                          <div>
                             <FormField
                               control={form.control}
                               name="cliente_email"
@@ -344,8 +351,8 @@ export function ProductoDetalle() {
                               <FormLabel>Comentarios adicionales (Opcional)</FormLabel>
                               <FormControl>
                                 <Textarea 
-                                placeholder="Ubicación de trabajo, horario estimado, tipo de operación o datos de facturación." 
-                                  className="resize-none h-24"
+                                  placeholder="Ubicación de trabajo, horario estimado, tipo de operación o datos de facturación." 
+                                  className="h-28 resize-none"
                                   {...field} 
                                 />
                               </FormControl>
@@ -354,11 +361,11 @@ export function ProductoDetalle() {
                           )}
                         />
 
-                        <div className="pt-4">
+                        <div className="pt-2">
                           <Button 
                             type="submit" 
                             size="lg" 
-                            className="w-full h-14 text-lg font-bold"
+                            className="h-12 w-full text-base font-bold md:h-14 md:text-lg"
                             disabled={reservaMutation.isPending}
                           >
                             {reservaMutation.isPending ? "Procesando..." : "Confirmar Reserva"}
