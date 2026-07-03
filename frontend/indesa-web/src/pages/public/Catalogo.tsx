@@ -59,22 +59,29 @@ export function Catalogo() {
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
       <div className="bg-white border-b">
-        <div className="container mx-auto px-4 md:px-8 py-8 md:py-12">
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">Catálogo de Maquinaria</h1>
-          <p className="text-muted-foreground max-w-2xl text-lg">
-            Explore maquinaria, equipos de apoyo y repuestos para obra, mantenimiento e industria.
-          </p>
+        <div className="container mx-auto px-4 py-5 md:px-8 md:py-6">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h1 className="mb-2 text-2xl font-bold tracking-tight md:text-3xl">Catálogo de Maquinaria</h1>
+              <p className="max-w-xl text-sm leading-relaxed text-muted-foreground md:text-base">
+                Encuentra maquinaria, equipos de apoyo y repuestos con operador coordinado por INDESA.
+              </p>
+            </div>
+            <div className="w-fit rounded-md border bg-gray-50 px-3 py-2 text-sm font-semibold text-muted-foreground">
+              {totalProductos} productos encontrados
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="container mx-auto px-4 md:px-8 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
+      <div className="container mx-auto px-4 py-5 md:px-8 md:py-6">
+        <div className="flex flex-col gap-5 lg:flex-row lg:gap-6">
           
           {/* Sidebar / Filters */}
-          <aside className="w-full lg:w-64 shrink-0 space-y-6">
-            <div className="bg-white p-5 rounded-lg border shadow-sm space-y-6">
+          <aside className="w-full shrink-0 space-y-4 self-start lg:sticky lg:top-28 lg:w-72">
+            <div className="space-y-5 rounded-lg border bg-white p-4 shadow-sm">
               <div>
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <h3 className="mb-2 flex items-center gap-2 font-semibold">
                   <Search className="h-4 w-4" /> Buscar
                 </h3>
                 <form onSubmit={handleSearch} className="flex gap-2">
@@ -86,13 +93,13 @@ export function Catalogo() {
                       setSearchQuery(e.target.value);
                       setPage(1);
                     }}
-                    className="w-full"
+                    className="h-10 w-full"
                   />
                 </form>
               </div>
 
               <div>
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <h3 className="mb-2 flex items-center gap-2 font-semibold">
                   <Filter className="h-4 w-4" /> Categoría
                 </h3>
                 <div className="space-y-2">
@@ -128,11 +135,11 @@ export function Catalogo() {
               </div>
 
               <div>
-                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                <h3 className="mb-2 flex items-center gap-2 font-semibold">
                   <SlidersHorizontal className="h-4 w-4" /> Ordenar por
                 </h3>
                 <Select value={orden} onValueChange={(val) => { setOrden(val as CatalogOrder); setPage(1); }}>
-                  <SelectTrigger className="w-full">
+                  <SelectTrigger className="h-10 w-full">
                     <SelectValue placeholder="Ordenar por" />
                   </SelectTrigger>
                   <SelectContent>
@@ -149,7 +156,7 @@ export function Catalogo() {
           {/* Product Grid */}
           <div className="flex-1">
             {productosPagina.length === 0 ? (
-              <div className="bg-white border rounded-lg p-12 text-center flex flex-col items-center">
+              <div className="flex flex-col items-center rounded-lg border bg-white p-10 text-center">
                 <AlertCircle className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
                 <h3 className="text-xl font-bold mb-2">No se encontraron productos</h3>
                 <p className="text-muted-foreground mb-6">
@@ -165,13 +172,13 @@ export function Catalogo() {
                 </Button>
               </div>
             ) : (
-              <div className="space-y-8">
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                   {productosPagina.map(producto => (
                     <Card key={producto.id} className="group relative flex overflow-hidden flex-col border bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:scale-[1.01] hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10">
                       <span className="absolute inset-x-0 top-0 z-10 h-1 origin-left scale-x-0 bg-primary transition-transform duration-300 group-hover:scale-x-100" />
                       <span className="pointer-events-none absolute -left-1/2 top-0 z-20 h-full w-1/3 -skew-x-12 bg-white/20 opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100" />
-                      <div className="aspect-square relative bg-gray-100 overflow-hidden">
+                      <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
                         {producto.imagen_url ? (
                           <img 
                             src={producto.imagen_url} 
@@ -195,19 +202,19 @@ export function Catalogo() {
                           </div>
                         )}
                       </div>
-                      <CardHeader className="p-4 pb-2 transition-transform duration-300 group-hover:-translate-y-0.5">
-                        <div className="text-xs text-muted-foreground mb-1">{producto.categoria_nombre}</div>
-                        <CardTitle className="text-lg leading-tight h-12 transition-colors duration-300 group-hover:text-primary" title={producto.nombre}>
+                      <CardHeader className="p-3 pb-2 transition-transform duration-300 group-hover:-translate-y-0.5">
+                        <div className="mb-1 text-xs text-muted-foreground">{producto.categoria_nombre}</div>
+                        <CardTitle className="min-h-10 text-base leading-tight transition-colors duration-300 group-hover:text-primary" title={producto.nombre}>
                           <span className="line-clamp-2">{producto.nombre}</span>
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="p-4 pt-0 flex-1 transition-transform duration-300 group-hover:-translate-y-0.5">
-                        <div className="text-2xl font-bold text-primary mb-2">
+                      <CardContent className="flex-1 p-3 pt-0 transition-transform duration-300 group-hover:-translate-y-0.5">
+                        <div className="mb-2 text-xl font-bold text-primary">
                           {formatCurrency(producto.precio)}
                         </div>
                       </CardContent>
-                      <CardFooter className="p-4 pt-0">
-                        <Button asChild className="w-full transition-all duration-200 group-hover:border-primary group-hover:text-primary hover:-translate-y-0.5 hover:shadow-md" variant="outline">
+                      <CardFooter className="p-3 pt-0">
+                        <Button asChild className="h-9 w-full transition-all duration-200 group-hover:border-primary group-hover:text-primary hover:-translate-y-0.5 hover:shadow-md" variant="outline">
                           <Link href={`/producto/${producto.id}`}>Ver Detalles</Link>
                         </Button>
                       </CardFooter>
