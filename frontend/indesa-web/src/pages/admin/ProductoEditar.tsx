@@ -178,7 +178,7 @@ export function ProductoEditar() {
                     )}
                   />
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField
                       control={form.control}
                       name="categoria_id"
@@ -324,7 +324,7 @@ export function ProductoEditar() {
 
           </div>
 
-          <div className="flex justify-end gap-4">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <Button variant="outline" asChild>
               <Link href="/admin/productos">Cancelar</Link>
             </Button>

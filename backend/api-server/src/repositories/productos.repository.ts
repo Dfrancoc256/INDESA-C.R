@@ -1,5 +1,5 @@
 import { db, productosTable, categoriasTable, inventarioTable } from "@workspace/db";
-import { eq, ilike, and, or, sql, asc, desc } from "drizzle-orm";
+import { eq, ilike, and, or, sql, asc, desc, type SQL } from "drizzle-orm";
 
 type DisponibilidadFiltro = "disponible" | "pocas_unidades" | "agotado" | undefined;
 type OrdenFiltro = "nombre_asc" | "nombre_desc" | "precio_asc" | "precio_desc" | undefined;
@@ -22,10 +22,27 @@ export async function findProductos(params: {
   const { page = 1, limit = 20, soloActivos = true } = params;
   const offset = (page - 1) * limit;
 
-  const conditions: ReturnType<typeof eq>[] = [];
+  const conditions: SQL[] = [];
   if (soloActivos) conditions.push(eq(productosTable.activo, true));
   if (params.categoriaId) conditions.push(eq(productosTable.categoriaId, params.categoriaId));
-  if (params.busqueda) conditions.push(ilike(productosTable.nombre, `%${params.busqueda}%`));
+  if (params.busqueda) {
+    const term = `%${params.busqueda}%`;
+    const searchCondition = or(
+      ilike(productosTable.nombre, term),
+      ilike(productosTable.descripcion, term),
+      ilike(categoriasTable.nombre, term),
+    );
+    if (searchCondition) conditions.push(searchCondition);
+  }
+  if (params.disponibilidad === "agotado") {
+    conditions.push(sql`coalesce(${inventarioTable.cantidad}, 0) = 0`);
+  }
+  if (params.disponibilidad === "pocas_unidades") {
+    conditions.push(sql`coalesce(${inventarioTable.cantidad}, 0) > 0 and coalesce(${inventarioTable.cantidad}, 0) <= coalesce(${inventarioTable.stockMinimo}, 5)`);
+  }
+  if (params.disponibilidad === "disponible") {
+    conditions.push(sql`coalesce(${inventarioTable.cantidad}, 0) > coalesce(${inventarioTable.stockMinimo}, 5)`);
+  }
 
   let orderBy;
   switch (params.orden) {
@@ -60,6 +77,8 @@ export async function findProductos(params: {
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(productosTable)
+    .leftJoin(categoriasTable, eq(productosTable.categoriaId, categoriasTable.id))
+    .leftJoin(inventarioTable, eq(productosTable.id, inventarioTable.productoId))
     .where(conditions.length ? and(...conditions) : undefined);
 
   const data = rows.map((r) => ({
@@ -68,12 +87,7 @@ export async function findProductos(params: {
     disponibilidad: calcularDisponibilidad(r.cantidad ?? 0, r.stock_minimo ?? 5),
   }));
 
-  // filtro de disponibilidad post-query
-  const filtered = params.disponibilidad
-    ? data.filter((p) => p.disponibilidad === params.disponibilidad)
-    : data;
-
-  return { data: filtered, total: Number(count), page, limit };
+  return { data, total: Number(count), page, limit };
 }
 
 export async function findProductoById(id: number) {

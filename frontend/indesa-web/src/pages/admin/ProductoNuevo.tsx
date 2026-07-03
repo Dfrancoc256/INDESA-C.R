@@ -144,7 +144,7 @@ export function ProductoNuevo() {
                     )}
                   />
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <FormField
                       control={form.control}
                       name="categoria_id"
@@ -195,7 +195,7 @@ export function ProductoNuevo() {
                   <CardTitle>Inventario Inicial</CardTitle>
                   <CardDescription>Configure las existencias de este producto al crearlo.</CardDescription>
                 </CardHeader>
-                <CardContent className="grid grid-cols-2 gap-4">
+                <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="stock_inicial"
@@ -319,7 +319,7 @@ export function ProductoNuevo() {
 
           </div>
 
-          <div className="flex justify-end gap-4">
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
             <Button variant="outline" asChild>
               <Link href="/admin/productos">Cancelar</Link>
             </Button>

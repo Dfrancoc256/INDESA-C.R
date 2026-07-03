@@ -12,13 +12,5 @@ INSERT INTO roles (nombre, descripcion, permisos) VALUES
     'reservas.ver', 'reservas.editar'
   ]);
 
-INSERT INTO categorias (nombre, descripcion) VALUES
-  ('Madera', 'Productos de madera'),
-  ('Herramientas', 'Herramientas y accesorios'),
-  ('Materiales', 'Materiales para construccion');
-
-INSERT INTO productos (nombre, descripcion, categoria_id, precio, imagen_url) VALUES
-  ('Producto de muestra', 'Producto inicial para pruebas locales', 1, 100.00, NULL);
-
-INSERT INTO inventario (producto_id, cantidad, stock_minimo) VALUES
-  (1, 20, 5);
+-- El catálogo debe gestionarse desde el panel administrador y quedar guardado en la base de datos.
+-- No se insertan productos ni categorías de muestra.

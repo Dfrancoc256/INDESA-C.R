@@ -3,8 +3,8 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, LayoutDashboard, LockKeyhole, Mail, Menu, MessageCircle, Phone, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { getListProductosQueryKey, useListProductos, type Producto } from "@workspace/api-client-react";
 import { formatCurrency, getInitials } from "@/lib/utils";
-import { mockProductos } from "@/lib/mockCatalog";
 import logoIndesa from "@/assets/logo-indesa-lockup.png";
 import logoIndesaCompleto from "@/assets/logo-indesa-transparent.png";
 
@@ -72,19 +72,22 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   };
 
   const normalizedSearch = headerSearch.trim().toLowerCase();
-  const searchSuggestions = normalizedSearch
-    ? mockProductos
-        .filter((producto) => producto.activo !== false)
-        .filter((producto) =>
-          `${producto.nombre} ${producto.descripcion ?? ""} ${producto.categoria_nombre ?? ""} ${producto.id}`
-            .toLowerCase()
-            .includes(normalizedSearch)
-        )
-        .slice(0, 5)
-    : [];
+  const searchParams = {
+    page: 1,
+    limit: 5,
+    busqueda: normalizedSearch || undefined,
+    orden: "nombre_asc",
+  } as const;
+  const { data: searchResponse, isFetching: isFetchingSuggestions } = useListProductos(searchParams, {
+    query: {
+      queryKey: getListProductosQueryKey(searchParams),
+      enabled: Boolean(normalizedSearch),
+    },
+  });
+  const searchSuggestions = normalizedSearch ? searchResponse?.data ?? [] : [];
   const showSearchSuggestions = isSearchFocused && Boolean(normalizedSearch);
 
-  const goToProduct = (producto: (typeof mockProductos)[number]) => {
+  const goToProduct = (producto: Producto) => {
     setHeaderSearch(producto.nombre);
     setIsSearchFocused(false);
     setIsMobileMenuOpen(false);
@@ -103,7 +106,9 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       <div className="border-b px-3 py-2 text-xs font-semibold uppercase text-muted-foreground">
         Coincidencias
       </div>
-      {searchSuggestions.length > 0 ? (
+      {isFetchingSuggestions ? (
+        <div className="px-3 py-4 text-sm text-muted-foreground">Buscando coincidencias...</div>
+      ) : searchSuggestions.length > 0 ? (
         <div className="max-h-80 overflow-y-auto py-1">
           {searchSuggestions.map((producto) => (
             <button

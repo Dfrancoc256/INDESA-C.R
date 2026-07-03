@@ -19,6 +19,7 @@ import { Dashboard } from '@/pages/admin/Dashboard';
 import { ProductosList } from '@/pages/admin/ProductosList';
 import { ProductoNuevo } from '@/pages/admin/ProductoNuevo';
 import { ProductoEditar } from '@/pages/admin/ProductoEditar';
+import { Categorias } from '@/pages/admin/Categorias';
 import { Inventario } from '@/pages/admin/Inventario';
 import { Reservas } from '@/pages/admin/Reservas';
 import { Usuarios } from '@/pages/admin/Usuarios';
@@ -115,6 +116,9 @@ function Router() {
       </Route>
       <Route path="/admin/productos">
         <AdminLayout><ProductosList /></AdminLayout>
+      </Route>
+      <Route path="/admin/categorias">
+        <AdminLayout><Categorias /></AdminLayout>
       </Route>
       <Route path="/admin/inventario">
         <AdminLayout><Inventario /></AdminLayout>

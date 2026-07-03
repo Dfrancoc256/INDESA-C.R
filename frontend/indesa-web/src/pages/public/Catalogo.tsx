@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
+import { useListCategorias, useListProductos, type ListProductosOrden } from "@workspace/api-client-react";
 import { formatCurrency, getInitials } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +8,8 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter, SlidersHorizontal, AlertCircle } from "lucide-react";
-import { mockCategorias, mockProductos } from "@/lib/mockCatalog";
 
-type CatalogOrder = "nombre_asc" | "nombre_desc" | "precio_asc" | "precio_desc";
+const pageSize = 12;
 
 export function Catalogo() {
   const [location] = useLocation();
@@ -17,7 +17,7 @@ export function Catalogo() {
   const [busqueda, setBusqueda] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoria, setCategoria] = useState<string>("todas");
-  const [orden, setOrden] = useState<CatalogOrder>("nombre_asc");
+  const [orden, setOrden] = useState<ListProductosOrden>("nombre_asc");
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,27 +34,26 @@ export function Catalogo() {
     setPage(1);
   }, [location]);
 
-  const categoriasDisponibles = mockCategorias;
-  const productosFiltrados = mockProductos
-    .filter((producto) => producto.activo !== false)
-    .filter((producto) => categoria === "todas" || producto.categoria_id === parseInt(categoria))
-    .filter((producto) => {
-      const term = searchQuery.trim().toLowerCase();
-      if (!term) return true;
-      return `${producto.nombre} ${producto.descripcion ?? ""} ${producto.categoria_nombre ?? ""}`
-        .toLowerCase()
-        .includes(term);
-    })
-    .sort((a, b) => {
-      const priceA = Number(a.precio);
-      const priceB = Number(b.precio);
-      if (orden === "nombre_desc") return b.nombre.localeCompare(a.nombre);
-      if (orden === "precio_asc") return priceA - priceB;
-      if (orden === "precio_desc") return priceB - priceA;
-      return a.nombre.localeCompare(b.nombre);
-    });
-  const totalProductos = productosFiltrados.length;
-  const productosPagina = productosFiltrados.slice((page - 1) * 12, page * 12);
+  const categoriaId = categoria === "todas" ? undefined : Number(categoria);
+  const { data: categorias = [], isLoading: isLoadingCategorias } = useListCategorias();
+  const { data: productosResponse, isLoading: isLoadingProductos, isError } = useListProductos({
+    page,
+    limit: pageSize,
+    busqueda: searchQuery.trim() || undefined,
+    categoria_id: categoriaId,
+    orden,
+  });
+
+  const categoriasDisponibles = categorias.filter((cat) => cat.activa);
+  const productosPagina = productosResponse?.data ?? [];
+  const totalProductos = productosResponse?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalProductos / pageSize));
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
 
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
@@ -116,7 +115,11 @@ export function Catalogo() {
                       Todas las categorías
                     </label>
                   </div>
-                  {categoriasDisponibles.map((cat) => (
+                  {isLoadingCategorias ? (
+                    <div className="text-sm text-muted-foreground">Cargando categorías...</div>
+                  ) : categoriasDisponibles.length === 0 ? (
+                    <div className="text-sm text-muted-foreground">No hay categorías activas.</div>
+                  ) : categoriasDisponibles.map((cat) => (
                     <div key={cat.id} className="flex items-center space-x-2">
                       <input 
                         type="radio" 
@@ -138,7 +141,7 @@ export function Catalogo() {
                 <h3 className="mb-2 flex items-center gap-2 font-semibold">
                   <SlidersHorizontal className="h-4 w-4" /> Ordenar por
                 </h3>
-                <Select value={orden} onValueChange={(val) => { setOrden(val as CatalogOrder); setPage(1); }}>
+                <Select value={orden} onValueChange={(val) => { setOrden(val as ListProductosOrden); setPage(1); }}>
                   <SelectTrigger className="h-10 w-full">
                     <SelectValue placeholder="Ordenar por" />
                   </SelectTrigger>
@@ -155,7 +158,29 @@ export function Catalogo() {
 
           {/* Product Grid */}
           <div className="flex-1">
-            {productosPagina.length === 0 ? (
+            {isLoadingProductos ? (
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                {Array.from({ length: 8 }).map((_, index) => (
+                  <div key={index} className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                    <div className="aspect-[4/3] animate-pulse bg-gray-200" />
+                    <div className="space-y-3 p-3">
+                      <div className="h-3 w-24 animate-pulse rounded bg-gray-200" />
+                      <div className="h-5 w-3/4 animate-pulse rounded bg-gray-200" />
+                      <div className="h-6 w-28 animate-pulse rounded bg-gray-200" />
+                      <div className="h-9 w-full animate-pulse rounded bg-gray-200" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : isError ? (
+              <div className="flex flex-col items-center rounded-lg border bg-white p-10 text-center">
+                <AlertCircle className="h-12 w-12 text-destructive mb-4 opacity-80" />
+                <h3 className="text-xl font-bold mb-2">No se pudo cargar el catálogo</h3>
+                <p className="text-muted-foreground mb-6">
+                  Verifique que el backend esté encendido y conectado a la base de datos.
+                </p>
+              </div>
+            ) : productosPagina.length === 0 ? (
               <div className="flex flex-col items-center rounded-lg border bg-white p-10 text-center">
                 <AlertCircle className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
                 <h3 className="text-xl font-bold mb-2">No se encontraron productos</h3>
@@ -223,7 +248,7 @@ export function Catalogo() {
                 </div>
                 
                 {/* Pagination */}
-                {totalProductos > 12 && (
+                {totalProductos > pageSize && (
                   <div className="flex items-center justify-center gap-2 pt-8">
                     <Button 
                       variant="outline" 
@@ -233,12 +258,12 @@ export function Catalogo() {
                       Anterior
                     </Button>
                     <div className="text-sm font-medium px-4">
-                      Página {page} de {Math.ceil(totalProductos / 12)}
+                      Página {page} de {totalPages}
                     </div>
                     <Button 
                       variant="outline" 
                       onClick={() => setPage(p => p + 1)}
-                      disabled={page * 12 >= totalProductos}
+                      disabled={page >= totalPages}
                     >
                       Siguiente
                     </Button>

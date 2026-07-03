@@ -3,7 +3,7 @@ import * as service from "../services/categorias.service";
 
 export async function list(req: Request, res: Response): Promise<void> {
   try {
-    const data = await service.listCategorias(true);
+    const data = await service.listCategorias(false);
     res.json(data);
   } catch (err: any) {
     res.status(err.status ?? 500).json({ error: err.message });
@@ -31,7 +31,7 @@ export async function update(req: Request, res: Response): Promise<void> {
 export async function remove(req: Request, res: Response): Promise<void> {
   try {
     await service.deleteCategoria(Number(req.params["id"]));
-    res.json({ message: "Categoría eliminada" });
+    res.json({ message: "Categoría desactivada" });
   } catch (err: any) {
     res.status(err.status ?? 500).json({ error: err.message });
   }

@@ -13,7 +13,6 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { mockProductos } from "@/lib/mockCatalog";
 
 const reservaSchema = z.object({
   cliente_nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
@@ -32,19 +31,11 @@ export function ProductoDetalle() {
   const [reservaExitoso, setReservaExitoso] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
 
-  const { data: producto, isLoading } = useGetProducto(productoId, {
+  const { data: productoActual, isLoading } = useGetProducto(productoId, {
     query: { enabled: productoId > 0, queryKey: getGetProductoQueryKey(productoId) }
   });
-  const productoActual = producto ?? mockProductos.find((item) => item.id === productoId);
-
-  const productoView = productoActual as
-    | (typeof productoActual & {
-        imagenUrl?: string | null;
-        categoriaNombre?: string | null;
-      })
-    | undefined;
-  const imageSrc = productoView?.imagen_url ?? productoView?.imagenUrl ?? "";
-  const categoriaNombre = productoView?.categoria_nombre ?? productoView?.categoriaNombre ?? "Maquinaria";
+  const imageSrc = productoActual?.imagen_url ?? "";
+  const categoriaNombre = productoActual?.categoria_nombre ?? "Maquinaria";
   const cantidadDisponible = productoActual?.cantidad ?? 0;
 
   useEffect(() => {

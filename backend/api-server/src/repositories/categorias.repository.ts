@@ -25,5 +25,5 @@ export async function updateCategoria(id: number, data: Partial<{ nombre: string
 }
 
 export async function deleteCategoria(id: number) {
-  await db.delete(categoriasTable).where(eq(categoriasTable.id, id));
+  await db.update(categoriasTable).set({ activa: false }).where(eq(categoriasTable.id, id));
 }

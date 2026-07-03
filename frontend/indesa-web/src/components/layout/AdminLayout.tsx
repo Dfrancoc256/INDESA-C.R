@@ -2,7 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "wouter";
 import { 
   Home, Package, ClipboardList, 
-  Calendar, Users, LogOut, Menu, X
+  Calendar, Users, LogOut, Menu, X, Tags
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -35,6 +35,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   const navLinks = [
     { href: "/admin/dashboard", label: "Dashboard", icon: Home },
     { href: "/admin/productos", label: "Productos", icon: Package },
+    { href: "/admin/categorias", label: "Categorías", icon: Tags },
     { href: "/admin/inventario", label: "Inventario", icon: ClipboardList },
     { href: "/admin/reservas", label: "Reservas", icon: Calendar },
     { href: "/admin/usuarios", label: "Usuarios", icon: Users },

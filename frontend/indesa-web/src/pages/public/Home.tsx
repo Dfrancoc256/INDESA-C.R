@@ -23,12 +23,12 @@ import {
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { useEffect, useState, type FormEvent } from "react";
+import { useCreateReserva, useListProductos, type Producto } from "@workspace/api-client-react";
 import bannerTools from "@/assets/images/banner-tools.png";
 import bannerWarehouse from "@/assets/images/banner-warehouse.png";
 import bannerMaterials from "@/assets/images/banner-materials.png";
-import { mockProductos } from "@/lib/mockCatalog";
 
-type HomeProduct = (typeof mockProductos)[number];
+type HomeProduct = Producto;
 
 type ReservaFormState = {
   cliente_nombre: string;
@@ -108,7 +108,24 @@ export function Home() {
   const [reservaOpen, setReservaOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<HomeProduct | null>(null);
   const [reservaForm, setReservaForm] = useState<ReservaFormState>(emptyReservaForm);
-  const productosCatalogo = mockProductos;
+  const { data: productosResponse, isLoading: isLoadingCatalogo, isError: isCatalogoError } = useListProductos({
+    page: 1,
+    limit: 6,
+    orden: "nombre_asc",
+  });
+  const productosCatalogo = productosResponse?.data ?? [];
+
+  const reservaMutation = useCreateReserva({
+    mutation: {
+      onError: (err: any) => {
+        toast({
+          variant: "destructive",
+          title: "No se pudo registrar la reserva",
+          description: err?.message || "Verifique los datos e intente nuevamente.",
+        });
+      },
+    },
+  });
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -131,7 +148,7 @@ export function Home() {
 
   const openReservaModal = (producto: HomeProduct) => {
     setSelectedProduct(producto);
-    setReservaForm({ ...emptyReservaForm, cantidad: producto.cantidad > 0 ? "1" : "0" });
+    setReservaForm({ ...emptyReservaForm, cantidad: (producto.cantidad ?? 0) > 0 ? "1" : "0" });
     setReservaOpen(true);
   };
 
@@ -139,11 +156,24 @@ export function Home() {
     event.preventDefault();
     if (!selectedProduct) return;
 
-    window.open(buildWhatsAppUrl(selectedProduct, reservaForm), "_blank", "noopener,noreferrer");
-    setReservaOpen(false);
-    toast({
-      title: "Solicitud preparada",
-      description: "Se abrió WhatsApp con los datos de la reserva.",
+    reservaMutation.mutate({
+      data: {
+        producto_id: selectedProduct.id,
+        cliente_nombre: reservaForm.cliente_nombre,
+        cliente_email: reservaForm.cliente_email,
+        cliente_telefono: reservaForm.cliente_telefono,
+        cantidad: Number(reservaForm.cantidad) || 1,
+        notas: reservaForm.notas || undefined,
+      },
+    }, {
+      onSuccess: () => {
+        window.open(buildWhatsAppUrl(selectedProduct, reservaForm), "_blank", "noopener,noreferrer");
+        setReservaOpen(false);
+        toast({
+          title: "Solicitud registrada",
+          description: "La reserva quedó en administración y se abrió WhatsApp para seguimiento.",
+        });
+      },
     });
   };
 
@@ -224,8 +254,30 @@ export function Home() {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-            {productosCatalogo.map((producto) => {
+          {isLoadingCatalogo ? (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <div key={index} className="overflow-hidden rounded-lg border bg-white shadow-sm">
+                  <div className="aspect-[4/3] animate-pulse bg-gray-200" />
+                  <div className="space-y-3 p-4">
+                    <div className="h-3 w-24 animate-pulse rounded bg-gray-200" />
+                    <div className="h-5 w-3/4 animate-pulse rounded bg-gray-200" />
+                    <div className="h-10 w-full animate-pulse rounded bg-gray-200" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : isCatalogoError ? (
+            <div className="rounded-lg border bg-white p-8 text-center text-muted-foreground">
+              No se pudo cargar el catálogo. Verifica que el backend esté activo.
+            </div>
+          ) : productosCatalogo.length === 0 ? (
+            <div className="rounded-lg border bg-white p-8 text-center text-muted-foreground">
+              Aún no hay productos publicados en el catálogo.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+              {productosCatalogo.map((producto) => {
               const agotado = (producto.cantidad ?? 0) <= 0;
 
               return (
@@ -292,8 +344,9 @@ export function Home() {
                   </CardContent>
                 </Card>
               );
-            })}
-          </div>
+              })}
+            </div>
+          )}
         </div>
       </section>
 
@@ -443,9 +496,9 @@ export function Home() {
                     Consultar por WhatsApp
                   </a>
                 </Button>
-                <Button type="submit" className="gap-2">
+                <Button type="submit" className="gap-2" disabled={reservaMutation.isPending}>
                   <ClipboardList className="h-4 w-4" />
-                  Enviar datos de reserva
+                  {reservaMutation.isPending ? "Enviando..." : "Enviar datos de reserva"}
                 </Button>
               </div>
             </form>

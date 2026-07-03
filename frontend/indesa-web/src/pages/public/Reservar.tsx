@@ -13,7 +13,6 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { formatCurrency } from "@/lib/utils";
-import { mockProductos } from "@/lib/mockCatalog";
 
 const reservaGlobalSchema = z.object({
   cliente_nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
@@ -41,8 +40,7 @@ export function Reservar() {
     orden: 'nombre_asc' as any
   });
   const productosDisponibles = useMemo(() => {
-    const source = productosResponse?.data?.length ? productosResponse.data : mockProductos;
-    return source.filter((producto) => producto.activo !== false);
+    return productosResponse?.data?.filter((producto) => producto.activo !== false) ?? [];
   }, [productosResponse]);
   const catalogoCargando = isLoadingProductos && !productosDisponibles.length;
 

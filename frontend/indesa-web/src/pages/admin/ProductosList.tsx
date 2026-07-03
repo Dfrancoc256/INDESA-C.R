@@ -40,7 +40,8 @@ export function ProductosList() {
     limit: 10,
     busqueda: debouncedBusqueda || undefined,
     categoria_id: categoriaId,
-  });
+    incluir_inactivos: true,
+  } as any);
 
   const toggleMutation = useToggleProducto({
     mutation: {
@@ -198,11 +199,11 @@ export function ProductosList() {
         
         {/* Pagination */}
         {productosResponse && productosResponse.total > 0 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t">
+          <div className="flex flex-col gap-3 border-t px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div className="text-sm text-muted-foreground">
               Mostrando {((page - 1) * 10) + 1} a {Math.min(page * 10, productosResponse.total)} de {productosResponse.total} productos
             </div>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:flex">
               <Button 
                 variant="outline" 
                 size="sm" 
