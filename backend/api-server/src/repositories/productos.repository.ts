@@ -10,6 +10,10 @@ function calcularDisponibilidad(cantidad: number, stockMinimo: number): string {
   return "disponible";
 }
 
+function decimalToNumber(value: string | null): number | null {
+  return value === null ? null : Number(value);
+}
+
 export async function findProductos(params: {
   categoriaId?: number;
   busqueda?: string;
@@ -61,6 +65,9 @@ export async function findProductos(params: {
       categoria_id: productosTable.categoriaId,
       categoria_nombre: categoriasTable.nombre,
       precio: productosTable.precio,
+      precio_dia: productosTable.precioDia,
+      precio_semana: productosTable.precioSemana,
+      precio_mes: productosTable.precioMes,
       imagen_url: productosTable.imagenUrl,
       activo: productosTable.activo,
       cantidad: inventarioTable.cantidad,
@@ -84,6 +91,9 @@ export async function findProductos(params: {
   const data = rows.map((r) => ({
     ...r,
     precio: Number(r.precio),
+    precio_dia: decimalToNumber(r.precio_dia),
+    precio_semana: decimalToNumber(r.precio_semana),
+    precio_mes: decimalToNumber(r.precio_mes),
     disponibilidad: calcularDisponibilidad(r.cantidad ?? 0, r.stock_minimo ?? 5),
   }));
 
@@ -99,6 +109,9 @@ export async function findProductoById(id: number) {
       categoria_id: productosTable.categoriaId,
       categoria_nombre: categoriasTable.nombre,
       precio: productosTable.precio,
+      precio_dia: productosTable.precioDia,
+      precio_semana: productosTable.precioSemana,
+      precio_mes: productosTable.precioMes,
       imagen_url: productosTable.imagenUrl,
       activo: productosTable.activo,
       cantidad: inventarioTable.cantidad,
@@ -115,6 +128,9 @@ export async function findProductoById(id: number) {
   return {
     ...r,
     precio: Number(r.precio),
+    precio_dia: decimalToNumber(r.precio_dia),
+    precio_semana: decimalToNumber(r.precio_semana),
+    precio_mes: decimalToNumber(r.precio_mes),
     disponibilidad: calcularDisponibilidad(r.cantidad ?? 0, r.stock_minimo ?? 5),
   };
 }
@@ -124,12 +140,18 @@ export async function createProducto(data: {
   descripcion?: string;
   categoriaId?: number;
   precio: number;
+  precioDia?: number | null;
+  precioSemana?: number | null;
+  precioMes?: number | null;
   imagenUrl?: string;
   activo?: boolean;
 }) {
   const rows = await db.insert(productosTable).values({
     ...data,
     precio: String(data.precio),
+    precioDia: data.precioDia === undefined || data.precioDia === null ? null : String(data.precioDia),
+    precioSemana: data.precioSemana === undefined || data.precioSemana === null ? null : String(data.precioSemana),
+    precioMes: data.precioMes === undefined || data.precioMes === null ? null : String(data.precioMes),
   }).returning();
   return rows[0];
 }
@@ -139,11 +161,17 @@ export async function updateProducto(id: number, data: Partial<{
   descripcion: string;
   categoriaId: number;
   precio: number;
+  precioDia: number | null;
+  precioSemana: number | null;
+  precioMes: number | null;
   imagenUrl: string;
   activo: boolean;
 }>) {
   const update: Record<string, unknown> = { ...data, updatedAt: new Date() };
   if (data.precio !== undefined) update["precio"] = String(data.precio);
+  if (data.precioDia !== undefined) update["precioDia"] = data.precioDia === null ? null : String(data.precioDia);
+  if (data.precioSemana !== undefined) update["precioSemana"] = data.precioSemana === null ? null : String(data.precioSemana);
+  if (data.precioMes !== undefined) update["precioMes"] = data.precioMes === null ? null : String(data.precioMes);
   const rows = await db.update(productosTable).set(update).where(eq(productosTable.id, id)).returning();
   return rows[0] ?? null;
 }

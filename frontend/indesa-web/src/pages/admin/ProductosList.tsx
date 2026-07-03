@@ -1,7 +1,7 @@
 import { useListCategorias, useListProductos, useToggleProducto } from "@workspace/api-client-react";
 import { useState, useRef } from "react";
 import { Link } from "wouter";
-import { formatCurrency, getInitials } from "@/lib/utils";
+import { formatCurrency, getInitials, getTarifaPrincipal, getTarifasProducto } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -139,7 +139,11 @@ export function ProductosList() {
                   </TableCell>
                 </TableRow>
               ) : (
-                productosResponse?.data?.map((producto) => (
+                productosResponse?.data?.map((producto) => {
+                  const tarifa = getTarifaPrincipal(producto);
+                  const tarifas = getTarifasProducto(producto);
+
+                  return (
                   <TableRow key={producto.id}>
                     <TableCell>
                       {producto.imagen_url ? (
@@ -164,7 +168,13 @@ export function ProductosList() {
                       <Badge variant="secondary" className="font-normal">{producto.categoria_nombre}</Badge>
                     </TableCell>
                     <TableCell className="text-right font-medium">
-                      {formatCurrency(producto.precio)}
+                      <div>{formatCurrency(tarifa.value)}</div>
+                      <div className="text-xs font-normal text-muted-foreground">por {tarifa.suffix}</div>
+                      {tarifas.length > 1 && (
+                        <div className="mt-1 text-[11px] font-normal text-muted-foreground">
+                          {tarifas.length} tarifas
+                        </div>
+                      )}
                     </TableCell>
                     <TableCell>
                       <button 
@@ -191,7 +201,8 @@ export function ProductosList() {
                       </Button>
                     </TableCell>
                   </TableRow>
-                ))
+                  );
+                })
               )}
             </TableBody>
           </Table>

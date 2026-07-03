@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, getTarifaPrincipal } from "@/lib/utils";
 
 const reservaGlobalSchema = z.object({
   cliente_nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
@@ -208,7 +208,7 @@ export function Reservar() {
                               <SelectContent className="max-h-[300px]">
                                 {productosDisponibles.map(prod => (
                                   <SelectItem key={prod.id} value={prod.id.toString()}>
-                                    {prod.nombre} - {formatCurrency(prod.precio)}
+                                    {prod.nombre} - {formatCurrency(getTarifaPrincipal(prod).value)} / {getTarifaPrincipal(prod).suffix}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -222,7 +222,12 @@ export function Reservar() {
                         <div className="bg-gray-50 border rounded-md p-4 flex justify-between items-center">
                           <div>
                             <div className="font-medium">{productoSeleccionado.nombre}</div>
-                            <div className="text-primary font-bold">{formatCurrency(productoSeleccionado.precio)}</div>
+                            <div className="text-primary font-bold">
+                              {formatCurrency(getTarifaPrincipal(productoSeleccionado).value)}
+                              <span className="ml-1 text-xs font-medium text-muted-foreground">
+                                por {getTarifaPrincipal(productoSeleccionado).suffix}
+                              </span>
+                            </div>
                           </div>
                           <div className="text-right">
                             <div className="text-sm text-muted-foreground">Disponibilidad</div>

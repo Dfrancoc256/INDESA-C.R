@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useListCategorias, useListProductos, type ListProductosOrden } from "@workspace/api-client-react";
-import { formatCurrency, getInitials } from "@/lib/utils";
+import { formatCurrency, getInitials, getTarifaPrincipal, getTarifasProducto } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -199,7 +199,11 @@ export function Catalogo() {
             ) : (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                  {productosPagina.map(producto => (
+                  {productosPagina.map(producto => {
+                    const tarifa = getTarifaPrincipal(producto);
+                    const tarifas = getTarifasProducto(producto);
+
+                    return (
                     <Card key={producto.id} className="group relative flex overflow-hidden flex-col border bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:scale-[1.01] hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10">
                       <span className="absolute inset-x-0 top-0 z-10 h-1 origin-left scale-x-0 bg-primary transition-transform duration-300 group-hover:scale-x-100" />
                       <span className="pointer-events-none absolute -left-1/2 top-0 z-20 h-full w-1/3 -skew-x-12 bg-white/20 opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100" />
@@ -235,8 +239,18 @@ export function Catalogo() {
                       </CardHeader>
                       <CardContent className="flex-1 p-3 pt-0 transition-transform duration-300 group-hover:-translate-y-0.5">
                         <div className="mb-2 text-xl font-bold text-primary">
-                          {formatCurrency(producto.precio)}
+                          {formatCurrency(tarifa.value)}
+                          <span className="ml-1 text-xs font-medium text-muted-foreground">/{tarifa.suffix}</span>
                         </div>
+                        {tarifas.length > 1 && (
+                          <div className="flex flex-wrap gap-1.5 text-[11px] font-medium text-muted-foreground">
+                            {tarifas.slice(1).map((item) => (
+                              <span key={item.suffix} className="rounded-full border bg-gray-50 px-2 py-0.5">
+                                {item.label}: {formatCurrency(item.value)}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </CardContent>
                       <CardFooter className="p-3 pt-0">
                         <Button asChild className="h-9 w-full transition-all duration-200 group-hover:border-primary group-hover:text-primary hover:-translate-y-0.5 hover:shadow-md" variant="outline">
@@ -244,7 +258,8 @@ export function Catalogo() {
                         </Button>
                       </CardFooter>
                     </Card>
-                  ))}
+                    );
+                  })}
                 </div>
                 
                 {/* Pagination */}

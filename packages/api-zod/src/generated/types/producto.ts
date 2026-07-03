@@ -17,6 +17,12 @@ export interface Producto {
   categoria_nombre?: string | null;
   precio: number;
   /** @nullable */
+  precio_dia?: number | null;
+  /** @nullable */
+  precio_semana?: number | null;
+  /** @nullable */
+  precio_mes?: number | null;
+  /** @nullable */
   imagen_url?: string | null;
   activo: boolean;
   /** @nullable */

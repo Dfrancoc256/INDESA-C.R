@@ -16,11 +16,19 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { isValidImageSource, readImageFileAsDataUrl } from "@/lib/imageUpload";
 
+const precioTiempoSchema = z.preprocess(
+  (value) => value === "" || value === null || value === undefined ? null : value,
+  z.coerce.number().min(0, "El precio no puede ser negativo").nullable().optional()
+);
+
 const productoSchema = z.object({
   nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
   descripcion: z.string().optional(),
   categoria_id: z.coerce.number().min(1, "Debe seleccionar una categoría"),
   precio: z.coerce.number().min(0.01, "El precio debe ser mayor a 0"),
+  precio_dia: precioTiempoSchema,
+  precio_semana: precioTiempoSchema,
+  precio_mes: precioTiempoSchema,
   imagen_url: z.string().refine(isValidImageSource, "Debe ser una URL valida o una imagen cargada").optional(),
   activo: z.boolean().default(true),
   stock_inicial: z.coerce.number().min(0, "El stock inicial no puede ser negativo").default(0),
@@ -59,6 +67,9 @@ export function ProductoNuevo() {
       nombre: "",
       descripcion: "",
       precio: 0,
+      precio_dia: null,
+      precio_semana: null,
+      precio_mes: null,
       imagen_url: "",
       activo: true,
       stock_inicial: 0,
@@ -187,6 +198,80 @@ export function ProductoNuevo() {
                       )}
                     />
                   </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tarifas por tiempo</CardTitle>
+                  <CardDescription>Estos precios se muestran al usuario para reservas por día, semana o mes.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <FormField
+                    control={form.control}
+                    name="precio_dia"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Por día (GTQ)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="Opcional"
+                            value={field.value ?? ""}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormDescription>Tarifa diaria</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="precio_semana"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Por semana (GTQ)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="Opcional"
+                            value={field.value ?? ""}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormDescription>Tarifa semanal</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="precio_mes"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Por mes (GTQ)</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="Opcional"
+                            value={field.value ?? ""}
+                            onChange={field.onChange}
+                          />
+                        </FormControl>
+                        <FormDescription>Tarifa mensual</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </CardContent>
               </Card>
 

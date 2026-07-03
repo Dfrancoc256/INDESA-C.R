@@ -37,11 +37,19 @@ CREATE TABLE IF NOT EXISTS productos (
   descripcion TEXT,
   categoria_id INTEGER REFERENCES categorias(id),
   precio NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  precio_dia NUMERIC(10, 2),
+  precio_semana NUMERIC(10, 2),
+  precio_mes NUMERIC(10, 2),
   imagen_url TEXT,
   activo BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE productos
+  ADD COLUMN IF NOT EXISTS precio_dia NUMERIC(10, 2),
+  ADD COLUMN IF NOT EXISTS precio_semana NUMERIC(10, 2),
+  ADD COLUMN IF NOT EXISTS precio_mes NUMERIC(10, 2);
 
 CREATE TABLE IF NOT EXISTS inventario (
   id SERIAL PRIMARY KEY,

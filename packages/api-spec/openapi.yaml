@@ -832,6 +832,12 @@ components:
           type: ["string", "null"]
         precio:
           type: number
+        precio_dia:
+          type: ["number", "null"]
+        precio_semana:
+          type: ["number", "null"]
+        precio_mes:
+          type: ["number", "null"]
         imagen_url:
           type: ["string", "null"]
         activo:
@@ -857,6 +863,15 @@ components:
           type: integer
         precio:
           type: number
+          minimum: 0
+        precio_dia:
+          type: ["number", "null"]
+          minimum: 0
+        precio_semana:
+          type: ["number", "null"]
+          minimum: 0
+        precio_mes:
+          type: ["number", "null"]
           minimum: 0
         imagen_url:
           type: string

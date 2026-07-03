@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, LayoutDashboard, LockKeyhole, Mail, Menu, MessageCircle, Phone, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { getListProductosQueryKey, useListProductos, type Producto } from "@workspace/api-client-react";
-import { formatCurrency, getInitials } from "@/lib/utils";
+import { formatCurrency, getInitials, getTarifaPrincipal } from "@/lib/utils";
 import logoIndesa from "@/assets/logo-indesa-lockup.png";
 import logoIndesaCompleto from "@/assets/logo-indesa-transparent.png";
 
@@ -136,7 +136,8 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
               <div className="hidden shrink-0 text-sm font-bold text-primary sm:block">
-                {formatCurrency(producto.precio)}
+                {formatCurrency(getTarifaPrincipal(producto).value)}
+                <span className="ml-1 text-[11px] font-medium text-muted-foreground">/{getTarifaPrincipal(producto).suffix}</span>
               </div>
             </button>
           ))}

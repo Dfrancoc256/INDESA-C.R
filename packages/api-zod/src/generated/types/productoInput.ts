@@ -13,6 +13,12 @@ export interface ProductoInput {
   categoria_id: number;
   /** @minimum 0 */
   precio: number;
+  /** @nullable */
+  precio_dia?: number | null;
+  /** @nullable */
+  precio_semana?: number | null;
+  /** @nullable */
+  precio_mes?: number | null;
   imagen_url?: string;
   activo?: boolean;
   /** @minimum 0 */

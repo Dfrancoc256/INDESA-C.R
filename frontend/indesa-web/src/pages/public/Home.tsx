@@ -1,6 +1,6 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, getInitials } from "@/lib/utils";
+import { formatCurrency, getInitials, getTarifaPrincipal } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -101,6 +101,7 @@ function buildWhatsAppUrl(producto: HomeProduct, form?: ReservaFormState) {
   const lines = [
     "Hola, quiero información para reservar este equipo:",
     `Producto: ${producto.nombre}`,
+    `Tarifa: ${formatCurrency(getTarifaPrincipal(producto).value)} por ${getTarifaPrincipal(producto).suffix}`,
     `Disponibles: ${producto.cantidad ?? "Consultar"}`,
   ];
 
@@ -301,6 +302,7 @@ export function Home() {
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {productosCatalogo.map((producto) => {
               const agotado = (producto.cantidad ?? 0) <= 0;
+              const tarifa = getTarifaPrincipal(producto);
 
               return (
                 <Card key={producto.id} className="group relative overflow-hidden border bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:scale-[1.01] hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10">
@@ -358,7 +360,10 @@ export function Home() {
                       {producto.descripcion}
                     </p>
                     <div className="flex items-center justify-between gap-3">
-                      <div className="text-xl font-bold text-primary">{formatCurrency(producto.precio)}</div>
+                      <div>
+                        <div className="text-xl font-bold text-primary">{formatCurrency(tarifa.value)}</div>
+                        <div className="text-xs font-medium text-muted-foreground">por {tarifa.suffix}</div>
+                      </div>
                       <Link href={`/producto/${producto.id}`} className="text-sm font-semibold text-muted-foreground transition-all duration-200 hover:text-primary group-hover:translate-x-1">
                         Detalle
                       </Link>
@@ -449,7 +454,10 @@ export function Home() {
                 <div className="min-w-0">
                   <div className="text-xs font-medium text-muted-foreground">{selectedProduct.categoria_nombre}</div>
                   <h3 className="mt-1 text-lg font-bold leading-tight">{selectedProduct.nombre}</h3>
-                  <div className="mt-2 text-primary font-bold">{formatCurrency(selectedProduct.precio)}</div>
+                  <div className="mt-2 text-primary font-bold">
+                    {formatCurrency(getTarifaPrincipal(selectedProduct).value)}
+                    <span className="ml-1 text-xs font-medium text-muted-foreground">por {getTarifaPrincipal(selectedProduct).suffix}</span>
+                  </div>
                   <div className="mt-2 text-sm text-muted-foreground">{getDisponibilidadLabel(selectedProduct)}</div>
                 </div>
               </div>

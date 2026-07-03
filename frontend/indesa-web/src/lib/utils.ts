@@ -12,6 +12,30 @@ export function formatCurrency(amount: number) {
   }).format(amount)
 }
 
+type ProductPricing = {
+  precio: number;
+  precio_dia?: number | null;
+  precio_semana?: number | null;
+  precio_mes?: number | null;
+}
+
+export function getTarifasProducto(producto: ProductPricing) {
+  const tarifas = [
+    { label: "Dia", suffix: "dia", value: producto.precio_dia },
+    { label: "Semana", suffix: "semana", value: producto.precio_semana },
+    { label: "Mes", suffix: "mes", value: producto.precio_mes },
+  ].filter((tarifa): tarifa is { label: string; suffix: string; value: number } => (
+    tarifa.value !== null && tarifa.value !== undefined && Number(tarifa.value) > 0
+  ));
+
+  if (tarifas.length > 0) return tarifas;
+  return [{ label: "Base", suffix: "servicio", value: producto.precio }];
+}
+
+export function getTarifaPrincipal(producto: ProductPricing) {
+  return getTarifasProducto(producto)[0];
+}
+
 export function formatDate(dateString: string) {
   return new Intl.DateTimeFormat("es-GT", {
     year: "numeric",

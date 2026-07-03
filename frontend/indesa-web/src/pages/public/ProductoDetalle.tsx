@@ -1,7 +1,7 @@
 import { useGetProducto, useCreateReserva, getGetProductoQueryKey } from "@workspace/api-client-react";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "wouter";
-import { formatCurrency, getInitials } from "@/lib/utils";
+import { formatCurrency, getInitials, getTarifaPrincipal, getTarifasProducto } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -136,6 +136,8 @@ export function ProductoDetalle() {
 
   const stockAgotado = productoActual.cantidad === 0;
   const diasReserva = getDiasReserva(form.watch("fecha_inicio"), form.watch("fecha_fin"));
+  const tarifaPrincipal = getTarifaPrincipal(productoActual);
+  const tarifas = getTarifasProducto(productoActual);
 
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
@@ -226,11 +228,20 @@ export function ProductoDetalle() {
                   {productoActual.nombre}
                 </h1>
                 <div className="text-4xl font-bold text-gray-900 mb-2 md:text-5xl">
-                  {formatCurrency(productoActual.precio)}
+                  {formatCurrency(tarifaPrincipal.value)}
+                  <span className="ml-2 text-base font-semibold text-muted-foreground md:text-lg">por {tarifaPrincipal.suffix}</span>
                 </div>
                 <p className="text-sm font-medium text-muted-foreground mb-6">
                   Precio con operador incluido. La coordinación final depende del lugar, horario y tipo de trabajo.
                 </p>
+                <div className="mb-6 grid gap-3 sm:grid-cols-3">
+                  {tarifas.map((tarifa) => (
+                    <div key={tarifa.suffix} className="rounded-lg border bg-gray-50 p-3">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{tarifa.label}</div>
+                      <div className="mt-1 text-lg font-bold text-primary">{formatCurrency(tarifa.value)}</div>
+                    </div>
+                  ))}
+                </div>
                 {productoActual.descripcion && (
                   <div className="prose prose-sm md:prose-base text-gray-600 max-w-none">
                     <p>{productoActual.descripcion}</p>

@@ -7,6 +7,12 @@ type ProductoInput = {
   categoriaId?: number;
   categoria_id?: number;
   precio?: number;
+  precioDia?: number | null;
+  precio_dia?: number | null;
+  precioSemana?: number | null;
+  precio_semana?: number | null;
+  precioMes?: number | null;
+  precio_mes?: number | null;
   imagenUrl?: string;
   imagen_url?: string;
   activo?: boolean;
@@ -22,6 +28,9 @@ function normalizeProductoInput(data: ProductoInput) {
     descripcion: data.descripcion,
     categoriaId: data.categoriaId ?? data.categoria_id,
     precio: data.precio,
+    precioDia: data.precioDia !== undefined ? data.precioDia : data.precio_dia,
+    precioSemana: data.precioSemana !== undefined ? data.precioSemana : data.precio_semana,
+    precioMes: data.precioMes !== undefined ? data.precioMes : data.precio_mes,
     imagenUrl: data.imagenUrl ?? data.imagen_url,
     activo: data.activo,
     stockInicial: data.stockInicial ?? data.stock_inicial,
@@ -67,6 +76,9 @@ export async function createProducto(data: ProductoInput) {
     descripcion: productoData.descripcion,
     categoriaId: productoData.categoriaId,
     precio: productoData.precio,
+    precioDia: productoData.precioDia,
+    precioSemana: productoData.precioSemana,
+    precioMes: productoData.precioMes,
     imagenUrl: productoData.imagenUrl,
     activo: productoData.activo,
   });
