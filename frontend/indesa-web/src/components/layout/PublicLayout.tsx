@@ -327,10 +327,10 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               href={whatsappUrl}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold transition-colors hover:bg-primary/5 hover:text-primary"
+              className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold text-[#128C7E] transition-colors hover:bg-[#128C7E]/10 hover:text-[#075E54]"
               onClick={() => setIsSocialMenuOpen(false)}
             >
-              <MessageCircle className="h-4 w-4 text-primary" />
+              <MessageCircle className="h-4 w-4 text-[#128C7E]" />
               WhatsApp
             </a>
             <a
