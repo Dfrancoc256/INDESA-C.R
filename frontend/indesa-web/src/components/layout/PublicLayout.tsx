@@ -5,7 +5,7 @@ import { ArrowRight, LayoutDashboard, LockKeyhole, Mail, Menu, MessageCircle, Ph
 import { useEffect, useRef, useState } from "react";
 import { getListProductosQueryKey, useListProductos, type Producto } from "@workspace/api-client-react";
 import { formatCurrency, getInitials, getTarifaPrincipal } from "@/lib/utils";
-import logoIndesa from "@/assets/logo-indesa-lockup.png";
+import logoIndesa from "@/assets/logo-indesa-wordmark.png";
 import logoIndesaCompleto from "@/assets/logo-indesa-transparent.png";
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -167,7 +167,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto flex h-20 items-center justify-between gap-4 px-4 md:h-[92px] md:px-8 lg:gap-8">
           <Link
             href="/"
-            className="group flex h-16 w-[132px] min-w-0 shrink-0 items-center justify-center rounded-md bg-white px-2 py-1.5 shadow-lg shadow-red-950/18 ring-1 ring-black/5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl sm:w-[142px] md:h-[76px] md:w-[156px]"
+            className="group flex h-14 w-[170px] min-w-0 shrink-0 items-center justify-center rounded-md bg-white px-4 py-2 shadow-lg shadow-red-950/18 ring-1 ring-black/5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl sm:w-[190px] md:h-[64px] md:w-[210px]"
           >
             <img
               src={logoIndesa}
