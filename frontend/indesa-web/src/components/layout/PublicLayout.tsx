@@ -167,12 +167,12 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         <div className="container mx-auto flex h-20 items-center justify-between gap-4 px-4 md:h-[92px] md:px-8 lg:gap-8">
           <Link
             href="/"
-            className="group flex h-14 w-[170px] min-w-0 shrink-0 items-center justify-center rounded-md bg-white px-4 py-2 shadow-lg shadow-red-950/18 ring-1 ring-black/5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl sm:w-[190px] md:h-[64px] md:w-[210px]"
+            className="group flex h-14 w-[170px] min-w-0 shrink-0 items-center justify-center px-1 py-1 transition-all duration-300 hover:-translate-y-0.5 sm:w-[190px] md:h-[64px] md:w-[210px]"
           >
             <img
               src={logoIndesa}
               alt="INDESA renta de equipo"
-              className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.04]"
+              className="h-full w-full object-contain drop-shadow-[0_3px_7px_rgba(0,0,0,0.38)] transition-transform duration-300 group-hover:scale-[1.04]"
             />
           </Link>
 
@@ -314,7 +314,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
         )}
-        <div className="h-1 w-full bg-[#ffd400]" />
+        <div className="h-0.5 w-full bg-[#ffd400]" />
       </header>
 
       <main className="flex-1 flex flex-col">{children}</main>
@@ -366,8 +366,8 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           aria-label={isSocialMenuOpen ? "Cerrar redes sociales" : "Abrir redes sociales"}
           className="inline-flex h-14 items-center gap-3 rounded-full bg-primary px-5 font-semibold text-white shadow-xl shadow-primary/25 transition-all duration-200 hover:-translate-y-1 hover:bg-primary/90 hover:shadow-2xl"
         >
-          {isSocialMenuOpen ? <X className="h-5 w-5" /> : <MessageCircle className="h-5 w-5" />}
-          Redes
+          <Phone className="h-5 w-5" />
+          Contacto
         </button>
       </div>
 
