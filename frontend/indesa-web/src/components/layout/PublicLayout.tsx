@@ -314,7 +314,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
         )}
-        <div className="h-1.5 w-full bg-[#ffd400]" />
+        <div className="h-1 w-full bg-[#ffd400]" />
       </header>
 
       <main className="flex-1 flex flex-col">{children}</main>
