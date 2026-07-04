@@ -5,7 +5,7 @@ import { ArrowRight, LayoutDashboard, LockKeyhole, Mail, Menu, MessageCircle, Ph
 import { useEffect, useRef, useState } from "react";
 import { getListProductosQueryKey, useListProductos, type Producto } from "@workspace/api-client-react";
 import { formatCurrency, getInitials, getTarifaPrincipal } from "@/lib/utils";
-import logoIndesa from "@/assets/logo-indesa-lockup.png";
+import logoIndesa from "@/assets/logo-indesa-clean.png";
 import logoIndesaCompleto from "@/assets/logo-indesa-transparent.png";
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -165,11 +165,14 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
     <div className="min-h-[100dvh] flex flex-col bg-background font-sans">
       <header className="sticky top-0 z-50 w-full bg-primary text-white shadow-lg shadow-primary/25">
         <div className="container mx-auto flex h-20 items-center justify-between gap-4 px-4 md:h-[92px] md:px-8 lg:gap-8">
-          <Link href="/" className="group flex h-16 w-[132px] min-w-0 shrink-0 items-center rounded-md bg-primary p-1 ring-1 ring-white/20 transition-transform duration-200 hover:-translate-y-0.5 sm:h-[72px] sm:w-[150px] md:w-[168px]">
+          <Link
+            href="/"
+            className="group flex h-14 w-[158px] min-w-0 shrink-0 items-center justify-center rounded-lg bg-white px-3 py-2 shadow-md shadow-red-950/20 ring-1 ring-white/70 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg sm:h-16 sm:w-[184px] md:h-[74px] md:w-[218px]"
+          >
             <img
               src={logoIndesa}
               alt="INDESA renta de equipo"
-              className="h-full w-full object-contain drop-shadow-md transition-transform duration-200 group-hover:scale-[1.03]"
+              className="h-full w-full object-contain transition-transform duration-200 group-hover:scale-[1.03]"
             />
           </Link>
 

@@ -1,27 +1,94 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useListCategorias, useListProductos, type ListProductosOrden } from "@workspace/api-client-react";
-import { formatCurrency, getInitials, getTarifaPrincipal, getTarifasProducto } from "@/lib/utils";
+import { useListCategorias, useListProductos, type ListProductosOrden, type ProductosPaginados } from "@workspace/api-client-react";
+import { cn, formatCurrency, getInitials, getTarifaPrincipal, getTarifasProducto } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter, SlidersHorizontal, AlertCircle } from "lucide-react";
 
 const pageSize = 12;
+
+function CatalogProductSkeleton() {
+  return (
+    <Card className="overflow-hidden border bg-white shadow-sm">
+      <Skeleton className="aspect-[4/3] w-full rounded-none" />
+      <CardHeader className="p-3 pb-2">
+        <Skeleton className="mb-1 h-3 w-24" />
+        <Skeleton className="h-5 w-4/5" />
+        <Skeleton className="h-5 w-3/5" />
+      </CardHeader>
+      <CardContent className="p-3 pt-0">
+        <Skeleton className="mb-2 h-6 w-28" />
+        <div className="flex gap-2">
+          <Skeleton className="h-5 w-20 rounded-full" />
+          <Skeleton className="h-5 w-24 rounded-full" />
+        </div>
+      </CardContent>
+      <CardFooter className="p-3 pt-0">
+        <Skeleton className="h-9 w-full" />
+      </CardFooter>
+    </Card>
+  );
+}
+
+function CatalogImage({ src, name, index }: { src?: string | null; name: string; index: number }) {
+  const [imageState, setImageState] = useState<"loading" | "loaded" | "error">(src ? "loading" : "error");
+
+  useEffect(() => {
+    setImageState(src ? "loading" : "error");
+  }, [src]);
+
+  if (!src || imageState === "error") {
+    return (
+      <div className="flex h-full w-full items-center justify-center bg-gray-100 text-4xl font-bold text-gray-300 transition-transform duration-500 group-hover:scale-105">
+        {getInitials(name)}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {imageState === "loading" && (
+        <div className="absolute inset-0 z-0 bg-gray-100">
+          <Skeleton className="h-full w-full rounded-none" />
+        </div>
+      )}
+      <img
+        src={src}
+        alt={name}
+        loading={index < 4 ? "eager" : "lazy"}
+        decoding="async"
+        sizes="(min-width: 1536px) 25vw, (min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
+        onLoad={() => setImageState("loaded")}
+        onError={() => setImageState("error")}
+        className={cn(
+          "relative z-10 h-full w-full object-cover transition-all duration-700 group-hover:scale-110 group-hover:rotate-[0.4deg]",
+          imageState === "loaded" ? "opacity-100" : "opacity-0",
+        )}
+      />
+    </>
+  );
+}
 
 export function Catalogo() {
   const [location] = useLocation();
   const [page, setPage] = useState(1);
   const [busqueda, setBusqueda] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [categoria, setCategoria] = useState<string>("todas");
   const [orden, setOrden] = useState<ListProductosOrden>("nombre_asc");
+  const [lastProductosResponse, setLastProductosResponse] = useState<ProductosPaginados | null>(null);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setSearchQuery(busqueda);
+    const nextQuery = busqueda.trim();
+    setSearchQuery(nextQuery);
+    setDebouncedSearchQuery(nextQuery);
     setPage(1);
   };
 
@@ -31,23 +98,42 @@ export function Catalogo() {
 
     setBusqueda(query);
     setSearchQuery(query);
+    setDebouncedSearchQuery(query.trim());
     setPage(1);
   }, [location]);
 
+  useEffect(() => {
+    const timeout = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+      setPage(1);
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  }, [searchQuery]);
+
   const categoriaId = categoria === "todas" ? undefined : Number(categoria);
   const { data: categorias = [], isLoading: isLoadingCategorias } = useListCategorias();
-  const { data: productosResponse, isLoading: isLoadingProductos, isError } = useListProductos({
+  const { data: productosResponse, isLoading: isLoadingProductos, isFetching: isFetchingProductos, isError } = useListProductos({
     page,
     limit: pageSize,
-    busqueda: searchQuery.trim() || undefined,
+    busqueda: debouncedSearchQuery || undefined,
     categoria_id: categoriaId,
     orden,
   });
 
+  useEffect(() => {
+    if (productosResponse) {
+      setLastProductosResponse(productosResponse);
+    }
+  }, [productosResponse]);
+
   const categoriasDisponibles = categorias.filter((cat) => cat.activa);
-  const productosPagina = productosResponse?.data ?? [];
-  const totalProductos = productosResponse?.total ?? 0;
+  const visibleProductosResponse = productosResponse ?? lastProductosResponse;
+  const productosPagina = visibleProductosResponse?.data ?? [];
+  const totalProductos = visibleProductosResponse?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalProductos / pageSize));
+  const showInitialSkeleton = isLoadingProductos && productosPagina.length === 0;
+  const isRefreshing = isFetchingProductos && !showInitialSkeleton;
 
   useEffect(() => {
     if (page > totalPages) {
@@ -67,7 +153,7 @@ export function Catalogo() {
               </p>
             </div>
             <div className="w-fit rounded-md border bg-gray-50 px-3 py-2 text-sm font-semibold text-muted-foreground">
-              {totalProductos} productos encontrados
+              {showInitialSkeleton ? "Cargando catálogo..." : isRefreshing ? "Actualizando..." : `${totalProductos} productos encontrados`}
             </div>
           </div>
         </div>
@@ -88,9 +174,9 @@ export function Catalogo() {
                     placeholder="¿Qué maquinaria buscas?"
                     value={busqueda}
                     onChange={(e) => {
-                      setBusqueda(e.target.value);
-                      setSearchQuery(e.target.value);
-                      setPage(1);
+                      const nextValue = e.target.value;
+                      setBusqueda(nextValue);
+                      setSearchQuery(nextValue);
                     }}
                     className="h-10 w-full"
                   />
@@ -116,7 +202,11 @@ export function Catalogo() {
                     </label>
                   </div>
                   {isLoadingCategorias ? (
-                    <div className="text-sm text-muted-foreground">Cargando categorías...</div>
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-4 w-28" />
+                      <Skeleton className="h-4 w-36" />
+                    </div>
                   ) : categoriasDisponibles.length === 0 ? (
                     <div className="text-sm text-muted-foreground">No hay categorías activas.</div>
                   ) : categoriasDisponibles.map((cat) => (
@@ -157,19 +247,23 @@ export function Catalogo() {
           </aside>
 
           {/* Product Grid */}
-          <div className="flex-1">
-            {isLoadingProductos ? (
+          <div className="flex-1" aria-busy={isRefreshing || showInitialSkeleton}>
+            {isRefreshing && (
+              <div className="mb-4 overflow-hidden rounded-md border bg-white px-4 py-3 text-sm font-medium text-muted-foreground shadow-sm">
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <span>Actualizando catálogo...</span>
+                  <span className="text-xs">{totalProductos} resultados</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-primary/10">
+                  <div className="h-full w-1/3 animate-pulse rounded-full bg-primary" />
+                </div>
+              </div>
+            )}
+
+            {showInitialSkeleton ? (
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                {Array.from({ length: 8 }).map((_, index) => (
-                  <div key={index} className="overflow-hidden rounded-lg border bg-white shadow-sm">
-                    <div className="aspect-[4/3] animate-pulse bg-gray-200" />
-                    <div className="space-y-3 p-3">
-                      <div className="h-3 w-24 animate-pulse rounded bg-gray-200" />
-                      <div className="h-5 w-3/4 animate-pulse rounded bg-gray-200" />
-                      <div className="h-6 w-28 animate-pulse rounded bg-gray-200" />
-                      <div className="h-9 w-full animate-pulse rounded bg-gray-200" />
-                    </div>
-                  </div>
+                {Array.from({ length: pageSize }).map((_, index) => (
+                  <CatalogProductSkeleton key={index} />
                 ))}
               </div>
             ) : isError ? (
@@ -199,7 +293,7 @@ export function Catalogo() {
             ) : (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-                  {productosPagina.map(producto => {
+                  {productosPagina.map((producto, index) => {
                     const tarifa = getTarifaPrincipal(producto);
                     const tarifas = getTarifasProducto(producto);
 
@@ -208,17 +302,7 @@ export function Catalogo() {
                       <span className="absolute inset-x-0 top-0 z-10 h-1 origin-left scale-x-0 bg-primary transition-transform duration-300 group-hover:scale-x-100" />
                       <span className="pointer-events-none absolute -left-1/2 top-0 z-20 h-full w-1/3 -skew-x-12 bg-white/20 opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100" />
                       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
-                        {producto.imagen_url ? (
-                          <img 
-                            src={producto.imagen_url} 
-                            alt={producto.nombre}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-[0.4deg]" 
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-4xl font-bold text-gray-300 bg-gray-100 transition-transform duration-500 group-hover:scale-105">
-                            {getInitials(producto.nombre)}
-                          </div>
-                        )}
+                        <CatalogImage src={producto.imagen_url} name={producto.nombre} index={index} />
                         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                         {producto.disponibilidad === "pocas_unidades" && (
                           <div className="absolute top-2 right-2 transition-transform duration-300 group-hover:-translate-y-0.5">
