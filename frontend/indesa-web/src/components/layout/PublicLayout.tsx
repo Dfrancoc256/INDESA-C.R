@@ -5,7 +5,7 @@ import { ArrowRight, LayoutDashboard, LockKeyhole, Mail, Menu, MessageCircle, Ph
 import { useEffect, useRef, useState } from "react";
 import { getListProductosQueryKey, useListProductos, type Producto } from "@workspace/api-client-react";
 import { formatCurrency, getInitials, getTarifaPrincipal } from "@/lib/utils";
-import logoIndesa from "@/assets/logo-indesa-clean.png";
+import logoIndesa from "@/assets/logo-indesa-lockup.png";
 import logoIndesaCompleto from "@/assets/logo-indesa-transparent.png";
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -163,21 +163,21 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background font-sans">
-      <header className="sticky top-0 z-50 w-full bg-primary text-white shadow-lg shadow-primary/25">
+      <header className="sticky top-0 z-50 w-full bg-[#ff2800] text-white shadow-[0_12px_28px_rgba(90,15,6,0.26)]">
         <div className="container mx-auto flex h-20 items-center justify-between gap-4 px-4 md:h-[92px] md:px-8 lg:gap-8">
           <Link
             href="/"
-            className="group flex h-14 w-[158px] min-w-0 shrink-0 items-center justify-center rounded-lg bg-white px-3 py-2 shadow-md shadow-red-950/20 ring-1 ring-white/70 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg sm:h-16 sm:w-[184px] md:h-[74px] md:w-[218px]"
+            className="group flex h-16 w-[132px] min-w-0 shrink-0 items-center justify-center rounded-md bg-white px-2 py-1.5 shadow-lg shadow-red-950/18 ring-1 ring-black/5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-xl sm:w-[142px] md:h-[76px] md:w-[156px]"
           >
             <img
               src={logoIndesa}
               alt="INDESA renta de equipo"
-              className="h-full w-full object-contain transition-transform duration-200 group-hover:scale-[1.03]"
+              className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.04]"
             />
           </Link>
 
           <form onSubmit={handleHeaderSearch} className="relative hidden w-full max-w-[430px] xl:block">
-            <div className="flex h-11 items-center rounded-md border border-white/20 bg-white shadow-sm transition-all duration-200 focus-within:border-white focus-within:shadow-md">
+            <div className="flex h-11 items-center rounded-md border border-white/60 bg-white shadow-[0_8px_18px_rgba(80,12,5,0.18)] transition-all duration-200 focus-within:border-[#ffd400] focus-within:shadow-[0_10px_24px_rgba(80,12,5,0.26)]">
               <Search className="ml-3 h-4 w-4 shrink-0 text-muted-foreground" />
               <input
                 type="search"
@@ -194,7 +194,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               />
               <button
                 type="submit"
-                className="mr-1 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-sm"
+                className="mr-1 rounded-md bg-[#c90000] px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#9f0000] hover:shadow-sm"
               >
                 Buscar
               </button>
@@ -203,12 +203,12 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           </form>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex flex-1 items-center justify-center gap-8 lg:gap-10">
+          <nav className="hidden md:flex flex-1 items-center justify-center gap-3 lg:gap-5">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`group relative px-1 py-3 text-[15px] font-semibold transition-all duration-200 hover:-translate-y-0.5 ${
+                className={`group relative rounded-md px-4 py-3 text-[15px] font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#c90000] ${
                   isActive(link.href)
                     ? "text-white"
                     : "text-white/80 hover:text-white"
@@ -216,7 +216,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               >
                 {link.label}
                 <span
-                  className={`absolute inset-x-0 bottom-1 h-0.5 rounded-full bg-white transition-all duration-300 ${
+                  className={`absolute inset-x-3 bottom-1 h-0.5 rounded-full bg-[#ffd400] transition-all duration-300 ${
                     isActive(link.href) ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
                   }`}
                 />
@@ -226,7 +226,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
           <div className="hidden md:flex shrink-0 items-center gap-4">
             {isAuthenticated ? (
-              <Button asChild className="gap-2 rounded-md bg-white text-primary shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-md">
+              <Button asChild className="gap-2 rounded-md bg-white text-[#c90000] shadow-[0_8px_18px_rgba(80,12,5,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#fff8d6] hover:text-[#9f0000] hover:shadow-md">
                 <Link href="/admin/dashboard">
                   <LayoutDashboard className="h-4 w-4" />
                   Panel Admin
@@ -234,7 +234,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 </Link>
               </Button>
             ) : (
-              <Button asChild className="gap-2 rounded-md bg-white text-primary shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/90 hover:shadow-md">
+              <Button asChild className="gap-2 rounded-md bg-white text-[#c90000] shadow-[0_8px_18px_rgba(80,12,5,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#fff8d6] hover:text-[#9f0000] hover:shadow-md">
                 <Link href="/admin/login">
                   <LockKeyhole className="h-4 w-4" />
                   Acceso
@@ -256,7 +256,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
         {/* Mobile Nav */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-white/15 bg-primary px-4 py-4 shadow-md">
+          <div className="md:hidden border-t border-white/15 bg-[#ff2800] px-4 py-4 shadow-md">
             <form onSubmit={handleHeaderSearch} className="relative mb-4">
               <div className="flex h-11 items-center rounded-md border bg-white shadow-sm">
                 <Search className="ml-3 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -273,7 +273,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                   aria-label="Buscar maquinaria"
                   className="h-full min-w-0 flex-1 bg-transparent px-3 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground"
                 />
-                <button type="submit" className="mr-1 rounded-md bg-primary px-3 py-2 text-sm font-semibold text-white">
+                <button type="submit" className="mr-1 rounded-md bg-[#c90000] px-3 py-2 text-sm font-semibold text-white">
                   Buscar
                 </button>
               </div>
@@ -286,7 +286,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                   href={link.href}
                   className={`rounded-md px-3 py-3 text-sm font-medium transition-all duration-200 ${
                     isActive(link.href)
-                      ? "bg-white text-primary"
+                      ? "bg-white text-[#c90000]"
                       : "text-white/85 hover:bg-white/10 hover:text-white"
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -296,14 +296,14 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               ))}
               <div className="pt-3 mt-2 border-t">
                 {isAuthenticated ? (
-                  <Button asChild className="w-full gap-2 bg-white text-primary hover:bg-white/90">
+                  <Button asChild className="w-full gap-2 bg-white text-[#c90000] hover:bg-[#fff8d6]">
                     <Link href="/admin/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
                       <LayoutDashboard className="h-4 w-4" />
                       Panel Admin
                     </Link>
                   </Button>
                 ) : (
-                  <Button asChild className="w-full gap-2 bg-white text-primary hover:bg-white/90">
+                  <Button asChild className="w-full gap-2 bg-white text-[#c90000] hover:bg-[#fff8d6]">
                     <Link href="/admin/login" onClick={() => setIsMobileMenuOpen(false)}>
                       <LockKeyhole className="h-4 w-4" />
                       Acceso
@@ -314,7 +314,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
         )}
-        <div className="h-1 w-full bg-red-950/35" />
+        <div className="h-1.5 w-full bg-[#ffd400]" />
       </header>
 
       <main className="flex-1 flex flex-col">{children}</main>
