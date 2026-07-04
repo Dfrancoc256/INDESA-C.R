@@ -12,7 +12,15 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { formatCurrency, getTarifaPrincipal } from "@/lib/utils";
+import {
+  calcularFechaFinPorTarifa,
+  calcularUnidadesTarifa,
+  formatCurrency,
+  getDiasEntreFechas,
+  getTarifaPrincipal,
+  getTarifasProducto,
+  getTodayDate,
+} from "@/lib/utils";
 
 const reservaGlobalSchema = z.object({
   cliente_nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
@@ -22,6 +30,8 @@ const reservaGlobalSchema = z.object({
   cantidad: z.coerce.number().min(1, "La cantidad mínima es 1"),
   fecha_inicio: z.string().min(1, "Seleccione fecha de inicio"),
   fecha_fin: z.string().min(1, "Seleccione fecha final"),
+  tipo_tarifa: z.enum(["dia", "semana", "mes", "base"]),
+  unidades_tarifa: z.coerce.number().min(1, "La cantidad mínima es 1"),
   notas: z.string().optional()
 }).refine((data) => data.fecha_fin >= data.fecha_inicio, {
   path: ["fecha_fin"],
@@ -29,16 +39,7 @@ const reservaGlobalSchema = z.object({
 });
 
 type ReservaGlobalValues = z.infer<typeof reservaGlobalSchema>;
-const todayDate = new Date().toISOString().slice(0, 10);
-
-function getDiasReserva(fechaInicio: string, fechaFin: string) {
-  const inicio = new Date(`${fechaInicio}T00:00:00`);
-  const fin = new Date(`${fechaFin}T00:00:00`);
-  const diff = fin.getTime() - inicio.getTime();
-
-  if (Number.isNaN(diff) || diff < 0) return 1;
-  return Math.floor(diff / 86_400_000) + 1;
-}
+const todayDate = getTodayDate();
 
 export function Reservar() {
   const { toast } = useToast();
@@ -69,6 +70,8 @@ export function Reservar() {
       cantidad: 1,
       fecha_inicio: todayDate,
       fecha_fin: todayDate,
+      tipo_tarifa: "dia",
+      unidades_tarifa: 1,
       notas: ""
     },
   });
@@ -79,6 +82,10 @@ export function Reservar() {
       if (name === "producto_id") {
         const prod = productosDisponibles.find(p => p.id === value.producto_id);
         setProductoSeleccionado(prod);
+        if (prod) {
+          form.setValue("tipo_tarifa", getTarifaPrincipal(prod).tipo);
+          form.setValue("unidades_tarifa", 1);
+        }
       }
     });
     return () => sub.unsubscribe();
@@ -91,6 +98,7 @@ export function Reservar() {
       if (prod) {
         setProductoSeleccionado(prod);
         form.setValue("producto_id", prod.id);
+        form.setValue("tipo_tarifa", getTarifaPrincipal(prod).tipo);
       }
     }
   }, [productoPreseleccionado, productosDisponibles, form]);
@@ -131,9 +139,35 @@ export function Reservar() {
       }
     }
 
-    reservaMutation.mutate({ data });
+    if (!productoSeleccionado) return;
+
+    const tarifa = getTarifasProducto(productoSeleccionado).find((item) => item.tipo === data.tipo_tarifa) ?? getTarifaPrincipal(productoSeleccionado);
+    const fechaFin = data.tipo_tarifa === "dia"
+      ? data.fecha_fin
+      : calcularFechaFinPorTarifa(data.fecha_inicio, data.tipo_tarifa, data.unidades_tarifa);
+    const unidadesTarifa = calcularUnidadesTarifa(data.tipo_tarifa, data.fecha_inicio, fechaFin, data.unidades_tarifa);
+
+    reservaMutation.mutate({
+      data: {
+        ...data,
+        fecha_fin: fechaFin,
+        tipo_tarifa: tarifa.tipo,
+        unidades_tarifa: unidadesTarifa,
+      },
+    });
   };
-  const diasReserva = getDiasReserva(form.watch("fecha_inicio"), form.watch("fecha_fin"));
+  const tarifasProducto = productoSeleccionado ? getTarifasProducto(productoSeleccionado) : [];
+  const tipoTarifa = form.watch("tipo_tarifa");
+  const tarifaSeleccionada = tarifasProducto.find((tarifa) => tarifa.tipo === tipoTarifa) ?? (productoSeleccionado ? getTarifaPrincipal(productoSeleccionado) : null);
+  const fechaInicio = form.watch("fecha_inicio");
+  const fechaFin = tipoTarifa === "dia"
+    ? form.watch("fecha_fin")
+    : calcularFechaFinPorTarifa(fechaInicio, tipoTarifa, form.watch("unidades_tarifa"));
+  const unidadesTarifa = calcularUnidadesTarifa(tipoTarifa, fechaInicio, fechaFin, form.watch("unidades_tarifa"));
+  const diasReserva = getDiasEntreFechas(fechaInicio, fechaFin);
+  const totalEstimado = productoSeleccionado && tarifaSeleccionada
+    ? tarifaSeleccionada.value * unidadesTarifa * (Number(form.watch("cantidad")) || 1)
+    : 0;
 
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
@@ -259,6 +293,55 @@ export function Reservar() {
                         )}
                       />
 
+                      {productoSeleccionado && tarifaSeleccionada && (
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <FormField
+                            control={form.control}
+                            name="tipo_tarifa"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Modalidad *</FormLabel>
+                                <FormControl>
+                                  <select
+                                    {...field}
+                                    onChange={(event) => {
+                                      field.onChange(event);
+                                      form.setValue("unidades_tarifa", 1);
+                                      if (event.target.value !== "dia") {
+                                        form.setValue("fecha_fin", form.getValues("fecha_inicio"));
+                                      }
+                                    }}
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                  >
+                                    {tarifasProducto.map((tarifa) => (
+                                      <option key={tarifa.tipo} value={tarifa.tipo}>
+                                        {tarifa.label} - {formatCurrency(tarifa.value)}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          {tipoTarifa !== "dia" && (
+                            <FormField
+                              control={form.control}
+                              name="unidades_tarifa"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{tarifaSeleccionada.plural} *</FormLabel>
+                                  <FormControl>
+                                    <Input type="number" min="1" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </div>
+                      )}
+
                       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                         <FormField
                           control={form.control}
@@ -284,6 +367,7 @@ export function Reservar() {
                             </FormItem>
                           )}
                         />
+                        {tipoTarifa === "dia" && (
                         <FormField
                           control={form.control}
                           name="fecha_fin"
@@ -297,9 +381,15 @@ export function Reservar() {
                             </FormItem>
                           )}
                         />
+                        )}
                       </div>
                       <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
                         Reserva por {diasReserva} día{diasReserva === 1 ? "" : "s"}.
+                        {tarifaSeleccionada && (
+                          <span className="block text-foreground">
+                            Estimado: {formatCurrency(totalEstimado)} ({unidadesTarifa} {unidadesTarifa === 1 ? tarifaSeleccionada.suffix : tarifaSeleccionada.plural})
+                          </span>
+                        )}
                       </div>
                     </div>
 

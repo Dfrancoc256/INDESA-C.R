@@ -24,6 +24,10 @@ interface ReservaNotificacion {
   fechaInicio: string;
   fechaFin: string;
   diasReserva: number;
+  tipoTarifa: string;
+  unidadesTarifa: number;
+  precioUnitario: number;
+  totalEstimado: number;
   reservaId: number;
 }
 
@@ -97,6 +101,9 @@ function construirMensaje(datos: ReservaNotificacion): string {
     `  ${datos.productoNombre} x ${datos.cantidad}`,
     `  Días: ${datos.diasReserva}`,
     `  Del: ${datos.fechaInicio} al ${datos.fechaFin}`,
+    `  Tarifa: ${datos.tipoTarifa} x ${datos.unidadesTarifa}`,
+    `  Precio unitario: Q ${datos.precioUnitario.toFixed(2)}`,
+    `  Total estimado: Q ${datos.totalEstimado.toFixed(2)}`,
     "",
     "Ingrese al panel administrativo para confirmar o gestionar esta reserva.",
   ].join("\n");

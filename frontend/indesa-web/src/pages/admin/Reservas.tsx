@@ -191,6 +191,9 @@ export function Reservas() {
                       <div className="text-xs text-muted-foreground">
                         Cant: {reserva.cantidad} unid. · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
                       </div>
+                      <div className="text-xs font-medium text-primary">
+                        {reserva.tipo_tarifa ?? "dia"} x {reserva.unidades_tarifa ?? reserva.dias_reserva ?? 1} · {formatCurrency(reserva.total_estimado ?? 0)}
+                      </div>
                       <div className="text-xs text-muted-foreground">
                         {formatDateOnly(reserva.fecha_inicio)} - {formatDateOnly(reserva.fecha_fin)}
                       </div>
@@ -296,6 +299,21 @@ export function Reservas() {
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
                     Días apartados: <span className="font-bold text-foreground">{reservaSeleccionada.dias_reserva ?? 1}</span>
+                  </div>
+                  <div className="mt-3 rounded-md border bg-white p-3 text-sm">
+                    <div className="font-semibold text-foreground">Tarifa solicitada</div>
+                    <div className="mt-1 text-muted-foreground">
+                      Modalidad: <span className="font-bold text-foreground">{reservaSeleccionada.tipo_tarifa ?? "dia"}</span>
+                    </div>
+                    <div className="text-muted-foreground">
+                      Períodos: <span className="font-bold text-foreground">{reservaSeleccionada.unidades_tarifa ?? reservaSeleccionada.dias_reserva ?? 1}</span>
+                    </div>
+                    <div className="text-muted-foreground">
+                      Precio unitario: <span className="font-bold text-foreground">{formatCurrency(reservaSeleccionada.precio_unitario ?? 0)}</span>
+                    </div>
+                    <div className="text-muted-foreground">
+                      Total estimado: <span className="font-bold text-primary">{formatCurrency(reservaSeleccionada.total_estimado ?? 0)}</span>
+                    </div>
                   </div>
                 </div>
 

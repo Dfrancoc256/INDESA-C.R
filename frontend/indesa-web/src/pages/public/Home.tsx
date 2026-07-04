@@ -1,6 +1,15 @@
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, getInitials, getTarifaPrincipal } from "@/lib/utils";
+import {
+  calcularFechaFinPorTarifa,
+  calcularUnidadesTarifa,
+  formatCurrency,
+  getDiasEntreFechas,
+  getInitials,
+  getTarifaPrincipal,
+  getTarifasProducto,
+  getTodayDate,
+} from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -37,21 +46,10 @@ type ReservaFormState = {
   cantidad: string;
   fecha_inicio: string;
   fecha_fin: string;
+  tipo_tarifa: "dia" | "semana" | "mes" | "base";
+  unidades_tarifa: string;
   notas: string;
 };
-
-function getTodayDate() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function getDiasReserva(fechaInicio: string, fechaFin: string) {
-  const inicio = new Date(`${fechaInicio}T00:00:00`);
-  const fin = new Date(`${fechaFin}T00:00:00`);
-  const diff = fin.getTime() - inicio.getTime();
-
-  if (Number.isNaN(diff) || diff < 0) return 1;
-  return Math.floor(diff / 86_400_000) + 1;
-}
 
 const whatsappPhone = "50222223333";
 const todayDate = getTodayDate();
@@ -63,6 +61,8 @@ const emptyReservaForm: ReservaFormState = {
   cantidad: "1",
   fecha_inicio: todayDate,
   fecha_fin: todayDate,
+  tipo_tarifa: "dia",
+  unidades_tarifa: "1",
   notas: "",
 };
 
@@ -108,6 +108,7 @@ function buildWhatsAppUrl(producto: HomeProduct, form?: ReservaFormState) {
   if (form) {
     lines.push(
       `Cantidad solicitada: ${form.cantidad || "1"}`,
+      `Modalidad: ${form.tipo_tarifa} x ${form.unidades_tarifa || "1"}`,
       `Fechas: ${form.fecha_inicio} al ${form.fecha_fin}`,
       `Nombre: ${form.cliente_nombre || "Pendiente"}`,
       `Teléfono: ${form.cliente_telefono || "Pendiente"}`,
@@ -134,7 +135,21 @@ export function Home() {
     orden: "nombre_asc",
   });
   const productosCatalogo = productosResponse?.data ?? [];
-  const diasReserva = getDiasReserva(reservaForm.fecha_inicio, reservaForm.fecha_fin);
+  const tarifasReserva = selectedProduct ? getTarifasProducto(selectedProduct) : [];
+  const tarifaSeleccionada = tarifasReserva.find((tarifa) => tarifa.tipo === reservaForm.tipo_tarifa) ?? tarifasReserva[0];
+  const fechaFinCalculada = tarifaSeleccionada?.tipo === "dia"
+    ? reservaForm.fecha_fin
+    : calcularFechaFinPorTarifa(reservaForm.fecha_inicio, tarifaSeleccionada?.tipo ?? "dia", Number(reservaForm.unidades_tarifa) || 1);
+  const unidadesTarifa = calcularUnidadesTarifa(
+    tarifaSeleccionada?.tipo ?? "dia",
+    reservaForm.fecha_inicio,
+    fechaFinCalculada,
+    Number(reservaForm.unidades_tarifa) || 1
+  );
+  const diasReserva = getDiasEntreFechas(reservaForm.fecha_inicio, fechaFinCalculada);
+  const totalEstimado = selectedProduct && tarifaSeleccionada
+    ? tarifaSeleccionada.value * unidadesTarifa * (Number(reservaForm.cantidad) || 1)
+    : 0;
 
   const reservaMutation = useCreateReserva({
     mutation: {
@@ -168,8 +183,14 @@ export function Home() {
   };
 
   const openReservaModal = (producto: HomeProduct) => {
+    const tarifaPrincipal = getTarifaPrincipal(producto);
     setSelectedProduct(producto);
-    setReservaForm({ ...emptyReservaForm, cantidad: (producto.cantidad ?? 0) > 0 ? "1" : "0" });
+    setReservaForm({
+      ...emptyReservaForm,
+      cantidad: (producto.cantidad ?? 0) > 0 ? "1" : "0",
+      tipo_tarifa: tarifaPrincipal.tipo,
+      unidades_tarifa: "1",
+    });
     setReservaOpen(true);
   };
 
@@ -185,12 +206,18 @@ export function Home() {
         cliente_telefono: reservaForm.cliente_telefono,
         cantidad: Number(reservaForm.cantidad) || 1,
         fecha_inicio: reservaForm.fecha_inicio,
-        fecha_fin: reservaForm.fecha_fin,
+        fecha_fin: fechaFinCalculada,
+        tipo_tarifa: tarifaSeleccionada?.tipo ?? "dia",
+        unidades_tarifa: unidadesTarifa,
         notas: reservaForm.notas || undefined,
       },
     }, {
       onSuccess: () => {
-        window.open(buildWhatsAppUrl(selectedProduct, reservaForm), "_blank", "noopener,noreferrer");
+        window.open(buildWhatsAppUrl(selectedProduct, {
+          ...reservaForm,
+          fecha_fin: fechaFinCalculada,
+          unidades_tarifa: String(unidadesTarifa),
+        }), "_blank", "noopener,noreferrer");
         setReservaOpen(false);
         toast({
           title: "Solicitud registrada",
@@ -431,7 +458,7 @@ export function Home() {
       </section>
 
       <Dialog open={reservaOpen} onOpenChange={setReservaOpen}>
-        <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-2xl">
+        <DialogContent className="max-h-[92dvh] overflow-y-auto sm:max-w-3xl">
           <DialogHeader>
             <DialogTitle>Datos de reserva</DialogTitle>
             <DialogDescription>
@@ -441,8 +468,8 @@ export function Home() {
 
           {selectedProduct && (
             <form onSubmit={handleReservaSubmit} className="space-y-5">
-              <div className="grid gap-4 rounded-md border bg-muted/40 p-4 sm:grid-cols-[120px_1fr]">
-                <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-gray-100">
+              <div className="grid gap-5 rounded-md border bg-muted/40 p-4 sm:grid-cols-[220px_1fr]">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-gray-100 shadow-sm">
                   {selectedProduct.imagen_url ? (
                     <img src={selectedProduct.imagen_url} alt={selectedProduct.nombre} className="h-full w-full object-cover" />
                   ) : (
@@ -507,6 +534,44 @@ export function Home() {
                   />
                 </div>
                 <div className="space-y-2">
+                  <label className="text-sm font-medium" htmlFor="home-reserva-tarifa">Modalidad</label>
+                  <select
+                    id="home-reserva-tarifa"
+                    value={reservaForm.tipo_tarifa}
+                    onChange={(event) => {
+                      const nextTipo = event.target.value as ReservaFormState["tipo_tarifa"];
+                      setReservaForm((current) => ({
+                        ...current,
+                        tipo_tarifa: nextTipo,
+                        unidades_tarifa: "1",
+                        fecha_fin: nextTipo === "dia" ? current.fecha_fin : current.fecha_inicio,
+                      }));
+                    }}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    {tarifasReserva.map((tarifa) => (
+                      <option key={tarifa.tipo} value={tarifa.tipo}>
+                        {tarifa.label} - {formatCurrency(tarifa.value)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {tarifaSeleccionada?.tipo !== "dia" && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium" htmlFor="home-reserva-unidades">
+                      {tarifaSeleccionada?.plural ?? "Períodos"}
+                    </label>
+                    <Input
+                      id="home-reserva-unidades"
+                      type="number"
+                      min="1"
+                      value={reservaForm.unidades_tarifa}
+                      onChange={(event) => setReservaForm((current) => ({ ...current, unidades_tarifa: event.target.value }))}
+                      required
+                    />
+                  </div>
+                )}
+                <div className="space-y-2">
                   <label className="text-sm font-medium" htmlFor="home-reserva-fecha-inicio">Inicio</label>
                   <Input
                     id="home-reserva-fecha-inicio"
@@ -524,6 +589,7 @@ export function Home() {
                     required
                   />
                 </div>
+                {tarifaSeleccionada?.tipo === "dia" && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium" htmlFor="home-reserva-fecha-fin">Fin</label>
                   <Input
@@ -535,8 +601,14 @@ export function Home() {
                     required
                   />
                 </div>
+                )}
                 <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary sm:col-span-2">
                   Reserva por {diasReserva} día{diasReserva === 1 ? "" : "s"}.
+                  {tarifaSeleccionada && (
+                    <span className="block text-foreground">
+                      Estimado: {formatCurrency(totalEstimado)} ({unidadesTarifa} {unidadesTarifa === 1 ? tarifaSeleccionada.suffix : tarifaSeleccionada.plural})
+                    </span>
+                  )}
                 </div>
               </div>
 

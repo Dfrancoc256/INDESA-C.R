@@ -16,5 +16,8 @@ export interface ReservaInput {
   cantidad: number;
   fecha_inicio: string;
   fecha_fin: string;
+  tipo_tarifa?: 'dia' | 'semana' | 'mes' | 'base';
+  /** @minimum 1 */
+  unidades_tarifa?: number;
   notas?: string;
 }

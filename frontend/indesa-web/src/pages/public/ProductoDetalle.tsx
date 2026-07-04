@@ -1,7 +1,16 @@
 import { useGetProducto, useCreateReserva, getGetProductoQueryKey } from "@workspace/api-client-react";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "wouter";
-import { formatCurrency, getInitials, getTarifaPrincipal, getTarifasProducto } from "@/lib/utils";
+import {
+  calcularFechaFinPorTarifa,
+  calcularUnidadesTarifa,
+  formatCurrency,
+  getDiasEntreFechas,
+  getInitials,
+  getTarifaPrincipal,
+  getTarifasProducto,
+  getTodayDate,
+} from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +30,8 @@ const reservaSchema = z.object({
   cantidad: z.coerce.number().min(1, "La cantidad mínima es 1"),
   fecha_inicio: z.string().min(1, "Seleccione fecha de inicio"),
   fecha_fin: z.string().min(1, "Seleccione fecha final"),
+  tipo_tarifa: z.enum(["dia", "semana", "mes", "base"]),
+  unidades_tarifa: z.coerce.number().min(1, "La cantidad mínima es 1"),
   notas: z.string().optional()
 }).refine((data) => data.fecha_fin >= data.fecha_inicio, {
   path: ["fecha_fin"],
@@ -28,16 +39,7 @@ const reservaSchema = z.object({
 });
 
 type ReservaValues = z.infer<typeof reservaSchema>;
-const todayDate = new Date().toISOString().slice(0, 10);
-
-function getDiasReserva(fechaInicio: string, fechaFin: string) {
-  const inicio = new Date(`${fechaInicio}T00:00:00`);
-  const fin = new Date(`${fechaFin}T00:00:00`);
-  const diff = fin.getTime() - inicio.getTime();
-
-  if (Number.isNaN(diff) || diff < 0) return 1;
-  return Math.floor(diff / 86_400_000) + 1;
-}
+const todayDate = getTodayDate();
 
 export function ProductoDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -66,9 +68,16 @@ export function ProductoDetalle() {
       cantidad: 1,
       fecha_inicio: todayDate,
       fecha_fin: todayDate,
+      tipo_tarifa: "dia",
+      unidades_tarifa: 1,
       notas: ""
     },
   });
+
+  useEffect(() => {
+    if (!productoActual) return;
+    form.setValue("tipo_tarifa", getTarifaPrincipal(productoActual).tipo);
+  }, [productoActual, form]);
 
   const reservaMutation = useCreateReserva({
     mutation: {
@@ -98,11 +107,20 @@ export function ProductoDetalle() {
       return;
     }
 
-    reservaMutation.mutate({ 
+    const tarifa = getTarifasProducto(productoActual).find((item) => item.tipo === data.tipo_tarifa) ?? getTarifaPrincipal(productoActual);
+    const fechaFin = data.tipo_tarifa === "dia"
+      ? data.fecha_fin
+      : calcularFechaFinPorTarifa(data.fecha_inicio, data.tipo_tarifa, data.unidades_tarifa);
+    const unidadesTarifa = calcularUnidadesTarifa(data.tipo_tarifa, data.fecha_inicio, fechaFin, data.unidades_tarifa);
+
+    reservaMutation.mutate({
       data: {
         producto_id: productoActual.id,
-        ...data
-      } 
+        ...data,
+        fecha_fin: fechaFin,
+        tipo_tarifa: tarifa.tipo,
+        unidades_tarifa: unidadesTarifa,
+      }
     });
   };
 
@@ -135,9 +153,17 @@ export function ProductoDetalle() {
   }
 
   const stockAgotado = productoActual.cantidad === 0;
-  const diasReserva = getDiasReserva(form.watch("fecha_inicio"), form.watch("fecha_fin"));
   const tarifaPrincipal = getTarifaPrincipal(productoActual);
   const tarifas = getTarifasProducto(productoActual);
+  const tipoTarifa = form.watch("tipo_tarifa");
+  const tarifaSeleccionada = tarifas.find((tarifa) => tarifa.tipo === tipoTarifa) ?? tarifaPrincipal;
+  const fechaInicio = form.watch("fecha_inicio");
+  const fechaFin = tipoTarifa === "dia"
+    ? form.watch("fecha_fin")
+    : calcularFechaFinPorTarifa(fechaInicio, tipoTarifa, form.watch("unidades_tarifa"));
+  const unidadesTarifa = calcularUnidadesTarifa(tipoTarifa, fechaInicio, fechaFin, form.watch("unidades_tarifa"));
+  const diasReserva = getDiasEntreFechas(fechaInicio, fechaFin);
+  const totalEstimado = tarifaSeleccionada.value * unidadesTarifa * (Number(form.watch("cantidad")) || 1);
 
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
@@ -366,6 +392,53 @@ export function ProductoDetalle() {
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                           <FormField
                             control={form.control}
+                            name="tipo_tarifa"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Modalidad *</FormLabel>
+                                <FormControl>
+                                  <select
+                                    {...field}
+                                    onChange={(event) => {
+                                      field.onChange(event);
+                                      form.setValue("unidades_tarifa", 1);
+                                      if (event.target.value !== "dia") {
+                                        form.setValue("fecha_fin", form.getValues("fecha_inicio"));
+                                      }
+                                    }}
+                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                                  >
+                                    {tarifas.map((tarifa) => (
+                                      <option key={tarifa.tipo} value={tarifa.tipo}>
+                                        {tarifa.label} - {formatCurrency(tarifa.value)}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          {tipoTarifa !== "dia" && (
+                            <FormField
+                              control={form.control}
+                              name="unidades_tarifa"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>{tarifaSeleccionada.plural} *</FormLabel>
+                                  <FormControl>
+                                    <Input type="number" min="1" {...field} />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          )}
+                        </div>
+
+                        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                          <FormField
+                            control={form.control}
                             name="fecha_inicio"
                             render={({ field }) => (
                               <FormItem>
@@ -388,6 +461,7 @@ export function ProductoDetalle() {
                               </FormItem>
                             )}
                           />
+                          {tipoTarifa === "dia" && (
                           <FormField
                             control={form.control}
                             name="fecha_fin"
@@ -401,9 +475,13 @@ export function ProductoDetalle() {
                               </FormItem>
                             )}
                           />
+                          )}
                         </div>
                         <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
                           Reserva por {diasReserva} día{diasReserva === 1 ? "" : "s"}.
+                          <span className="block text-foreground">
+                            Estimado: {formatCurrency(totalEstimado)} ({unidadesTarifa} {unidadesTarifa === 1 ? tarifaSeleccionada.suffix : tarifaSeleccionada.plural})
+                          </span>
                         </div>
 
                         <FormField

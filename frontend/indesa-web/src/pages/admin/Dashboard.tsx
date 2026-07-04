@@ -94,6 +94,9 @@ export function Dashboard() {
                           <div className="text-xs text-muted-foreground font-normal">
                             Cant: {reserva.cantidad} · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
                           </div>
+                          <div className="text-xs font-medium text-primary">
+                            {reserva.tipo_tarifa ?? "dia"} · {formatCurrency(reserva.total_estimado ?? 0)}
+                          </div>
                         </TableCell>
                         <TableCell>
                           <EstadoBadge estado={reserva.estado} />

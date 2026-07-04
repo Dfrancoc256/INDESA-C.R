@@ -19,6 +19,10 @@ export interface Reserva {
   fecha_inicio: Date;
   fecha_fin: Date;
   dias_reserva: number;
+  tipo_tarifa: 'dia' | 'semana' | 'mes' | 'base';
+  unidades_tarifa: number;
+  precio_unitario: number;
+  total_estimado: number;
   estado: ReservaEstado;
   /** @nullable */
   notas?: string | null;

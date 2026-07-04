@@ -4,6 +4,8 @@ import * as productosRepo from "../repositories/productos.repository";
 import { notificarReservaPorWhatsApp } from "../lib/whatsapp";
 import { logger } from "../lib/logger";
 
+type TipoTarifa = "dia" | "semana" | "mes" | "base";
+
 type ReservaInput = {
   clienteNombre?: string;
   cliente_nombre?: string;
@@ -20,6 +22,10 @@ type ReservaInput = {
   fecha_fin?: string;
   diasReserva?: number;
   dias_reserva?: number;
+  tipoTarifa?: TipoTarifa;
+  tipo_tarifa?: TipoTarifa;
+  unidadesTarifa?: number;
+  unidades_tarifa?: number;
   notas?: string;
 };
 
@@ -32,6 +38,8 @@ type NormalizedReservaInput = {
   fechaInicio: string;
   fechaFin: string;
   diasReserva: number;
+  tipoTarifa: TipoTarifa;
+  unidadesTarifaSolicitada?: number;
   notas?: string;
 };
 
@@ -60,6 +68,11 @@ function calcularDiasReserva(fechaInicio: string, fechaFin: string): number {
   return Math.floor(diffMs / 86_400_000) + 1;
 }
 
+function normalizeTipoTarifa(value: string | undefined): TipoTarifa {
+  if (value === "semana" || value === "mes" || value === "base") return value;
+  return "dia";
+}
+
 function normalizeReservaInput(data: ReservaInput): NormalizedReservaInput {
   const fechaInicio = toDateOnly(data.fechaInicio ?? data.fecha_inicio, "fecha_inicio");
   const fechaFin = toDateOnly(data.fechaFin ?? data.fecha_fin, "fecha_fin");
@@ -69,6 +82,8 @@ function normalizeReservaInput(data: ReservaInput): NormalizedReservaInput {
   const clienteTelefono = data.clienteTelefono ?? data.cliente_telefono;
   const productoId = data.productoId ?? data.producto_id;
   const cantidad = data.cantidad;
+  const tipoTarifa = normalizeTipoTarifa(data.tipoTarifa ?? data.tipo_tarifa);
+  const unidadesTarifaSolicitada = data.unidadesTarifa ?? data.unidades_tarifa;
 
   if (!clienteNombre || !clienteEmail || !clienteTelefono || !productoId || !cantidad) {
     throw Object.assign(new Error("Datos incompletos para registrar la reserva"), { status: 400 });
@@ -83,7 +98,36 @@ function normalizeReservaInput(data: ReservaInput): NormalizedReservaInput {
     fechaInicio,
     fechaFin,
     diasReserva,
+    tipoTarifa,
+    unidadesTarifaSolicitada,
     notas: data.notas,
+  };
+}
+
+function calcularTarifaReserva(producto: any, data: NormalizedReservaInput) {
+  const precioBase = Number(producto.precio ?? 0);
+  const tarifas: Record<TipoTarifa, number> = {
+    dia: Number(producto.precio_dia ?? precioBase),
+    semana: Number(producto.precio_semana ?? 0),
+    mes: Number(producto.precio_mes ?? 0),
+    base: precioBase,
+  };
+
+  const precioUnitario = tarifas[data.tipoTarifa];
+  if (!precioUnitario || precioUnitario <= 0) {
+    throw Object.assign(new Error("El producto no tiene configurada esa tarifa"), { status: 400 });
+  }
+
+  const unidadesTarifa = data.tipoTarifa === "dia"
+    ? data.diasReserva
+    : Math.max(1, Number(data.unidadesTarifaSolicitada ?? 1));
+  const totalEstimado = precioUnitario * unidadesTarifa * data.cantidad;
+
+  return {
+    tipoTarifa: data.tipoTarifa,
+    unidadesTarifa,
+    precioUnitario,
+    totalEstimado,
   };
 }
 
@@ -116,7 +160,8 @@ export async function createReserva(input: ReservaInput) {
     );
   }
 
-  const reserva = await repo.createReserva(data);
+  const tarifa = calcularTarifaReserva(producto, data);
+  const reserva = await repo.createReserva({ ...data, ...tarifa });
 
   // Notificar por WhatsApp de forma asíncrona (no bloquea la respuesta)
   notificarReservaPorWhatsApp({
@@ -128,6 +173,10 @@ export async function createReserva(input: ReservaInput) {
     fechaInicio: data.fechaInicio,
     fechaFin: data.fechaFin,
     diasReserva: data.diasReserva,
+    tipoTarifa: tarifa.tipoTarifa,
+    unidadesTarifa: tarifa.unidadesTarifa,
+    precioUnitario: tarifa.precioUnitario,
+    totalEstimado: tarifa.totalEstimado,
     reservaId: reserva.id,
   }).then(async (enviado) => {
     if (enviado) {

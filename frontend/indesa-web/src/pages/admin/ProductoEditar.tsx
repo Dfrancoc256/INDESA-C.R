@@ -1,4 +1,4 @@
-import { useGetProducto, useUpdateProducto, useListCategorias, getGetProductoQueryKey } from "@workspace/api-client-react";
+import { useCreateCategoria, useGetProducto, useUpdateProducto, useListCategorias, getGetProductoQueryKey } from "@workspace/api-client-react";
 import { useState, useEffect, useRef } from "react";
 import { useLocation, Link, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -43,9 +43,10 @@ export function ProductoEditar() {
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [imageUrlPreview, setImageUrlPreview] = useState("");
+  const [nuevaCategoria, setNuevaCategoria] = useState("");
   const initRef = useRef<number | null>(null);
 
-  const { data: categorias, isLoading: isLoadingCategorias } = useListCategorias();
+  const { data: categorias, isLoading: isLoadingCategorias, refetch: refetchCategorias } = useListCategorias();
   const { data: producto, isLoading: isLoadingProducto } = useGetProducto(productoId, {
     query: { enabled: productoId > 0, queryKey: getGetProductoQueryKey(productoId) }
   });
@@ -112,6 +113,26 @@ export function ProductoEditar() {
       }
     }
   });
+
+  const createCategoriaMutation = useCreateCategoria({
+    mutation: {
+      onSuccess: async (categoria) => {
+        toast({ title: "Categoría creada", description: "Ya puedes usarla en este producto." });
+        await refetchCategorias();
+        form.setValue("categoria_id", categoria.id);
+        setNuevaCategoria("");
+      },
+      onError: (err: any) => {
+        toast({ variant: "destructive", title: "Error al crear categoría", description: err?.message || "Verifique el nombre e intente nuevamente." });
+      },
+    },
+  });
+
+  const crearCategoriaRapida = () => {
+    const nombre = nuevaCategoria.trim();
+    if (!nombre) return;
+    createCategoriaMutation.mutate({ data: { nombre, activa: true } });
+  };
 
   const onSubmit = (data: ProductoValues) => {
     const payload = { ...data };
@@ -218,6 +239,19 @@ export function ProductoEditar() {
                             </SelectContent>
                           </Select>
                           <FormMessage />
+                          <div className="mt-3 rounded-md border bg-muted/40 p-3">
+                            <div className="mb-2 text-xs font-semibold text-muted-foreground">Crear categoría rápida</div>
+                            <div className="flex gap-2">
+                              <Input
+                                value={nuevaCategoria}
+                                onChange={(event) => setNuevaCategoria(event.target.value)}
+                                placeholder="Ej. Maquinaria pesada"
+                              />
+                              <Button type="button" variant="outline" onClick={crearCategoriaRapida} disabled={createCategoriaMutation.isPending}>
+                                Crear
+                              </Button>
+                            </div>
+                          </div>
                         </FormItem>
                       )}
                     />

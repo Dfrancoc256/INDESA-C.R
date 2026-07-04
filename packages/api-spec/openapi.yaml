@@ -979,6 +979,12 @@ components:
         fecha_fin:
           type: string
           format: date
+        tipo_tarifa:
+          type: string
+          enum: [dia, semana, mes, base]
+        unidades_tarifa:
+          type: integer
+          minimum: 1
         notas:
           type: string
 
@@ -994,7 +1000,7 @@ components:
 
     Reserva:
       type: object
-      required: [id, cliente_nombre, cliente_email, cliente_telefono, producto_id, cantidad, fecha_inicio, fecha_fin, dias_reserva, estado, created_at]
+      required: [id, cliente_nombre, cliente_email, cliente_telefono, producto_id, cantidad, fecha_inicio, fecha_fin, dias_reserva, tipo_tarifa, unidades_tarifa, precio_unitario, total_estimado, estado, created_at]
       properties:
         id:
           type: integer
@@ -1019,6 +1025,16 @@ components:
         dias_reserva:
           type: integer
           minimum: 1
+        tipo_tarifa:
+          type: string
+          enum: [dia, semana, mes, base]
+        unidades_tarifa:
+          type: integer
+          minimum: 1
+        precio_unitario:
+          type: number
+        total_estimado:
+          type: number
         estado:
           type: string
           enum: [pendiente, confirmada, entregada, cancelada]

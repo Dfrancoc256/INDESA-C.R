@@ -74,8 +74,8 @@
   --elevate-1: rgba(0, 0, 0, 0.03);
   --elevate-2: rgba(0, 0, 0, 0.08);
 
-  /* Rojo INDESA como primario */
-  --primary:            0 82% 40%;     /* #C01010 — rojo institucional */
+  /* Rojo de alto impacto inspirado en identidad automotriz/de consumo */
+  --primary:            9 100% 50%;    /* #FF2800 — rojo intenso tipo competición */
   --primary-foreground: 0 0% 100%;
 
   --background:   0 0% 97%;           /* blanco hueso */
@@ -87,7 +87,7 @@
 
   --border:       220 10% 88%;
   --input:        220 10% 82%;
-  --ring:         0 82% 40%;
+  --ring:         9 100% 50%;
 
   --popover:      0 0% 100%;
   --popover-foreground: 220 15% 14%;
@@ -99,8 +99,8 @@
   --muted:        220 10% 93%;
   --muted-foreground: 220 10% 48%;
 
-  --accent:       0 70% 95%;          /* rojo muy suave para acentos */
-  --accent-foreground: 0 82% 30%;
+  --accent:       9 100% 95%;          /* rojo muy suave para acentos */
+  --accent-foreground: 9 100% 28%;
 
   --destructive:  0 84% 45%;
   --destructive-foreground: 0 0% 100%;
@@ -108,13 +108,13 @@
   --sidebar:      220 18% 14%;        /* panel lateral oscuro */
   --sidebar-foreground: 0 0% 92%;
   --sidebar-border: 220 18% 20%;
-  --sidebar-primary: 0 82% 40%;
+  --sidebar-primary: 9 100% 50%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 220 18% 20%;
   --sidebar-accent-foreground: 0 0% 90%;
-  --sidebar-ring: 0 82% 40%;
+  --sidebar-ring: 9 100% 50%;
 
-  --chart-1: 0 82% 40%;
+  --chart-1: 9 100% 50%;
   --chart-2: 220 70% 50%;
   --chart-3: 160 60% 40%;
   --chart-4: 40 90% 50%;
@@ -153,7 +153,7 @@
   --elevate-1: rgba(255, 255, 255, 0.04);
   --elevate-2: rgba(255, 255, 255, 0.09);
 
-  --primary:            0 78% 52%;
+  --primary:            9 100% 50%;
   --primary-foreground: 0 0% 100%;
 
   --background:   220 18% 10%;
@@ -165,7 +165,7 @@
 
   --border:       220 18% 22%;
   --input:        220 18% 28%;
-  --ring:         0 78% 52%;
+  --ring:         9 100% 50%;
 
   --popover:      220 18% 13%;
   --popover-foreground: 0 0% 92%;
@@ -186,13 +186,13 @@
   --sidebar:      220 20% 8%;
   --sidebar-foreground: 0 0% 88%;
   --sidebar-border: 220 20% 14%;
-  --sidebar-primary: 0 78% 52%;
+  --sidebar-primary: 9 100% 50%;
   --sidebar-primary-foreground: 0 0% 100%;
   --sidebar-accent: 220 20% 14%;
   --sidebar-accent-foreground: 0 0% 85%;
-  --sidebar-ring: 0 78% 52%;
+  --sidebar-ring: 9 100% 50%;
 
-  --chart-1: 0 78% 52%;
+  --chart-1: 9 100% 50%;
   --chart-2: 220 60% 60%;
   --chart-3: 160 55% 50%;
   --chart-4: 40 85% 55%;

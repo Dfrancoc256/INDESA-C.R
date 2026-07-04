@@ -1,6 +1,21 @@
 import { db, reservasTable, productosTable } from "@workspace/db";
 import { eq, desc, sql } from "drizzle-orm";
 
+function decimalToNumber(value: string | null): number | null {
+  return value === null ? null : Number(value);
+}
+
+function mapReservaRow<T extends {
+  precio_unitario: string;
+  total_estimado: string;
+}>(row: T) {
+  return {
+    ...row,
+    precio_unitario: decimalToNumber(row.precio_unitario) ?? 0,
+    total_estimado: decimalToNumber(row.total_estimado) ?? 0,
+  };
+}
+
 export async function findAllReservas(params: {
   estado?: string;
   page?: number;
@@ -23,6 +38,10 @@ export async function findAllReservas(params: {
       fecha_inicio: reservasTable.fechaInicio,
       fecha_fin: reservasTable.fechaFin,
       dias_reserva: reservasTable.diasReserva,
+      tipo_tarifa: reservasTable.tipoTarifa,
+      unidades_tarifa: reservasTable.unidadesTarifa,
+      precio_unitario: reservasTable.precioUnitario,
+      total_estimado: reservasTable.totalEstimado,
       estado: reservasTable.estado,
       notas: reservasTable.notas,
       whatsapp_enviado: reservasTable.whatsappEnviado,
@@ -41,7 +60,7 @@ export async function findAllReservas(params: {
     .from(reservasTable)
     .where(condition);
 
-  return { data: rows, total: Number(count), page, limit };
+  return { data: rows.map(mapReservaRow), total: Number(count), page, limit };
 }
 
 export async function findReservaById(id: number) {
@@ -57,6 +76,10 @@ export async function findReservaById(id: number) {
       fecha_inicio: reservasTable.fechaInicio,
       fecha_fin: reservasTable.fechaFin,
       dias_reserva: reservasTable.diasReserva,
+      tipo_tarifa: reservasTable.tipoTarifa,
+      unidades_tarifa: reservasTable.unidadesTarifa,
+      precio_unitario: reservasTable.precioUnitario,
+      total_estimado: reservasTable.totalEstimado,
       estado: reservasTable.estado,
       notas: reservasTable.notas,
       whatsapp_enviado: reservasTable.whatsappEnviado,
@@ -67,7 +90,7 @@ export async function findReservaById(id: number) {
     .leftJoin(productosTable, eq(reservasTable.productoId, productosTable.id))
     .where(eq(reservasTable.id, id))
     .limit(1);
-  return rows[0] ?? null;
+  return rows[0] ? mapReservaRow(rows[0]) : null;
 }
 
 export async function createReserva(data: {
@@ -79,9 +102,18 @@ export async function createReserva(data: {
   fechaInicio: string;
   fechaFin: string;
   diasReserva: number;
+  tipoTarifa: string;
+  unidadesTarifa: number;
+  precioUnitario: number;
+  totalEstimado: number;
   notas?: string;
 }) {
-  const rows = await db.insert(reservasTable).values({ ...data, estado: "pendiente" }).returning();
+  const rows = await db.insert(reservasTable).values({
+    ...data,
+    precioUnitario: String(data.precioUnitario),
+    totalEstimado: String(data.totalEstimado),
+    estado: "pendiente",
+  }).returning();
   return rows[0];
 }
 
@@ -110,6 +142,10 @@ export async function findReservasRecientes(limit = 10) {
       fecha_inicio: reservasTable.fechaInicio,
       fecha_fin: reservasTable.fechaFin,
       dias_reserva: reservasTable.diasReserva,
+      tipo_tarifa: reservasTable.tipoTarifa,
+      unidades_tarifa: reservasTable.unidadesTarifa,
+      precio_unitario: reservasTable.precioUnitario,
+      total_estimado: reservasTable.totalEstimado,
       estado: reservasTable.estado,
       notas: reservasTable.notas,
       whatsapp_enviado: reservasTable.whatsappEnviado,
@@ -119,5 +155,6 @@ export async function findReservasRecientes(limit = 10) {
     .from(reservasTable)
     .leftJoin(productosTable, eq(reservasTable.productoId, productosTable.id))
     .orderBy(desc(reservasTable.createdAt))
-    .limit(limit);
+    .limit(limit)
+    .then((rows) => rows.map(mapReservaRow));
 }

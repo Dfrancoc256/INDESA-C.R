@@ -180,6 +180,9 @@ export interface ReservaInput {
   cantidad: number;
   fecha_inicio: string;
   fecha_fin: string;
+  tipo_tarifa?: 'dia' | 'semana' | 'mes' | 'base';
+  /** @minimum 1 */
+  unidades_tarifa?: number;
   notas?: string;
 }
 
@@ -220,6 +223,10 @@ export interface Reserva {
   fecha_inicio: string;
   fecha_fin: string;
   dias_reserva: number;
+  tipo_tarifa: 'dia' | 'semana' | 'mes' | 'base';
+  unidades_tarifa: number;
+  precio_unitario: number;
+  total_estimado: number;
   estado: ReservaEstado;
   /** @nullable */
   notas?: string | null;
