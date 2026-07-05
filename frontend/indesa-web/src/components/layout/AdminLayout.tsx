@@ -2,7 +2,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "wouter";
 import { 
   Home, Package, ClipboardList, 
-  Calendar, Users, LogOut, Menu, X, Tags
+  Calendar, Users, LogOut, Menu, X, Tags, Loader2, Landmark
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -28,8 +28,12 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, isLoading, setLocation]);
 
-  if (isLoading || !isAuthenticated) {
-    return null; // Will redirect or show loading
+  if (isLoading) {
+    return <AdminStatus title="Cargando panel administrativo" description="Estamos validando tu sesión." />;
+  }
+
+  if (!isAuthenticated) {
+    return <AdminStatus title="Redirigiendo al acceso" description="Inicia sesión para entrar al panel." />;
   }
 
   const navLinks = [
@@ -38,6 +42,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     { href: "/admin/categorias", label: "Categorías", icon: Tags },
     { href: "/admin/inventario", label: "Inventario", icon: ClipboardList },
     { href: "/admin/reservas", label: "Reservas", icon: Calendar },
+    { href: "/admin/finanzas", label: "Finanzas", icon: Landmark },
     { href: "/admin/usuarios", label: "Usuarios", icon: Users },
   ];
 
@@ -142,6 +147,21 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </main>
+    </div>
+  );
+}
+
+function AdminStatus({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="grid min-h-[100dvh] place-items-center bg-gray-100 px-4">
+      <div className="w-full max-w-sm rounded-md border bg-white p-6 text-center shadow-lg">
+        <img src={logoIndesa} alt="INDESA" className="mx-auto mb-5 h-auto w-44 object-contain" />
+        <div className="mx-auto mb-4 grid h-11 w-11 place-items-center rounded-full bg-primary/10 text-primary">
+          <Loader2 className="h-5 w-5 animate-spin" />
+        </div>
+        <h1 className="text-lg font-bold text-foreground">{title}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+      </div>
     </div>
   );
 }

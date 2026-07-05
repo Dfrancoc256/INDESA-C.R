@@ -22,6 +22,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateCatalogData } from "@/lib/queryInvalidation";
 
 const reservaSchema = z.object({
   cliente_nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
@@ -45,6 +47,7 @@ export function ProductoDetalle() {
   const { id } = useParams<{ id: string }>();
   const productoId = parseInt(id || "0");
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [reservaExitoso, setReservaExitoso] = useState(false);
   const [imageFailed, setImageFailed] = useState(false);
 
@@ -81,7 +84,8 @@ export function ProductoDetalle() {
 
   const reservaMutation = useCreateReserva({
     mutation: {
-      onSuccess: () => {
+      onSuccess: async () => {
+        await invalidateCatalogData(queryClient);
         setReservaExitoso(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
@@ -115,12 +119,20 @@ export function ProductoDetalle() {
 
     reservaMutation.mutate({
       data: {
+        productoId: productoActual.id,
         producto_id: productoActual.id,
         ...data,
+        clienteNombre: data.cliente_nombre,
+        clienteEmail: data.cliente_email,
+        clienteTelefono: data.cliente_telefono,
+        fechaInicio: data.fecha_inicio,
+        fechaFin: fechaFin,
         fecha_fin: fechaFin,
+        tipoTarifa: tarifa.tipo,
         tipo_tarifa: tarifa.tipo,
+        unidadesTarifa,
         unidades_tarifa: unidadesTarifa,
-      }
+      } as any
     });
   };
 
@@ -237,8 +249,8 @@ export function ProductoDetalle() {
                 <div className="flex items-start gap-3 rounded-lg border bg-white p-4 shadow-sm">
                   <HardHat className="h-5 w-5 text-primary shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-sm">Operador incluido</h4>
-                    <p className="text-xs text-muted-foreground mt-1">El costo contempla personal capacitado para manejar la maquinaria</p>
+                    <h4 className="font-semibold text-sm">Servicio operativo</h4>
+                    <p className="text-xs text-muted-foreground mt-1">INDESA coordina la maquinaria y el soporte para su operación.</p>
                   </div>
                 </div>
               </div>
@@ -258,7 +270,7 @@ export function ProductoDetalle() {
                   <span className="ml-2 text-base font-semibold text-muted-foreground md:text-lg">por {tarifaPrincipal.suffix}</span>
                 </div>
                 <p className="text-sm font-medium text-muted-foreground mb-6">
-                  Precio con operador incluido. La coordinación final depende del lugar, horario y tipo de trabajo.
+                  La coordinación final depende del lugar, horario y tipo de trabajo.
                 </p>
                 <div className="mb-6 grid gap-3 sm:grid-cols-3">
                   {tarifas.map((tarifa) => (

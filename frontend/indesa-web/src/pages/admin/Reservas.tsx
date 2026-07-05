@@ -14,6 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { invalidateCatalogData } from "@/lib/queryInvalidation";
 
 function formatDateOnly(value?: string | Date | null) {
   if (!value) return "Sin fecha";
@@ -47,14 +48,12 @@ export function Reservas() {
 
   const estadoMutation = useUpdateReservaEstado({
     mutation: {
-      onSuccess: () => {
+      onSuccess: async () => {
         toast({ title: "Estado actualizado", description: "La reserva ha cambiado de estado exitosamente." });
-        refetch();
+        await invalidateCatalogData(queryClient);
+        await refetch();
         setIsNotaOpen(false);
         setNotaEstado("");
-        
-        // Also invalidate dashboard metrics
-        queryClient.invalidateQueries({ queryKey: ["/api/dashboard/resumen"] });
       },
       onError: (err: any) => {
         toast({ variant: "destructive", title: "Error", description: err?.message || "No se pudo actualizar el estado." });

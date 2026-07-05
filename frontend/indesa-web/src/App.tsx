@@ -23,12 +23,15 @@ import { Categorias } from '@/pages/admin/Categorias';
 import { Inventario } from '@/pages/admin/Inventario';
 import { Reservas } from '@/pages/admin/Reservas';
 import { Usuarios } from '@/pages/admin/Usuarios';
+import { Finanzas } from '@/pages/admin/Finanzas';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: false,
-      refetchOnWindowFocus: false,
+      staleTime: 0,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
     },
   },
 });
@@ -128,6 +131,9 @@ function Router() {
       </Route>
       <Route path="/admin/usuarios">
         <AdminLayout><Usuarios /></AdminLayout>
+      </Route>
+      <Route path="/admin/finanzas">
+        <AdminLayout><Finanzas /></AdminLayout>
       </Route>
       <Route path="/admin">
         <Redirect to="/admin/dashboard" />

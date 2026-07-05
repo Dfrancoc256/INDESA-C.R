@@ -177,7 +177,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           </Link>
 
           <form onSubmit={handleHeaderSearch} className="relative hidden w-full max-w-[430px] xl:block">
-            <div className="flex h-11 items-center rounded-md border border-white/60 bg-white shadow-[0_8px_18px_rgba(80,12,5,0.18)] transition-all duration-200 focus-within:border-[#ffd400] focus-within:shadow-[0_10px_24px_rgba(80,12,5,0.26)]">
+            <div className="flex h-11 items-center rounded-md border border-white/60 bg-white shadow-[0_8px_18px_rgba(80,12,5,0.18)] transition-all duration-200 focus-within:border-[#111111] focus-within:shadow-[0_10px_24px_rgba(80,12,5,0.26)]">
               <Search className="ml-3 h-4 w-4 shrink-0 text-muted-foreground" />
               <input
                 type="search"
@@ -194,7 +194,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               />
               <button
                 type="submit"
-                className="mr-1 rounded-md bg-[#c90000] px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#9f0000] hover:shadow-sm"
+                className="mr-1 rounded-md bg-[#FF2800] px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#d91f00] hover:shadow-sm"
               >
                 Buscar
               </button>
@@ -208,7 +208,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`group relative rounded-md px-4 py-3 text-[15px] font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#c90000] ${
+                className={`group relative rounded-md px-4 py-3 text-[15px] font-semibold transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#FF2800] ${
                   isActive(link.href)
                     ? "text-white"
                     : "text-white/80 hover:text-white"
@@ -216,7 +216,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               >
                 {link.label}
                 <span
-                  className={`absolute inset-x-3 bottom-1 h-0.5 rounded-full bg-[#ffd400] transition-all duration-300 ${
+                className={`absolute inset-x-3 bottom-1 h-0.5 rounded-full bg-black transition-all duration-300 ${
                     isActive(link.href) ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
                   }`}
                 />
@@ -226,19 +226,25 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
           <div className="hidden md:flex shrink-0 items-center gap-4">
             {isAuthenticated ? (
-              <Button asChild className="gap-2 rounded-md bg-white text-[#c90000] shadow-[0_8px_18px_rgba(80,12,5,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#fff8d6] hover:text-[#9f0000] hover:shadow-md">
-                <Link href="/admin/dashboard">
-                  <LayoutDashboard className="h-4 w-4" />
-                  Panel Admin
-                  <ArrowRight className="h-4 w-4" />
+              <Button
+                asChild
+                size="icon"
+                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(80,12,5,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#fff8d6] hover:text-[#d91f00] hover:shadow-md"
+              >
+                <Link href="/admin/dashboard" aria-label="Abrir panel administrativo" title="Panel administrativo">
+                  <LayoutDashboard className="h-5 w-5" />
+                  <span className="sr-only">Panel administrativo</span>
                 </Link>
               </Button>
             ) : (
-              <Button asChild className="gap-2 rounded-md bg-white text-[#c90000] shadow-[0_8px_18px_rgba(80,12,5,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#fff8d6] hover:text-[#9f0000] hover:shadow-md">
-                <Link href="/admin/login">
-                  <LockKeyhole className="h-4 w-4" />
-                  Acceso
-                  <ArrowRight className="h-4 w-4" />
+              <Button
+                asChild
+                size="icon"
+                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(80,12,5,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#fff8d6] hover:text-[#d91f00] hover:shadow-md"
+              >
+                <Link href="/admin/login" aria-label="Acceder al administrador" title="Acceso administrador">
+                  <LockKeyhole className="h-5 w-5" />
+                  <span className="sr-only">Acceso administrador</span>
                 </Link>
               </Button>
             )}
@@ -273,7 +279,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                   aria-label="Buscar maquinaria"
                   className="h-full min-w-0 flex-1 bg-transparent px-3 text-sm font-medium text-foreground outline-none placeholder:text-muted-foreground"
                 />
-                <button type="submit" className="mr-1 rounded-md bg-[#c90000] px-3 py-2 text-sm font-semibold text-white">
+                <button type="submit" className="mr-1 rounded-md bg-[#FF2800] px-3 py-2 text-sm font-semibold text-white">
                   Buscar
                 </button>
               </div>
@@ -286,7 +292,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                   href={link.href}
                   className={`rounded-md px-3 py-3 text-sm font-medium transition-all duration-200 ${
                     isActive(link.href)
-                      ? "bg-white text-[#c90000]"
+                      ? "bg-white text-[#FF2800]"
                       : "text-white/85 hover:bg-white/10 hover:text-white"
                   }`}
                   onClick={() => setIsMobileMenuOpen(false)}
@@ -296,14 +302,14 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               ))}
               <div className="pt-3 mt-2 border-t">
                 {isAuthenticated ? (
-                  <Button asChild className="w-full gap-2 bg-white text-[#c90000] hover:bg-[#fff8d6]">
+                  <Button asChild className="w-full gap-2 bg-white text-[#FF2800] hover:bg-[#fff8d6]">
                     <Link href="/admin/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
                       <LayoutDashboard className="h-4 w-4" />
                       Panel Admin
                     </Link>
                   </Button>
                 ) : (
-                  <Button asChild className="w-full gap-2 bg-white text-[#c90000] hover:bg-[#fff8d6]">
+                  <Button asChild className="w-full gap-2 bg-white text-[#FF2800] hover:bg-[#fff8d6]">
                     <Link href="/admin/login" onClick={() => setIsMobileMenuOpen(false)}>
                       <LockKeyhole className="h-4 w-4" />
                       Acceso
@@ -314,7 +320,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             </nav>
           </div>
         )}
-        <div className="h-0.5 w-full bg-[#ffd400]" />
+        <div className="h-0.5 w-full bg-black" />
       </header>
 
       <main className="flex-1 flex flex-col">{children}</main>

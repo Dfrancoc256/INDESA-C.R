@@ -33,6 +33,8 @@ import {
 import { FaWhatsapp } from "react-icons/fa";
 import { useEffect, useState, type FormEvent } from "react";
 import { useCreateReserva, useListProductos, type Producto } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateCatalogData } from "@/lib/queryInvalidation";
 import bannerTools from "@/assets/images/banner-tools.png";
 import bannerWarehouse from "@/assets/images/banner-warehouse.png";
 import bannerMaterials from "@/assets/images/banner-materials.png";
@@ -125,11 +127,12 @@ function buildWhatsAppUrl(producto: HomeProduct, form?: ReservaFormState) {
 
 export function Home() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeSlide, setActiveSlide] = useState(0);
   const [reservaOpen, setReservaOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<HomeProduct | null>(null);
   const [reservaForm, setReservaForm] = useState<ReservaFormState>(emptyReservaForm);
-  const { data: productosResponse, isLoading: isLoadingCatalogo, isError: isCatalogoError } = useListProductos({
+  const { data: productosResponse, isLoading: isLoadingCatalogo, isError: isCatalogoError, refetch: refetchCatalogo } = useListProductos({
     page: 1,
     limit: 6,
     orden: "nombre_asc",
@@ -154,10 +157,20 @@ export function Home() {
   const reservaMutation = useCreateReserva({
     mutation: {
       onError: (err: any) => {
+        const message = err?.message || "Verifique los datos e intente nuevamente.";
+        const shouldRefreshCatalog = /producto no encontrado|desactivado|no disponible/i.test(message);
+
+        if (shouldRefreshCatalog) {
+          void refetchCatalogo();
+          setReservaOpen(false);
+        }
+
         toast({
           variant: "destructive",
           title: "No se pudo registrar la reserva",
-          description: err?.message || "Verifique los datos e intente nuevamente.",
+          description: shouldRefreshCatalog
+            ? `${message} Actualizamos el catálogo para mostrar la disponibilidad real.`
+            : message,
         });
       },
     },
@@ -198,21 +211,56 @@ export function Home() {
     event.preventDefault();
     if (!selectedProduct) return;
 
+    const productoId = Number(selectedProduct.id);
+    const cantidadSolicitada = Number(reservaForm.cantidad) || 1;
+
+    if (!Number.isInteger(productoId) || productoId < 1) {
+      toast({
+        variant: "destructive",
+        title: "Producto no válido",
+        description: "Actualice el catálogo y vuelva a seleccionar el producto.",
+      });
+      void refetchCatalogo();
+      setReservaOpen(false);
+      return;
+    }
+
+    if (selectedProduct.activo === false) {
+      toast({
+        variant: "destructive",
+        title: "Producto no disponible",
+        description: "Este producto está desactivado para reservas. Actualizamos el catálogo.",
+      });
+      void refetchCatalogo();
+      setReservaOpen(false);
+      return;
+    }
+
     reservaMutation.mutate({
       data: {
-        producto_id: selectedProduct.id,
+        productoId,
+        producto_id: productoId,
+        clienteNombre: reservaForm.cliente_nombre,
         cliente_nombre: reservaForm.cliente_nombre,
+        clienteEmail: reservaForm.cliente_email,
         cliente_email: reservaForm.cliente_email,
+        clienteTelefono: reservaForm.cliente_telefono,
         cliente_telefono: reservaForm.cliente_telefono,
-        cantidad: Number(reservaForm.cantidad) || 1,
+        cantidad: cantidadSolicitada,
+        fechaInicio: reservaForm.fecha_inicio,
         fecha_inicio: reservaForm.fecha_inicio,
+        fechaFin: fechaFinCalculada,
         fecha_fin: fechaFinCalculada,
+        tipoTarifa: tarifaSeleccionada?.tipo ?? "dia",
         tipo_tarifa: tarifaSeleccionada?.tipo ?? "dia",
+        unidadesTarifa,
         unidades_tarifa: unidadesTarifa,
         notas: reservaForm.notas || undefined,
-      },
+      } as any,
     }, {
-      onSuccess: () => {
+      onSuccess: async () => {
+        await invalidateCatalogData(queryClient);
+        await refetchCatalogo();
         window.open(buildWhatsAppUrl(selectedProduct, {
           ...reservaForm,
           fecha_fin: fechaFinCalculada,
@@ -248,9 +296,6 @@ export function Home() {
 
         <div className="container relative z-10 mx-auto px-4 md:px-8">
           <div className="max-w-2xl">
-            <Badge className="mb-5 border-0 bg-primary py-1 text-sm text-white shadow-md hover:bg-primary">
-              {heroSlides[activeSlide].label}
-            </Badge>
             <h1 className="mb-5 text-3xl font-bold leading-tight tracking-tight transition-all duration-500 md:text-5xl">
               {heroSlides[activeSlide].title}
             </h1>
@@ -293,9 +338,6 @@ export function Home() {
           <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <h2 className="text-3xl font-bold tracking-tight">Catálogo de Productos</h2>
-              <p className="mt-2 text-muted-foreground">
-                Equipos disponibles para consulta rápida, WhatsApp o reserva inmediata.
-              </p>
             </div>
             <Button asChild variant="ghost" className="w-fit">
               <Link href="/catalogo">
@@ -335,12 +377,12 @@ export function Home() {
                 <Card key={producto.id} className="group relative overflow-hidden border bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:scale-[1.01] hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10">
                   <span className="absolute inset-x-0 top-0 z-10 h-1 origin-left scale-x-0 bg-primary transition-transform duration-300 group-hover:scale-x-100" />
                   <span className="pointer-events-none absolute -left-1/2 top-0 z-20 h-full w-1/3 -skew-x-12 bg-white/20 opacity-0 transition-all duration-700 group-hover:left-[120%] group-hover:opacity-100" />
-                  <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
+                  <div className="relative aspect-[16/11] overflow-hidden bg-white">
                     {producto.imagen_url ? (
                       <img
                         src={producto.imagen_url}
                         alt={producto.nombre}
-                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-[0.4deg]"
+                        className="h-full w-full object-contain p-2 transition-transform duration-700 group-hover:scale-105"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gray-100 text-4xl font-bold text-gray-300 transition-transform duration-500 group-hover:scale-105">
@@ -468,10 +510,10 @@ export function Home() {
 
           {selectedProduct && (
             <form onSubmit={handleReservaSubmit} className="space-y-5">
-              <div className="grid gap-5 rounded-md border bg-muted/40 p-4 sm:grid-cols-[220px_1fr]">
-                <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-gray-100 shadow-sm">
+              <div className="grid gap-5 rounded-md border bg-muted/40 p-4 sm:grid-cols-[260px_1fr]">
+                <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-white shadow-sm">
                   {selectedProduct.imagen_url ? (
-                    <img src={selectedProduct.imagen_url} alt={selectedProduct.nombre} className="h-full w-full object-cover" />
+                    <img src={selectedProduct.imagen_url} alt={selectedProduct.nombre} className="h-full w-full object-contain p-2" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-gray-300">
                       {getInitials(selectedProduct.nombre)}

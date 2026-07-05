@@ -10,6 +10,7 @@ import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { CheckCircle2, Pencil, Plus, Save, Tags, XCircle } from "lucide-react";
+import { invalidateCatalogData } from "@/lib/queryInvalidation";
 
 type CategoriaForm = {
   nombre: string;
@@ -31,17 +32,12 @@ export function Categorias() {
 
   const { data: categorias = [], isLoading } = useListCategorias();
 
-  const refreshCategorias = () => {
-    queryClient.invalidateQueries({ queryKey: ["/api/categorias"] });
-    queryClient.invalidateQueries({ queryKey: ["/api/productos"] });
-  };
-
   const createMutation = useCreateCategoria({
     mutation: {
-      onSuccess: () => {
+      onSuccess: async () => {
         toast({ title: "Categoría creada", description: "Ya está disponible para publicar productos." });
         setForm(emptyForm);
-        refreshCategorias();
+        await invalidateCatalogData(queryClient);
       },
       onError: (err: any) => {
         toast({ variant: "destructive", title: "No se pudo crear", description: err?.message || "Revise los datos e intente nuevamente." });
@@ -51,11 +47,11 @@ export function Categorias() {
 
   const updateMutation = useUpdateCategoria({
     mutation: {
-      onSuccess: () => {
+      onSuccess: async () => {
         toast({ title: "Categoría actualizada", description: "Los cambios quedaron guardados en la base de datos." });
         setEditingCategory(null);
         setForm(emptyForm);
-        refreshCategorias();
+        await invalidateCatalogData(queryClient);
       },
       onError: (err: any) => {
         toast({ variant: "destructive", title: "No se pudo actualizar", description: err?.message || "Revise los datos e intente nuevamente." });

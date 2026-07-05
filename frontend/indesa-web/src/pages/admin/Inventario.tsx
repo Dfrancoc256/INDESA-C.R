@@ -15,6 +15,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
+import { invalidateCatalogData } from "@/lib/queryInvalidation";
 
 const inventarioSchema = z.object({
   cantidad: z.coerce.number().min(0, "La cantidad debe ser mayor o igual a 0"),
@@ -50,9 +51,10 @@ export function Inventario() {
 
   const updateMutation = useUpdateInventario({
     mutation: {
-      onSuccess: () => {
+      onSuccess: async () => {
         toast({ title: "Inventario actualizado", description: "El ajuste se ha registrado correctamente." });
-        queryClient.invalidateQueries({ queryKey: ["/api/inventario"] });
+        await invalidateCatalogData(queryClient);
+        await queryClient.invalidateQueries({ queryKey: getGetMovimientosInventarioQueryKey(productoSeleccionado as number) });
         setIsAjusteOpen(false);
         setProductoSeleccionado(null);
       },

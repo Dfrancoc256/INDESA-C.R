@@ -21,6 +21,8 @@ import {
   getTarifasProducto,
   getTodayDate,
 } from "@/lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
+import { invalidateCatalogData } from "@/lib/queryInvalidation";
 
 const reservaGlobalSchema = z.object({
   cliente_nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
@@ -43,6 +45,7 @@ const todayDate = getTodayDate();
 
 export function Reservar() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [location] = useLocation();
   const searchParams = new URLSearchParams(window.location.search);
   const productoPreseleccionado = searchParams.get("productoId");
@@ -105,7 +108,8 @@ export function Reservar() {
 
   const reservaMutation = useCreateReserva({
     mutation: {
-      onSuccess: () => {
+      onSuccess: async () => {
+        await invalidateCatalogData(queryClient);
         setReservaExitoso(true);
         window.scrollTo({ top: 0, behavior: 'smooth' });
       },
@@ -150,10 +154,18 @@ export function Reservar() {
     reservaMutation.mutate({
       data: {
         ...data,
+        productoId: data.producto_id,
+        clienteNombre: data.cliente_nombre,
+        clienteEmail: data.cliente_email,
+        clienteTelefono: data.cliente_telefono,
+        fechaInicio: data.fecha_inicio,
+        fechaFin,
         fecha_fin: fechaFin,
+        tipoTarifa: tarifa.tipo,
         tipo_tarifa: tarifa.tipo,
+        unidadesTarifa,
         unidades_tarifa: unidadesTarifa,
-      },
+      } as any,
     });
   };
   const tarifasProducto = productoSeleccionado ? getTarifasProducto(productoSeleccionado) : [];

@@ -144,9 +144,6 @@ export function Login() {
             </CardContent>
           </Card>
 
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            Usa el usuario creado en la base de datos para acceder al panel.
-          </p>
         </div>
       </section>
 

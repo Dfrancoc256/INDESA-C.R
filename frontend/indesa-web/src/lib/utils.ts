@@ -79,14 +79,19 @@ export function calcularUnidadesTarifa(tipoTarifa: string, fechaInicio: string, 
   return Math.max(1, Number(unidades) || 1);
 }
 
-export function formatDate(dateString: string) {
+export function formatDate(dateString?: string | Date | null) {
+  if (!dateString) return "Fecha no disponible";
+
+  const date = dateString instanceof Date ? dateString : new Date(dateString);
+  if (Number.isNaN(date.getTime())) return "Fecha no disponible";
+
   return new Intl.DateTimeFormat("es-GT", {
     year: "numeric",
     month: "long",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit"
-  }).format(new Date(dateString))
+  }).format(date)
 }
 
 export function getInitials(name: string) {

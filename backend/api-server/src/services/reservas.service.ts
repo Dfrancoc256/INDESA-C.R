@@ -73,6 +73,16 @@ function normalizeTipoTarifa(value: string | undefined): TipoTarifa {
   return "dia";
 }
 
+function toPositiveInteger(value: unknown, fieldName: string): number {
+  const parsed = Number(value);
+
+  if (!Number.isInteger(parsed) || parsed < 1) {
+    throw Object.assign(new Error(`${fieldName} debe ser un número válido`), { status: 400 });
+  }
+
+  return parsed;
+}
+
 function normalizeReservaInput(data: ReservaInput): NormalizedReservaInput {
   const fechaInicio = toDateOnly(data.fechaInicio ?? data.fecha_inicio, "fecha_inicio");
   const fechaFin = toDateOnly(data.fechaFin ?? data.fecha_fin, "fecha_fin");
@@ -80,12 +90,10 @@ function normalizeReservaInput(data: ReservaInput): NormalizedReservaInput {
   const clienteNombre = data.clienteNombre ?? data.cliente_nombre;
   const clienteEmail = data.clienteEmail ?? data.cliente_email;
   const clienteTelefono = data.clienteTelefono ?? data.cliente_telefono;
-  const productoId = data.productoId ?? data.producto_id;
-  const cantidad = data.cantidad;
   const tipoTarifa = normalizeTipoTarifa(data.tipoTarifa ?? data.tipo_tarifa);
   const unidadesTarifaSolicitada = data.unidadesTarifa ?? data.unidades_tarifa;
 
-  if (!clienteNombre || !clienteEmail || !clienteTelefono || !productoId || !cantidad) {
+  if (!clienteNombre || !clienteEmail || !clienteTelefono) {
     throw Object.assign(new Error("Datos incompletos para registrar la reserva"), { status: 400 });
   }
 
@@ -93,13 +101,15 @@ function normalizeReservaInput(data: ReservaInput): NormalizedReservaInput {
     clienteNombre,
     clienteEmail,
     clienteTelefono,
-    productoId,
-    cantidad,
+    productoId: toPositiveInteger(data.productoId ?? data.producto_id, "producto_id"),
+    cantidad: toPositiveInteger(data.cantidad, "cantidad"),
     fechaInicio,
     fechaFin,
     diasReserva,
     tipoTarifa,
-    unidadesTarifaSolicitada,
+    unidadesTarifaSolicitada: unidadesTarifaSolicitada === undefined
+      ? undefined
+      : toPositiveInteger(unidadesTarifaSolicitada, "unidades_tarifa"),
     notas: data.notas,
   };
 }
@@ -146,8 +156,12 @@ export async function createReserva(input: ReservaInput) {
 
   // Verificar que el producto existe y está activo
   const producto = await productosRepo.findProductoById(data.productoId);
-  if (!producto || !producto.activo) {
-    throw Object.assign(new Error("Producto no disponible"), { status: 404 });
+  if (!producto) {
+    throw Object.assign(new Error("Producto no encontrado. Actualice el catálogo e intente nuevamente."), { status: 404 });
+  }
+
+  if (producto.activo === false) {
+    throw Object.assign(new Error("Este producto está desactivado para reservas."), { status: 409 });
   }
 
   // Verificar stock suficiente (no decrementar aún — solo reservar)

@@ -16,6 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isValidImageSource, readImageFileAsDataUrl } from "@/lib/imageUpload";
+import { invalidateCatalogData } from "@/lib/queryInvalidation";
 
 const precioTiempoSchema = z.preprocess(
   (value) => value === "" || value === null || value === undefined ? null : value,
@@ -102,10 +103,9 @@ export function ProductoEditar() {
 
   const updateMutation = useUpdateProducto({
     mutation: {
-      onSuccess: () => {
+      onSuccess: async () => {
         toast({ title: "Producto actualizado", description: "Los cambios han sido guardados." });
-        queryClient.invalidateQueries({ queryKey: ["/api/productos"] });
-        queryClient.invalidateQueries({ queryKey: [`/api/productos/${productoId}`] });
+        await invalidateCatalogData(queryClient);
         setLocation("/admin/productos");
       },
       onError: (err: any) => {
@@ -118,6 +118,7 @@ export function ProductoEditar() {
     mutation: {
       onSuccess: async (categoria) => {
         toast({ title: "Categoría creada", description: "Ya puedes usarla en este producto." });
+        await invalidateCatalogData(queryClient);
         await refetchCategorias();
         form.setValue("categoria_id", categoria.id);
         setNuevaCategoria("");

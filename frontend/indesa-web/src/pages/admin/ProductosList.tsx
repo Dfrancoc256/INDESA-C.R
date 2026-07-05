@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, Search, Edit, Image as ImageIcon, Filter, CheckCircle2, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
+import { invalidateCatalogData } from "@/lib/queryInvalidation";
 
 export function ProductosList() {
   const { toast } = useToast();
@@ -35,7 +36,7 @@ export function ProductosList() {
 
   const { data: categorias } = useListCategorias();
   
-  const { data: productosResponse, isLoading, refetch } = useListProductos({
+  const { data: productosResponse, isLoading } = useListProductos({
     page,
     limit: 10,
     busqueda: debouncedBusqueda || undefined,
@@ -45,9 +46,9 @@ export function ProductosList() {
 
   const toggleMutation = useToggleProducto({
     mutation: {
-      onSuccess: () => {
+      onSuccess: async () => {
         toast({ title: "Estado actualizado", description: "El estado del producto ha sido cambiado." });
-        refetch();
+        await invalidateCatalogData(queryClient);
       },
       onError: () => {
         toast({ variant: "destructive", title: "Error", description: "No se pudo cambiar el estado del producto." });
@@ -112,7 +113,7 @@ export function ProductosList() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-16">Imagen</TableHead>
+                <TableHead className="w-32">Imagen</TableHead>
                 <TableHead>Producto</TableHead>
                 <TableHead>Categoría</TableHead>
                 <TableHead className="text-right">Precio</TableHead>
@@ -123,8 +124,8 @@ export function ProductosList() {
             <TableBody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell><Skeleton className="h-10 w-10 rounded-md" /></TableCell>
+                  <TableRow key={i} className="h-24">
+                    <TableCell className="py-3"><Skeleton className="h-16 w-24 rounded-lg" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-[200px]" /><Skeleton className="h-3 w-[150px] mt-1" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
@@ -144,16 +145,20 @@ export function ProductosList() {
                   const tarifas = getTarifasProducto(producto);
 
                   return (
-                  <TableRow key={producto.id}>
-                    <TableCell>
+                  <TableRow key={producto.id} className="h-24 transition-colors hover:bg-muted/35">
+                    <TableCell className="py-3">
                       {producto.imagen_url ? (
-                        <img 
-                          src={producto.imagen_url} 
-                          alt={producto.nombre} 
-                          className="h-10 w-10 rounded-md object-cover border bg-muted"
-                        />
+                        <div className="flex h-16 w-24 items-center justify-center overflow-hidden rounded-lg border bg-white shadow-sm md:h-20 md:w-28">
+                          <img
+                            src={producto.imagen_url}
+                            alt={producto.nombre}
+                            loading="lazy"
+                            decoding="async"
+                            className="h-full w-full object-contain p-1.5 transition-transform duration-200 hover:scale-105"
+                          />
+                        </div>
                       ) : (
-                        <div className="h-10 w-10 rounded-md bg-muted flex items-center justify-center border text-muted-foreground font-semibold text-xs">
+                        <div className="flex h-16 w-24 items-center justify-center rounded-lg border bg-muted text-lg font-semibold text-muted-foreground md:h-20 md:w-28">
                           {getInitials(producto.nombre)}
                         </div>
                       )}
