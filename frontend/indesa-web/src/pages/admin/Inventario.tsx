@@ -1,6 +1,8 @@
 import { useListInventario, useUpdateInventario, useGetMovimientosInventario, getGetMovimientosInventarioQueryKey } from "@workspace/api-client-react";
 import { useState, useRef } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { hasPermission } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -26,12 +28,15 @@ const inventarioSchema = z.object({
 type InventarioValues = z.infer<typeof inventarioSchema>;
 
 export function Inventario() {
+  const { usuario } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [busqueda, setBusqueda] = useState("");
   const [productoSeleccionado, setProductoSeleccionado] = useState<number | null>(null);
   const [isHistorialOpen, setIsHistorialOpen] = useState(false);
   const [isAjusteOpen, setIsAjusteOpen] = useState(false);
+  const canEditInventory = hasPermission(usuario, "inventario.editar");
+  const inventarioColSpan = canEditInventory ? 6 : 5;
   
   const { data: inventario, isLoading } = useListInventario();
 
@@ -128,7 +133,7 @@ export function Inventario() {
                 <TableHead className="text-right">Stock Actual</TableHead>
                 <TableHead className="text-right">Stock Mínimo</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                {canEditInventory && <TableHead className="text-right">Acciones</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -140,12 +145,12 @@ export function Inventario() {
                     <TableCell className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-4 w-12 ml-auto" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
+                    {canEditInventory && <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>}
                   </TableRow>
                 ))
               ) : filteredInventario?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={inventarioColSpan} className="h-32 text-center text-muted-foreground">
                     No se encontró inventario.
                   </TableCell>
                 </TableRow>
@@ -172,16 +177,18 @@ export function Inventario() {
                       {item.disponibilidad === "pocas_unidades" && <Badge variant="warning">Poco Stock</Badge>}
                       {item.disponibilidad === "agotado" && <Badge variant="destructive">Agotado</Badge>}
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => handleOpenAjuste(item)}>
-                          Ajustar
-                        </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleOpenHistorial(item.producto_id)} title="Historial">
-                          <History className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+                    {canEditInventory && (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button variant="outline" size="sm" onClick={() => handleOpenAjuste(item)}>
+                            Ajustar
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleOpenHistorial(item.producto_id)} title="Historial">
+                            <History className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
@@ -190,117 +197,121 @@ export function Inventario() {
         </div>
       </Card>
 
-      {/* Modal Ajuste */}
-      <Dialog open={isAjusteOpen} onOpenChange={setIsAjusteOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Ajuste de Inventario</DialogTitle>
-            <DialogDescription>
-              Actualiza las existencias actuales y el nivel mínimo de alerta.
-            </DialogDescription>
-          </DialogHeader>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="cantidad"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Stock Actual</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="stock_minimo"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Stock Mínimo (Alerta)</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <FormField
-                control={form.control}
-                name="motivo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Motivo del Ajuste</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsAjusteOpen(false)}>Cancelar</Button>
-                <Button type="submit" disabled={updateMutation.isPending}>
-                  {updateMutation.isPending ? "Guardando..." : "Guardar Cambios"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      {canEditInventory && (
+        <>
+          {/* Modal Ajuste */}
+          <Dialog open={isAjusteOpen} onOpenChange={setIsAjusteOpen}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Ajuste de Inventario</DialogTitle>
+                <DialogDescription>
+                  Actualiza las existencias actuales y el nivel mínimo de alerta.
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="cantidad"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Stock Actual</FormLabel>
+                          <FormControl>
+                            <Input type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="stock_minimo"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Stock Mínimo (Alerta)</FormLabel>
+                          <FormControl>
+                            <Input type="number" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="motivo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Motivo del Ajuste</FormLabel>
+                        <FormControl>
+                          <Input {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsAjusteOpen(false)}>Cancelar</Button>
+                    <Button type="submit" disabled={updateMutation.isPending}>
+                      {updateMutation.isPending ? "Guardando..." : "Guardar Cambios"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
 
-      {/* Modal Historial */}
-      <Dialog open={isHistorialOpen} onOpenChange={setIsHistorialOpen}>
-        <DialogContent className="max-w-3xl">
-          <DialogHeader>
-            <DialogTitle>Historial de Movimientos</DialogTitle>
-            <DialogDescription>
-              Registro de entradas, salidas y ajustes del producto.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="max-h-[60vh] overflow-y-auto mt-4">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fecha</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead className="text-right">Cantidad</TableHead>
-                  <TableHead>Motivo / Usuario</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isHistorialLoading ? (
-                  <TableRow><TableCell colSpan={4} className="text-center py-8"><Skeleton className="h-4 w-32 mx-auto" /></TableCell></TableRow>
-                ) : historial?.length === 0 ? (
-                  <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No hay movimientos registrados.</TableCell></TableRow>
-                ) : (
-                  historial?.map((mov) => (
-                    <TableRow key={mov.id}>
-                      <TableCell className="text-xs">{formatDate(mov.created_at)}</TableCell>
-                      <TableCell>
-                        {mov.tipo === 'entrada' && <Badge variant="success" className="bg-green-100 text-green-800 hover:bg-green-100"><ArrowDownToLine className="mr-1 h-3 w-3" /> Entrada</Badge>}
-                        {mov.tipo === 'salida' && <Badge variant="destructive" className="bg-red-100 text-red-800 hover:bg-red-100"><ArrowUpToLine className="mr-1 h-3 w-3" /> Salida</Badge>}
-                        {mov.tipo === 'ajuste' && <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100"><PenTool className="mr-1 h-3 w-3" /> Ajuste</Badge>}
-                      </TableCell>
-                      <TableCell className={`text-right font-medium ${mov.tipo === 'entrada' ? 'text-green-600' : mov.tipo === 'salida' ? 'text-red-600' : ''}`}>
-                        {mov.tipo === 'entrada' ? '+' : mov.tipo === 'salida' ? '-' : ''}{mov.cantidad}
-                      </TableCell>
-                      <TableCell>
-                        <div className="text-sm">{mov.motivo || "—"}</div>
-                        <div className="text-xs text-muted-foreground">{mov.usuario_nombre}</div>
-                      </TableCell>
+          {/* Modal Historial */}
+          <Dialog open={isHistorialOpen} onOpenChange={setIsHistorialOpen}>
+            <DialogContent className="max-w-3xl">
+              <DialogHeader>
+                <DialogTitle>Historial de Movimientos</DialogTitle>
+                <DialogDescription>
+                  Registro de entradas, salidas y ajustes del producto.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="max-h-[60vh] overflow-y-auto mt-4">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Fecha</TableHead>
+                      <TableHead>Tipo</TableHead>
+                      <TableHead className="text-right">Cantidad</TableHead>
+                      <TableHead>Motivo / Usuario</TableHead>
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </DialogContent>
-      </Dialog>
+                  </TableHeader>
+                  <TableBody>
+                    {isHistorialLoading ? (
+                      <TableRow><TableCell colSpan={4} className="text-center py-8"><Skeleton className="h-4 w-32 mx-auto" /></TableCell></TableRow>
+                    ) : historial?.length === 0 ? (
+                      <TableRow><TableCell colSpan={4} className="text-center py-8 text-muted-foreground">No hay movimientos registrados.</TableCell></TableRow>
+                    ) : (
+                      historial?.map((mov) => (
+                        <TableRow key={mov.id}>
+                          <TableCell className="text-xs">{formatDate(mov.created_at)}</TableCell>
+                          <TableCell>
+                            {mov.tipo === 'entrada' && <Badge variant="success" className="bg-green-100 text-green-800 hover:bg-green-100"><ArrowDownToLine className="mr-1 h-3 w-3" /> Entrada</Badge>}
+                            {mov.tipo === 'salida' && <Badge variant="destructive" className="bg-primary/10 text-primary hover:bg-primary/10"><ArrowUpToLine className="mr-1 h-3 w-3" /> Salida</Badge>}
+                            {mov.tipo === 'ajuste' && <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-100"><PenTool className="mr-1 h-3 w-3" /> Ajuste</Badge>}
+                          </TableCell>
+                          <TableCell className={`text-right font-medium ${mov.tipo === 'entrada' ? 'text-green-600' : mov.tipo === 'salida' ? 'text-primary' : ''}`}>
+                            {mov.tipo === 'entrada' ? '+' : mov.tipo === 'salida' ? '-' : ''}{mov.cantidad}
+                          </TableCell>
+                          <TableCell>
+                            <div className="text-sm">{mov.motivo || "—"}</div>
+                            <div className="text-xs text-muted-foreground">{mov.usuario_nombre}</div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </>
+      )}
 
     </div>
   );

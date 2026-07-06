@@ -1,6 +1,8 @@
 import { useCreateCategoria, useListCategorias, useUpdateCategoria, type Categoria } from "@workspace/api-client-react";
 import { useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/contexts/AuthContext";
+import { hasPermission } from "@/lib/permissions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -25,10 +27,12 @@ const emptyForm: CategoriaForm = {
 };
 
 export function Categorias() {
+  const { usuario } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingCategory, setEditingCategory] = useState<Categoria | null>(null);
   const [form, setForm] = useState<CategoriaForm>(emptyForm);
+  const canManageCategories = hasPermission(usuario, "productos.crear") || hasPermission(usuario, "productos.editar");
 
   const { data: categorias = [], isLoading } = useListCategorias();
 
@@ -114,74 +118,78 @@ export function Categorias() {
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Categorías</h1>
           <p className="text-muted-foreground">Organiza el catálogo público desde la base de datos.</p>
         </div>
-        <Button type="button" variant="outline" onClick={cancelEdit} className="w-full gap-2 sm:w-auto">
-          <Plus className="h-4 w-4" />
-          Nueva categoría
-        </Button>
+        {canManageCategories && (
+          <Button type="button" variant="outline" onClick={cancelEdit} className="w-full gap-2 sm:w-auto">
+            <Plus className="h-4 w-4" />
+            Nueva categoría
+          </Button>
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[380px_minmax(0,1fr)]">
-        <Card className="h-fit">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Tags className="h-5 w-5 text-primary" />
-              {editingCategory ? "Editar categoría" : "Crear categoría"}
-            </CardTitle>
-            <CardDescription>
-              Las categorías activas aparecen en los filtros públicos y al publicar productos.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="categoria-nombre">Nombre</Label>
-                <Input
-                  id="categoria-nombre"
-                  value={form.nombre}
-                  onChange={(event) => setForm((current) => ({ ...current, nombre: event.target.value }))}
-                  placeholder="Ej. Maquinaria pesada"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="categoria-descripcion">Descripción</Label>
-                <Textarea
-                  id="categoria-descripcion"
-                  value={form.descripcion}
-                  onChange={(event) => setForm((current) => ({ ...current, descripcion: event.target.value }))}
-                  placeholder="Uso o tipo de productos incluidos"
-                  className="min-h-24 resize-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-between rounded-lg border p-3">
-                <div>
-                  <Label htmlFor="categoria-activa" className="text-sm font-semibold">Visible en el sitio</Label>
-                  <p className="text-xs text-muted-foreground">Permite usarla en el catálogo público.</p>
+        {canManageCategories && (
+          <Card className="h-fit">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Tags className="h-5 w-5 text-primary" />
+                {editingCategory ? "Editar categoría" : "Crear categoría"}
+              </CardTitle>
+              <CardDescription>
+                Las categorías activas aparecen en los filtros públicos y al publicar productos.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="categoria-nombre">Nombre</Label>
+                  <Input
+                    id="categoria-nombre"
+                    value={form.nombre}
+                    onChange={(event) => setForm((current) => ({ ...current, nombre: event.target.value }))}
+                    placeholder="Ej. Maquinaria pesada"
+                  />
                 </div>
-                <Switch
-                  id="categoria-activa"
-                  checked={form.activa}
-                  onCheckedChange={(checked) => setForm((current) => ({ ...current, activa: checked }))}
-                />
-              </div>
 
-              <div className="flex flex-col gap-2 sm:flex-row">
-                <Button type="submit" disabled={isSaving} className="flex-1 gap-2">
-                  <Save className="h-4 w-4" />
-                  {isSaving ? "Guardando..." : editingCategory ? "Guardar cambios" : "Crear categoría"}
-                </Button>
-                {editingCategory && (
-                  <Button type="button" variant="outline" onClick={cancelEdit}>
-                    Cancelar
+                <div className="space-y-2">
+                  <Label htmlFor="categoria-descripcion">Descripción</Label>
+                  <Textarea
+                    id="categoria-descripcion"
+                    value={form.descripcion}
+                    onChange={(event) => setForm((current) => ({ ...current, descripcion: event.target.value }))}
+                    placeholder="Uso o tipo de productos incluidos"
+                    className="min-h-24 resize-none"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg border p-3">
+                  <div>
+                    <Label htmlFor="categoria-activa" className="text-sm font-semibold">Visible en el sitio</Label>
+                    <p className="text-xs text-muted-foreground">Permite usarla en el catálogo público.</p>
+                  </div>
+                  <Switch
+                    id="categoria-activa"
+                    checked={form.activa}
+                    onCheckedChange={(checked) => setForm((current) => ({ ...current, activa: checked }))}
+                  />
+                </div>
+
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Button type="submit" disabled={isSaving} className="flex-1 gap-2">
+                    <Save className="h-4 w-4" />
+                    {isSaving ? "Guardando..." : editingCategory ? "Guardar cambios" : "Crear categoría"}
                   </Button>
-                )}
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+                  {editingCategory && (
+                    <Button type="button" variant="outline" onClick={cancelEdit}>
+                      Cancelar
+                    </Button>
+                  )}
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        )}
 
-        <Card>
+        <Card className={!canManageCategories ? "lg:col-span-2" : ""}>
           <CardHeader>
             <CardTitle>Categorías registradas</CardTitle>
             <CardDescription>
@@ -223,19 +231,23 @@ export function Categorias() {
                       </p>
                     </div>
                     <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-                      <Button type="button" variant="outline" size="sm" onClick={() => startEdit(categoria)} className="gap-2">
-                        <Pencil className="h-4 w-4" />
-                        Editar
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={categoria.activa ? "outline" : "default"}
-                        size="sm"
-                        onClick={() => toggleCategoria(categoria)}
-                        disabled={updateMutation.isPending}
-                      >
-                        {categoria.activa ? "Desactivar" : "Activar"}
-                      </Button>
+                      {canManageCategories && (
+                        <>
+                          <Button type="button" variant="outline" size="sm" onClick={() => startEdit(categoria)} className="gap-2">
+                            <Pencil className="h-4 w-4" />
+                            Editar
+                          </Button>
+                          <Button
+                            type="button"
+                            variant={categoria.activa ? "outline" : "default"}
+                            size="sm"
+                            onClick={() => toggleCategoria(categoria)}
+                            disabled={updateMutation.isPending}
+                          >
+                            {categoria.activa ? "Desactivar" : "Activar"}
+                          </Button>
+                        </>
+                      )}
                     </div>
                   </div>
                 ))}

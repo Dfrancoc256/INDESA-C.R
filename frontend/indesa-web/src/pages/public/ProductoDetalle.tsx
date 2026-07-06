@@ -17,7 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { ArrowLeft, CheckCircle2, AlertTriangle, BadgeCheck, HardHat, Package, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle2, AlertTriangle, BadgeCheck, Package, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -239,19 +239,23 @@ export function ProductoDetalle() {
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <div className="flex items-start gap-3 rounded-lg border bg-white p-4 shadow-sm">
-                  <ShieldCheck className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-sm">Equipo revisado</h4>
-                    <p className="text-xs text-muted-foreground mt-1">Inspección previa antes de cada servicio</p>
+                <div className="rounded-lg border bg-white p-4 shadow-sm">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <ShieldCheck className="h-4 w-4 text-primary" />
+                    Equipo revisado
                   </div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Inspeccionamos el equipo antes de cada entrega para que llegue listo para trabajar.
+                  </p>
                 </div>
-                <div className="flex items-start gap-3 rounded-lg border bg-white p-4 shadow-sm">
-                  <HardHat className="h-5 w-5 text-primary shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="font-semibold text-sm">Servicio operativo</h4>
-                    <p className="text-xs text-muted-foreground mt-1">INDESA coordina la maquinaria y el soporte para su operación.</p>
+                <div className="rounded-lg border bg-white p-4 shadow-sm">
+                  <div className="flex items-center gap-2 text-sm font-semibold">
+                    <BadgeCheck className="h-4 w-4 text-primary" />
+                    Reserva guiada
                   </div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Te acompañamos en el proceso para confirmar disponibilidad y condiciones.
+                  </p>
                 </div>
               </div>
             </div>
@@ -299,11 +303,11 @@ export function ProductoDetalle() {
                   </div>
                   <div className="rounded-lg border bg-gray-50 p-4">
                     <div className="flex items-center gap-2 text-sm font-semibold">
-                      <HardHat className="h-4 w-4 text-primary" />
-                      Servicio operado
+                      <AlertTriangle className="h-4 w-4 text-primary" />
+                      Confirmación rápida
                     </div>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      INDESA coordina la maquinaria con la persona capacitada para su operación.
+                      Revisamos tu solicitud y te respondemos con el siguiente paso lo antes posible.
                     </p>
                   </div>
                 </div>
@@ -321,13 +325,13 @@ export function ProductoDetalle() {
                 <CardContent className="p-6 md:p-7">
 
                   {stockAgotado ? (
-                    <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-                      <AlertTriangle className="h-10 w-10 text-red-500 mx-auto mb-3" />
-                      <h4 className="text-lg font-bold text-red-900 mb-2">Producto Agotado</h4>
-                      <p className="text-red-700 mb-4">
+                    <div className="border border-primary/20 bg-primary/5 rounded-lg p-6 text-center">
+                      <AlertTriangle className="h-10 w-10 text-primary mx-auto mb-3" />
+                      <h4 className="text-lg font-bold text-primary mb-2">Producto Agotado</h4>
+                      <p className="text-primary/80 mb-4">
                         Lo sentimos, actualmente no contamos con existencias de este producto.
                       </p>
-                      <Button asChild variant="outline" className="border-red-300 text-red-800 hover:bg-red-100">
+                      <Button asChild variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
                         <Link href="/contacto">Consultar próxima disponibilidad</Link>
                       </Button>
                     </div>

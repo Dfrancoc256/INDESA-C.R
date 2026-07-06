@@ -7,6 +7,7 @@ import {
 import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
+import { hasPermission } from "@/lib/permissions";
 import logoIndesa from "@/assets/logo-indesa-wordmark.png";
 import {
   DropdownMenu,
@@ -37,20 +38,27 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
   }
 
   const navLinks = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: Home },
-    { href: "/admin/productos", label: "Productos", icon: Package },
-    { href: "/admin/categorias", label: "Categorías", icon: Tags },
-    { href: "/admin/inventario", label: "Inventario", icon: ClipboardList },
-    { href: "/admin/reservas", label: "Reservas", icon: Calendar },
-    { href: "/admin/finanzas", label: "Finanzas", icon: Landmark },
-    { href: "/admin/usuarios", label: "Usuarios", icon: Users },
-  ];
+    { href: "/admin/dashboard", label: "Dashboard", icon: Home, permiso: "dashboard.ver" },
+    { href: "/admin/productos", label: "Productos", icon: Package, permiso: "productos.ver" },
+    { href: "/admin/categorias", label: "Categorías", icon: Tags, permiso: "categorias.ver" },
+    { href: "/admin/inventario", label: "Inventario", icon: ClipboardList, permiso: "inventario.ver" },
+    { href: "/admin/reservas", label: "Reservas", icon: Calendar, permiso: "reservas.ver" },
+    { href: "/admin/finanzas", label: "Finanzas", icon: Landmark, permiso: "finanzas.ver" },
+    { href: "/admin/usuarios", label: "Usuarios", icon: Users, permiso: "usuarios.ver" },
+  ].filter((link) => {
+    if (usuario?.rol?.nombre === "operador") {
+      return ["/admin/dashboard", "/admin/productos", "/admin/categorias", "/admin/inventario", "/admin/reservas"].includes(link.href);
+    }
+    return hasPermission(usuario, link.permiso);
+  });
+
+  const homeHref = navLinks[0]?.href ?? "/admin/login";
 
   return (
-    <div className="min-h-[100dvh] flex flex-col md:flex-row bg-gray-100 font-sans">
+    <div className="min-h-[100dvh] overflow-hidden bg-gray-100 font-sans md:flex">
       {/* Mobile Header */}
       <header className="md:hidden flex items-center justify-between p-4 bg-sidebar text-sidebar-foreground border-b border-sidebar-border z-20 shadow-md">
-        <Link href="/admin/dashboard" className="group flex min-w-0 items-center gap-3">
+        <Link href={homeHref} className="group flex min-w-0 items-center gap-3">
           <span className="grid h-10 w-[128px] place-items-center transition-transform duration-200 group-hover:-translate-y-0.5">
             <img src={logoIndesa} alt="INDESA" className="h-auto w-full object-contain" />
           </span>
@@ -67,11 +75,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar */}
       <aside className={`
-        fixed inset-y-0 left-0 z-10 w-64 bg-sidebar text-sidebar-foreground flex flex-col shadow-xl transition-transform duration-300 ease-in-out md:static md:translate-x-0 md:shadow-none
+        fixed inset-y-0 left-0 z-20 w-64 bg-sidebar text-sidebar-foreground flex flex-col shadow-xl transition-transform duration-300 ease-in-out md:translate-x-0 md:shadow-none
         ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
       `}>
         <div className="hidden md:flex h-16 items-center px-6 border-b border-sidebar-border">
-          <Link href="/admin/dashboard" className="group flex min-w-0 items-center gap-3">
+            <Link href={homeHref} className="group flex min-w-0 items-center gap-3">
             <span className="grid h-10 w-[148px] place-items-center transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:scale-[1.02]">
               <img src={logoIndesa} alt="INDESA" className="h-auto w-full object-contain" />
             </span>
@@ -136,13 +144,13 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       {/* Overlay for mobile */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-0 md:hidden" 
+          className="fixed inset-0 z-10 bg-black/50 md:hidden" 
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto">
+      <main className="flex-1 min-h-0 overflow-y-auto md:ml-64">
         <div className="flex-1 p-4 md:p-8">
           {children}
         </div>

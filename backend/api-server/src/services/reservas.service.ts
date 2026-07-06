@@ -141,12 +141,18 @@ function calcularTarifaReserva(producto: any, data: NormalizedReservaInput) {
   };
 }
 
-export async function listReservas(params: { estado?: string; page?: number; limit?: number }) {
+export async function listReservas(params: { estado?: string; busqueda?: string; page?: number; limit?: number }) {
   return repo.findAllReservas(params);
 }
 
 export async function getReserva(id: number) {
   const reserva = await repo.findReservaById(id);
+  if (!reserva) throw Object.assign(new Error("Reserva no encontrada"), { status: 404 });
+  return reserva;
+}
+
+export async function getReservaDetalle(id: number) {
+  const reserva = await repo.findReservaDetalleById(id);
   if (!reserva) throw Object.assign(new Error("Reserva no encontrada"), { status: 404 });
   return reserva;
 }
@@ -175,7 +181,22 @@ export async function createReserva(input: ReservaInput) {
   }
 
   const tarifa = calcularTarifaReserva(producto, data);
-  const reserva = await repo.createReserva({ ...data, ...tarifa });
+  const payload = {
+    clienteNombre: data.clienteNombre,
+    clienteEmail: data.clienteEmail,
+    clienteTelefono: data.clienteTelefono,
+    productoId: data.productoId,
+    cantidad: data.cantidad,
+    fechaInicio: data.fechaInicio,
+    fechaFin: data.fechaFin,
+    diasReserva: data.diasReserva,
+    tipoTarifa: tarifa.tipoTarifa,
+    unidadesTarifa: tarifa.unidadesTarifa,
+    precioUnitario: String(tarifa.precioUnitario),
+    totalEstimado: String(tarifa.totalEstimado),
+    notas: data.notas?.trim() ? data.notas.trim() : undefined,
+  };
+  const reserva = await repo.createReserva(payload);
 
   // Notificar por WhatsApp de forma asíncrona (no bloquea la respuesta)
   notificarReservaPorWhatsApp({

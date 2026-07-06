@@ -102,7 +102,7 @@
   --accent:       9 100% 95%;          /* rojo muy suave para acentos */
   --accent-foreground: 9 100% 28%;
 
-  --destructive:  0 84% 45%;
+  --destructive:  9 100% 50%;
   --destructive-foreground: 0 0% 100%;
 
   --sidebar:      220 18% 14%;        /* panel lateral oscuro */
@@ -180,7 +180,7 @@
   --accent:       0 60% 20%;
   --accent-foreground: 0 70% 80%;
 
-  --destructive:  0 78% 52%;
+  --destructive:  9 100% 50%;
   --destructive-foreground: 0 0% 100%;
 
   --sidebar:      220 20% 8%;
@@ -218,6 +218,14 @@
 
 @layer base {
   * { @apply border-border; }
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
   body { @apply font-sans antialiased bg-background text-foreground; }
 }
 

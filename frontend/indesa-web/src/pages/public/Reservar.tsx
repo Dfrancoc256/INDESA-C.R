@@ -19,6 +19,7 @@ import {
   getDiasEntreFechas,
   getTarifaPrincipal,
   getTarifasProducto,
+  getPrecioReferenciaProducto,
   getTodayDate,
 } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
@@ -274,6 +275,18 @@ export function Reservar() {
                                 por {getTarifaPrincipal(productoSeleccionado).suffix}
                               </span>
                             </div>
+                            {getPrecioReferenciaProducto(productoSeleccionado) > 0 && (
+                              <div className="mt-1 text-xs text-muted-foreground">
+                                Precio base de referencia: {formatCurrency(getPrecioReferenciaProducto(productoSeleccionado))}
+                              </div>
+                            )}
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {tarifasProducto.map((tarifa) => (
+                                <span key={tarifa.tipo} className="rounded-full border border-primary/15 bg-primary/5 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                                  {tarifa.label}: {formatCurrency(tarifa.value)}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                           <div className="text-right">
                             <div className="text-sm text-muted-foreground">Disponibilidad</div>
@@ -496,3 +509,4 @@ export function Reservar() {
     </div>
   );
 }
+

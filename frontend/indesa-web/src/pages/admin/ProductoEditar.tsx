@@ -45,6 +45,7 @@ export function ProductoEditar() {
   const [, setLocation] = useLocation();
   const [imageUrlPreview, setImageUrlPreview] = useState("");
   const [nuevaCategoria, setNuevaCategoria] = useState("");
+  const [editarCategoria, setEditarCategoria] = useState(false);
   const initRef = useRef<number | null>(null);
 
   const { data: categorias, isLoading: isLoadingCategorias, refetch: refetchCategorias } = useListCategorias();
@@ -221,27 +222,49 @@ export function ProductoEditar() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>Categoría *</FormLabel>
-                          <Select 
-                            onValueChange={field.onChange} 
-                            value={field.value ? field.value.toString() : ""}
-                            disabled={isLoadingCategorias}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Seleccione una categoría" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {categorias?.map(cat => (
-                                <SelectItem key={cat.id} value={cat.id.toString()}>
-                                  {cat.nombre}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          {editarCategoria ? (
+                            <Select 
+                              onValueChange={field.onChange} 
+                              value={field.value ? field.value.toString() : ""}
+                              disabled={isLoadingCategorias}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Seleccione una categoría" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {categorias?.map(cat => (
+                                  <SelectItem key={cat.id} value={cat.id.toString()}>
+                                    {cat.nombre}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : (
+                            <div className="rounded-md border bg-muted/30 px-3 py-3">
+                              <div className="text-sm font-medium text-foreground">
+                                {producto?.categoria_nombre || "Categoría no disponible"}
+                              </div>
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                La categoría actual ya está asignada. Solo cámbiala si necesitas mover el producto.
+                              </p>
+                            </div>
+                          )}
                           <FormMessage />
                           <div className="mt-3 rounded-md border bg-muted/40 p-3">
-                            <div className="mb-2 text-xs font-semibold text-muted-foreground">Crear categoría rápida</div>
+                            <div className="mb-2 flex items-center justify-between gap-2">
+                              <div className="text-xs font-semibold text-muted-foreground">Crear categoría rápida</div>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="h-7 px-2 text-xs"
+                                onClick={() => setEditarCategoria((current) => !current)}
+                              >
+                                {editarCategoria ? "Cerrar selector" : "Cambiar categoría"}
+                              </Button>
+                            </div>
                             <div className="flex gap-2">
                               <Input
                                 value={nuevaCategoria}
@@ -262,7 +285,7 @@ export function ProductoEditar() {
                       name="precio"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Precio Público (GTQ) *</FormLabel>
+                          <FormLabel>Precio base de referencia (GTQ) *</FormLabel>
                           <FormControl>
                             <Input type="number" step="0.01" min="0" {...field} />
                           </FormControl>
@@ -277,7 +300,7 @@ export function ProductoEditar() {
               <Card>
                 <CardHeader>
                   <CardTitle>Tarifas por tiempo</CardTitle>
-                  <CardDescription>Estos precios se muestran al usuario para reservas por día, semana o mes.</CardDescription>
+                  <CardDescription>Estas son las tarifas visibles que el cliente podrá escoger en el sitio web.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <FormField
@@ -460,3 +483,4 @@ export function ProductoEditar() {
     </div>
   );
 }
+

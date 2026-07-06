@@ -145,7 +145,7 @@ export function Usuarios() {
       nombre: usuario.nombre,
       apellido: usuario.apellido || "",
       email: usuario.email,
-      role_id: usuario.role_id,
+      role_id: usuario.role_id ?? usuario.roleId ?? 2,
     });
     setIsEditarOpen(true);
   };
@@ -166,6 +166,8 @@ export function Usuarios() {
     u.apellido?.toLowerCase().includes(busqueda.toLowerCase()) ||
     u.email.toLowerCase().includes(busqueda.toLowerCase())
   );
+
+  const rolesDisponibles = Array.isArray(roles) ? roles : [];
 
   return (
     <div className="space-y-6">
@@ -236,7 +238,7 @@ export function Usuarios() {
                     <TableCell>
                       <Badge variant="outline" className={`font-normal capitalize ${usuario.rol_nombre === 'admin' ? 'border-primary text-primary' : ''}`}>
                         {usuario.rol_nombre === 'admin' && <ShieldCheck className="mr-1 h-3 w-3" />}
-                        {usuario.rol_nombre}
+                        {usuario.rol_nombre ?? "Sin rol"}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground">
@@ -304,16 +306,21 @@ export function Usuarios() {
                   <FormItem><FormLabel>Contraseña</FormLabel><FormControl><Input type="password" {...field} /></FormControl><FormMessage /></FormItem>
                 )}/>
                 <FormField control={createForm.control} name="role_id" render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Rol en el sistema</FormLabel>
-                    <Select onValueChange={(val) => field.onChange(parseInt(val))} defaultValue={field.value.toString()}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un rol" /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        {roles?.map(rol => (
+                    <FormItem>
+                      <FormLabel>Rol en el sistema</FormLabel>
+                      <Select
+                        onValueChange={(val) => field.onChange(parseInt(val))}
+                        value={String(field.value ?? "")}
+                      >
+                        <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un rol" /></SelectTrigger></FormControl>
+                        <SelectContent>
+                        {rolesDisponibles.length === 0 ? (
+                          <SelectItem value="2" disabled>Sin roles disponibles</SelectItem>
+                        ) : rolesDisponibles.map(rol => (
                           <SelectItem key={rol.id} value={rol.id.toString()} className="capitalize">{rol.nombre}</SelectItem>
                         ))}
-                      </SelectContent>
-                    </Select>
+                        </SelectContent>
+                      </Select>
                     <FormMessage />
                   </FormItem>
                 )}/>
@@ -352,10 +359,15 @@ export function Usuarios() {
               <FormField control={updateForm.control} name="role_id" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Rol en el sistema</FormLabel>
-                  <Select onValueChange={(val) => field.onChange(parseInt(val))} value={field.value.toString()}>
+                  <Select
+                    onValueChange={(val) => field.onChange(parseInt(val))}
+                    value={String(field.value ?? "")}
+                  >
                     <FormControl><SelectTrigger><SelectValue placeholder="Seleccione un rol" /></SelectTrigger></FormControl>
                     <SelectContent>
-                      {roles?.map(rol => (
+                      {rolesDisponibles.length === 0 ? (
+                        <SelectItem value="2" disabled>Sin roles disponibles</SelectItem>
+                      ) : rolesDisponibles.map(rol => (
                         <SelectItem key={rol.id} value={rol.id.toString()} className="capitalize">{rol.nombre}</SelectItem>
                       ))}
                     </SelectContent>

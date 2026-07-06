@@ -123,9 +123,13 @@ VALUES (
   'Administrador del sistema',
   ARRAY[
     'dashboard.ver',
+    'roles.ver',
+    'productos.ver',
     'productos.crear', 'productos.editar', 'productos.eliminar',
+    'categorias.ver',
     'inventario.ver', 'inventario.editar',
     'reservas.ver', 'reservas.editar',
+    'finanzas.ver',
     'usuarios.ver', 'usuarios.crear', 'usuarios.editar', 'usuarios.eliminar'
   ]
 )

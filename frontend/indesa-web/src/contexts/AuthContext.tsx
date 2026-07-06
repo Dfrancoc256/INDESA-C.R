@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
-import { useGetMe, login as apiLogin, logout as apiLogout, LoginInput, UsuarioMe, getGetMeQueryKey } from "@workspace/api-client-react";
+import { useGetMe, login as apiLogin, logout as apiLogout, refreshToken as apiRefreshToken, LoginInput, UsuarioMe, getGetMeQueryKey } from "@workspace/api-client-react";
 
 const ACCESS_TOKEN_KEY = "indesa_access_token";
 const REFRESH_TOKEN_KEY = "indesa_refresh_token";
@@ -33,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [usuario, setUsuario] = useState<UsuarioMe | null>(null);
   const [hasStoredToken, setHasStoredToken] = useState(() => Boolean(getStoredAccessToken()));
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshingSession, setIsRefreshingSession] = useState(false);
   const [, setLocation] = useLocation();
 
   const { data: meData, error, isLoading: isMeLoading } = useGetMe({
@@ -57,6 +58,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (error) {
+      const refreshToken = window.localStorage.getItem(REFRESH_TOKEN_KEY);
+
+      if (refreshToken && !isRefreshingSession) {
+        setIsRefreshingSession(true);
+        void (async () => {
+          try {
+            const response = await apiRefreshToken({ refresh_token: refreshToken });
+            localStorage.setItem(ACCESS_TOKEN_KEY, response.access_token);
+            localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+            setHasStoredToken(true);
+            setUsuario(response.usuario);
+            setIsLoading(false);
+          } catch {
+            clearStoredSession();
+            setHasStoredToken(false);
+            setUsuario(null);
+            setIsLoading(false);
+          } finally {
+            setIsRefreshingSession(false);
+          }
+        })();
+        return;
+      }
+
       clearStoredSession();
       setHasStoredToken(false);
       setUsuario(null);

@@ -51,7 +51,7 @@ export function Login() {
   };
 
   return (
-    <div className="grid min-h-[100dvh] bg-[radial-gradient(circle_at_top_left,hsl(var(--accent)),transparent_34%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--muted)))] lg:grid-cols-[1.05fr_0.95fr]">
+    <div className="grid min-h-[100dvh] bg-[radial-gradient(circle_at_top_left,rgba(255,40,0,0.30),transparent_28%),radial-gradient(circle_at_center,rgba(255,40,0,0.14),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,40,0,0.18),transparent_26%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--muted)))] lg:grid-cols-[1.05fr_0.95fr]">
       <section className="flex min-h-[100dvh] items-center justify-center px-4 py-6 sm:px-6 lg:px-10">
         <div className="w-full max-w-[440px]">
           <Link

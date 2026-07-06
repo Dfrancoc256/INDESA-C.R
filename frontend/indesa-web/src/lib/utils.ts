@@ -41,6 +41,11 @@ export function getTarifasProducto(producto: ProductPricing): TarifaProducto[] {
   return [{ tipo: "base", label: "Base", suffix: "servicio", plural: "servicios", value: Number(producto.precio ?? 0) }];
 }
 
+export function getPrecioReferenciaProducto(producto: ProductPricing) {
+  const precio = Number(producto.precio ?? 0);
+  return Number.isFinite(precio) && precio > 0 ? precio : 0;
+}
+
 export function getTarifaPrincipal(producto: ProductPricing): TarifaProducto {
   return getTarifasProducto(producto)[0];
 }

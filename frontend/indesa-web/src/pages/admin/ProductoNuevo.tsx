@@ -225,7 +225,7 @@ export function ProductoNuevo() {
                       name="precio"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Precio Público (GTQ) *</FormLabel>
+                          <FormLabel>Precio base de referencia (GTQ) *</FormLabel>
                           <FormControl>
                             <Input type="number" step="0.01" min="0" placeholder="0.00" {...field} />
                           </FormControl>
@@ -240,7 +240,7 @@ export function ProductoNuevo() {
               <Card>
                 <CardHeader>
                   <CardTitle>Tarifas por tiempo</CardTitle>
-                  <CardDescription>Estos precios se muestran al usuario para reservas por día, semana o mes.</CardDescription>
+                  <CardDescription>Estas son las tarifas visibles que el cliente podrá escoger en el sitio web.</CardDescription>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                   <FormField
@@ -453,3 +453,4 @@ export function ProductoNuevo() {
     </div>
   );
 }
+

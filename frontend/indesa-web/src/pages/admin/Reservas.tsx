@@ -1,4 +1,4 @@
-import { useListReservas, useUpdateReservaEstado, ListReservasEstado } from "@workspace/api-client-react";
+import { useListReservas, useUpdateReservaEstado, useGetReserva, getGetReservaQueryKey, ListReservasEstado } from "@workspace/api-client-react";
 import { useState } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { invalidateCatalogData } from "@/lib/queryInvalidation";
+import { useAuth } from "@/contexts/AuthContext";
+import { hasPermission } from "@/lib/permissions";
 
 function formatDateOnly(value?: string | Date | null) {
   if (!value) return "Sin fecha";
@@ -27,6 +29,7 @@ function formatDateOnly(value?: string | Date | null) {
 }
 
 export function Reservas() {
+  const { usuario } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(1);
@@ -39,12 +42,26 @@ export function Reservas() {
   const [isNotaOpen, setIsNotaOpen] = useState(false);
   const [notaEstado, setNotaEstado] = useState("");
   const [nuevoEstado, setNuevoEstado] = useState<any>(null);
+  const canEditReservas = hasPermission(usuario, "reservas.editar");
+  const reservasColSpan = canEditReservas ? 6 : 5;
+
+  const busquedaNormalizada = busqueda.trim();
 
   const { data: reservasResponse, isLoading, refetch } = useListReservas({
     page,
     limit: 15,
     estado: estadoFilter !== "todas" ? estadoFilter as ListReservasEstado : undefined,
+    busqueda: busquedaNormalizada || undefined,
+  } as any);
+
+  const reservaDetalleId = reservaSeleccionada?.id ?? 0;
+  const { data: reservaDetalle } = useGetReserva(reservaDetalleId, {
+    query: {
+      enabled: isDetalleOpen && Boolean(reservaDetalleId),
+      queryKey: getGetReservaQueryKey(reservaDetalleId),
+    },
   });
+  const notasReserva = reservaDetalle?.notas ?? reservaSeleccionada?.notas;
 
   const estadoMutation = useUpdateReservaEstado({
     mutation: {
@@ -88,14 +105,7 @@ export function Reservas() {
     setIsDetalleOpen(true);
   };
 
-  // Filtrado cliente side para búsqueda simple (idealmente sería server-side)
-  const reservasFiltradas = reservasResponse?.data?.filter(r => 
-    !busqueda || 
-    r.cliente_nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-    r.cliente_email.toLowerCase().includes(busqueda.toLowerCase()) ||
-    r.producto_nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    r.id.toString().includes(busqueda)
-  );
+  const reservasFiltradas = reservasResponse?.data ?? [];
 
   return (
     <div className="space-y-6">
@@ -112,7 +122,10 @@ export function Reservas() {
               placeholder="Buscar por cliente, email, producto o ID..."
               className="pl-9"
               value={busqueda}
-              onChange={(e) => setBusqueda(e.target.value)}
+              onChange={(e) => {
+                setBusqueda(e.target.value);
+                setPage(1);
+              }}
             />
           </div>
           <div className="w-full md:w-64 flex items-center gap-2">
@@ -149,7 +162,7 @@ export function Reservas() {
                 <TableHead>Cliente</TableHead>
                 <TableHead>Producto</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                {canEditReservas && <TableHead className="text-right">Acciones</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -161,12 +174,12 @@ export function Reservas() {
                     <TableCell><Skeleton className="h-4 w-32" /><Skeleton className="h-3 w-24 mt-1" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-40" /><Skeleton className="h-3 w-16 mt-1" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>
+                    {canEditReservas && <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>}
                   </TableRow>
                 ))
               ) : reservasFiltradas?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={reservasColSpan} className="h-32 text-center text-muted-foreground">
                     No se encontraron reservas.
                   </TableCell>
                 </TableRow>
@@ -200,42 +213,44 @@ export function Reservas() {
                     <TableCell>
                       <EstadoBadge estado={reserva.estado} />
                     </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end items-center gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => verDetalle(reserva)}>
-                          Ver Detalle
-                        </Button>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm" disabled={reserva.estado === 'entregada' || reserva.estado === 'cancelada'}>
-                              Cambiar Estado
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            {reserva.estado === 'pendiente' && (
-                              <>
-                                <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, 'confirmada')}>
-                                  <CheckCircle className="mr-2 h-4 w-4 text-info" /> Confirmar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, 'cancelada', true)}>
-                                  <XCircle className="mr-2 h-4 w-4 text-destructive" /> Cancelar
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                            {reserva.estado === 'confirmada' && (
-                              <>
-                                <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, 'entregada')}>
-                                  <Truck className="mr-2 h-4 w-4 text-success" /> Marcar Entregada
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, 'cancelada', true)}>
-                                  <XCircle className="mr-2 h-4 w-4 text-destructive" /> Cancelar
-                                </DropdownMenuItem>
-                              </>
-                            )}
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </TableCell>
+                    {canEditReservas && (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end items-center gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => verDetalle(reserva)}>
+                            Ver Detalle
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm" disabled={reserva.estado === 'entregada' || reserva.estado === 'cancelada'}>
+                                Cambiar Estado
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              {reserva.estado === 'pendiente' && (
+                                <>
+                                  <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, 'confirmada')}>
+                                    <CheckCircle className="mr-2 h-4 w-4 text-info" /> Confirmar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, 'cancelada', true)}>
+                                    <XCircle className="mr-2 h-4 w-4 text-destructive" /> Cancelar
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                              {reserva.estado === 'confirmada' && (
+                                <>
+                                  <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, 'entregada')}>
+                                    <Truck className="mr-2 h-4 w-4 text-success" /> Marcar Entregada
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, 'cancelada', true)}>
+                                    <XCircle className="mr-2 h-4 w-4 text-destructive" /> Cancelar
+                                  </DropdownMenuItem>
+                                </>
+                              )}
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))
               )}
@@ -287,31 +302,31 @@ export function Reservas() {
                   <h3 className="font-semibold flex items-center gap-2 mb-3">
                     <Package className="h-4 w-4 text-primary" /> Producto Reservado
                   </h3>
-                  <div className="font-medium">{reservaSeleccionada.producto_nombre}</div>
+                  <div className="font-medium">{reservaDetalle?.producto_nombre ?? reservaSeleccionada.producto_nombre}</div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    Cantidad solicitada: <span className="font-bold text-foreground">{reservaSeleccionada.cantidad} unidades</span>
+                    Cantidad solicitada: <span className="font-bold text-foreground">{reservaDetalle?.cantidad ?? reservaSeleccionada.cantidad} unidades</span>
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
                     Período: <span className="font-bold text-foreground">
-                      {formatDateOnly(reservaSeleccionada.fecha_inicio)} - {formatDateOnly(reservaSeleccionada.fecha_fin)}
+                      {formatDateOnly(reservaDetalle?.fecha_inicio ?? reservaSeleccionada.fecha_inicio)} - {formatDateOnly(reservaDetalle?.fecha_fin ?? reservaSeleccionada.fecha_fin)}
                     </span>
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    Días apartados: <span className="font-bold text-foreground">{reservaSeleccionada.dias_reserva ?? 1}</span>
+                    Días apartados: <span className="font-bold text-foreground">{reservaDetalle?.dias_reserva ?? reservaSeleccionada.dias_reserva ?? 1}</span>
                   </div>
                   <div className="mt-3 rounded-md border bg-white p-3 text-sm">
                     <div className="font-semibold text-foreground">Tarifa solicitada</div>
                     <div className="mt-1 text-muted-foreground">
-                      Modalidad: <span className="font-bold text-foreground">{reservaSeleccionada.tipo_tarifa ?? "dia"}</span>
+                      Modalidad: <span className="font-bold text-foreground">{reservaDetalle?.tipo_tarifa ?? reservaSeleccionada.tipo_tarifa ?? "dia"}</span>
                     </div>
                     <div className="text-muted-foreground">
-                      Períodos: <span className="font-bold text-foreground">{reservaSeleccionada.unidades_tarifa ?? reservaSeleccionada.dias_reserva ?? 1}</span>
+                      Períodos: <span className="font-bold text-foreground">{reservaDetalle?.unidades_tarifa ?? reservaSeleccionada.unidades_tarifa ?? reservaDetalle?.dias_reserva ?? reservaSeleccionada.dias_reserva ?? 1}</span>
                     </div>
                     <div className="text-muted-foreground">
-                      Precio unitario: <span className="font-bold text-foreground">{formatCurrency(reservaSeleccionada.precio_unitario ?? 0)}</span>
+                      Precio unitario: <span className="font-bold text-foreground">{formatCurrency(reservaDetalle?.precio_unitario ?? reservaSeleccionada.precio_unitario ?? 0)}</span>
                     </div>
                     <div className="text-muted-foreground">
-                      Total estimado: <span className="font-bold text-primary">{formatCurrency(reservaSeleccionada.total_estimado ?? 0)}</span>
+                      Total estimado: <span className="font-bold text-primary">{formatCurrency(reservaDetalle?.total_estimado ?? reservaSeleccionada.total_estimado ?? 0)}</span>
                     </div>
                   </div>
                 </div>
@@ -319,7 +334,7 @@ export function Reservas() {
                 <div>
                   <h3 className="font-semibold text-sm text-muted-foreground mb-2">Notas del Cliente</h3>
                   <div className="bg-background border rounded-md p-3 text-sm min-h-[80px]">
-                    {reservaSeleccionada.notas || <span className="italic text-muted-foreground">Sin notas adicionales.</span>}
+                    {notasReserva ? notasReserva : <span className="italic text-muted-foreground">Sin notas adicionales.</span>}
                   </div>
                 </div>
               </div>
@@ -330,18 +345,18 @@ export function Reservas() {
                   <div className="space-y-2 text-sm">
                     <div className="flex items-start gap-2">
                       <div className="font-medium min-w-[80px]">Nombre:</div>
-                      <div>{reservaSeleccionada.cliente_nombre}</div>
+                      <div>{reservaDetalle?.cliente_nombre ?? reservaSeleccionada.cliente_nombre}</div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground" />
-                      <a href={`mailto:${reservaSeleccionada.cliente_email}`} className="text-primary hover:underline">
-                        {reservaSeleccionada.cliente_email}
+                      <a href={`mailto:${reservaDetalle?.cliente_email ?? reservaSeleccionada.cliente_email}`} className="text-primary hover:underline">
+                        {reservaDetalle?.cliente_email ?? reservaSeleccionada.cliente_email}
                       </a>
                     </div>
                     <div className="flex items-center gap-2">
                       <Phone className="h-4 w-4 text-muted-foreground" />
-                      <a href={`https://wa.me/${reservaSeleccionada.cliente_telefono.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                        {reservaSeleccionada.cliente_telefono}
+                      <a href={`https://wa.me/${(reservaDetalle?.cliente_telefono ?? reservaSeleccionada.cliente_telefono).replace(/\D/g, '')}`} target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                        {reservaDetalle?.cliente_telefono ?? reservaSeleccionada.cliente_telefono}
                       </a>
                     </div>
                   </div>
@@ -353,7 +368,7 @@ export function Reservas() {
                     <span>Fecha de solicitud:</span>
                   </div>
                   <div className="text-sm font-medium pl-6">
-                    {formatDate(reservaSeleccionada.created_at)}
+                    {formatDate(reservaDetalle?.created_at ?? reservaSeleccionada.created_at)}
                   </div>
                 </div>
               </div>

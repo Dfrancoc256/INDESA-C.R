@@ -1,5 +1,5 @@
 import { db, reservasTable, productosTable } from "@workspace/db";
-import { eq, desc, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
 
 function decimalToNumber(value: string | null): number | null {
   return value === null ? null : Number(value);
@@ -18,13 +18,27 @@ function mapReservaRow<T extends {
 
 export async function findAllReservas(params: {
   estado?: string;
+  busqueda?: string;
   page?: number;
   limit?: number;
 }) {
-  const { page = 1, limit = 20, estado } = params;
+  const { page = 1, limit = 20, estado, busqueda } = params;
   const offset = (page - 1) * limit;
 
-  const condition = estado ? eq(reservasTable.estado, estado) : undefined;
+  const conditions: SQL[] = [];
+  if (estado) conditions.push(eq(reservasTable.estado, estado));
+  if (busqueda?.trim()) {
+    const term = `%${busqueda.trim()}%`;
+    const searchCondition = or(
+      ilike(reservasTable.clienteNombre, term),
+      ilike(reservasTable.clienteEmail, term),
+      ilike(reservasTable.clienteTelefono, term),
+      ilike(productosTable.nombre, term),
+      sql`cast(${reservasTable.id} as text) ilike ${term}`,
+    );
+    if (searchCondition) conditions.push(searchCondition);
+  }
+  const condition = conditions.length ? and(...conditions) : undefined;
 
   const rows = await db
     .select({
@@ -93,6 +107,10 @@ export async function findReservaById(id: number) {
   return rows[0] ? mapReservaRow(rows[0]) : null;
 }
 
+export async function findReservaDetalleById(id: number) {
+  return findReservaById(id);
+}
+
 export async function createReserva(data: {
   clienteNombre: string;
   clienteEmail: string;
@@ -104,15 +122,25 @@ export async function createReserva(data: {
   diasReserva: number;
   tipoTarifa: string;
   unidadesTarifa: number;
-  precioUnitario: number;
-  totalEstimado: number;
+  precioUnitario: number | string;
+  totalEstimado: number | string;
   notas?: string;
 }) {
   const rows = await db.insert(reservasTable).values({
-    ...data,
+    clienteNombre: data.clienteNombre,
+    clienteEmail: data.clienteEmail,
+    clienteTelefono: data.clienteTelefono,
+    productoId: data.productoId,
+    cantidad: data.cantidad,
+    fechaInicio: data.fechaInicio,
+    fechaFin: data.fechaFin,
+    diasReserva: data.diasReserva,
+    tipoTarifa: data.tipoTarifa,
+    unidadesTarifa: data.unidadesTarifa,
     precioUnitario: String(data.precioUnitario),
     totalEstimado: String(data.totalEstimado),
     estado: "pendiente",
+    notas: data.notas ?? null,
   }).returning();
   return rows[0];
 }

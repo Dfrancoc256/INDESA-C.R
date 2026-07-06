@@ -1,7 +1,9 @@
-import { useListCategorias, useListProductos, useToggleProducto } from "@workspace/api-client-react";
-import { useState, useRef } from "react";
+import { useListCategorias, useListProductos, type Producto } from "@workspace/api-client-react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "wouter";
 import { formatCurrency, getInitials, getTarifaPrincipal, getTarifasProducto } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
+import { hasPermission } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,14 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Edit, Image as ImageIcon, Filter, CheckCircle2, XCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { useQueryClient } from "@tanstack/react-query";
-import { invalidateCatalogData } from "@/lib/queryInvalidation";
+import { Plus, Search, Edit, Filter, BadgeCheck, XCircle } from "lucide-react";
 
 export function ProductosList() {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const { usuario } = useAuth();
+  const pageSize = 10;
   const [page, setPage] = useState(1);
   const [busqueda, setBusqueda] = useState("");
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
@@ -24,6 +23,10 @@ export function ProductosList() {
   // Debounce search
   const [debouncedBusqueda, setDebouncedBusqueda] = useState("");
   const searchTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
+  const canCreateProducts = hasPermission(usuario, "productos.crear");
+  const canEditProducts = hasPermission(usuario, "productos.editar");
+  const canManageProducts = canCreateProducts || canEditProducts;
+  const productosColSpan = canManageProducts ? 6 : 5;
   
   const handleSearch = (val: string) => {
     setBusqueda(val);
@@ -38,28 +41,18 @@ export function ProductosList() {
   
   const { data: productosResponse, isLoading } = useListProductos({
     page,
-    limit: 10,
+    limit: pageSize,
     busqueda: debouncedBusqueda || undefined,
     categoria_id: categoriaId,
     incluir_inactivos: true,
   } as any);
 
-  const toggleMutation = useToggleProducto({
-    mutation: {
-      onSuccess: async () => {
-        toast({ title: "Estado actualizado", description: "El estado del producto ha sido cambiado." });
-        await invalidateCatalogData(queryClient);
-      },
-      onError: () => {
-        toast({ variant: "destructive", title: "Error", description: "No se pudo cambiar el estado del producto." });
-      }
-    }
-  });
+  const productosPagina = productosResponse?.data ?? [];
+  const totalProductos = productosResponse?.total ?? 0;
+  const totalPages = Math.max(1, Math.ceil(totalProductos / pageSize));
+  const showInitialSkeleton = isLoading && productosPagina.length === 0;
 
-  const handleToggleEstado = (id: number) => {
-    toggleMutation.mutate({ id });
-  };
-
+  // Mantiene la página dentro del rango cuando cambian los filtros o el total
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -67,11 +60,13 @@ export function ProductosList() {
           <h1 className="text-3xl font-bold tracking-tight">Productos</h1>
           <p className="text-muted-foreground">Gestiona el catálogo de productos de INDESA.</p>
         </div>
-        <Button asChild>
-          <Link href="/admin/productos/nuevo">
-            <Plus className="mr-2 h-4 w-4" /> Nuevo Producto
-          </Link>
-        </Button>
+        {canCreateProducts && (
+          <Button asChild>
+            <Link href="/admin/productos/nuevo">
+              <Plus className="mr-2 h-4 w-4" /> Nuevo Producto
+            </Link>
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -118,29 +113,29 @@ export function ProductosList() {
                 <TableHead>Categoría</TableHead>
                 <TableHead className="text-right">Precio</TableHead>
                 <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                {canManageProducts && <TableHead className="text-right">Acciones</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
-              {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
+              {showInitialSkeleton ? (
+                Array.from({ length: pageSize }).map((_, i) => (
                   <TableRow key={i} className="h-24">
                     <TableCell className="py-3"><Skeleton className="h-16 w-24 rounded-lg" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-[200px]" /><Skeleton className="h-3 w-[150px] mt-1" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-20" /></TableCell>
                     <TableCell className="text-right"><Skeleton className="h-4 w-16 ml-auto" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                    <TableCell className="text-right"><Skeleton className="h-8 w-16 ml-auto" /></TableCell>
+                    {canManageProducts && <TableCell className="text-right"><Skeleton className="h-8 w-16 ml-auto" /></TableCell>}
                   </TableRow>
                 ))
-              ) : productosResponse?.data?.length === 0 ? (
+              ) : productosPagina.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                  <TableCell colSpan={productosColSpan} className="h-32 text-center text-muted-foreground">
                     No se encontraron productos que coincidan con la búsqueda.
                   </TableCell>
                 </TableRow>
               ) : (
-                productosResponse?.data?.map((producto) => {
+                productosPagina.map((producto: Producto) => {
                   const tarifa = getTarifaPrincipal(producto);
                   const tarifas = getTarifasProducto(producto);
 
@@ -182,29 +177,31 @@ export function ProductosList() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <button 
-                        onClick={() => handleToggleEstado(producto.id)}
-                        disabled={toggleMutation.isPending}
-                        className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border transition-colors ${
+                      <div
+                        className={`flex items-center gap-1.5 text-xs px-2 py-1 rounded-full border ${
                           producto.activo 
-                            ? "bg-green-50 text-green-700 border-green-200 hover:bg-green-100" 
-                            : "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
+                            ? "bg-green-50 text-green-700 border-green-200" 
+                            : "bg-gray-50 text-gray-500 border-gray-200"
                         }`}
                       >
                         {producto.activo ? (
-                          <><CheckCircle2 className="h-3.5 w-3.5" /> Activo</>
+                          <><BadgeCheck className="h-3.5 w-3.5" /> Activo</>
                         ) : (
                           <><XCircle className="h-3.5 w-3.5" /> Inactivo</>
                         )}
-                      </button>
+                      </div>
                     </TableCell>
-                    <TableCell className="text-right">
-                      <Button asChild variant="ghost" size="sm">
-                        <Link href={`/admin/productos/editar/${producto.id}`}>
-                          <Edit className="h-4 w-4 mr-1" /> Editar
-                        </Link>
-                      </Button>
-                    </TableCell>
+                    {canManageProducts && (
+                      <TableCell className="text-right">
+                        {canEditProducts && (
+                          <Button asChild variant="ghost" size="sm">
+                            <Link href={`/admin/productos/editar/${producto.id}`}>
+                              <Edit className="h-4 w-4 mr-1" /> Editar
+                            </Link>
+                          </Button>
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                   );
                 })
@@ -214,10 +211,10 @@ export function ProductosList() {
         </div>
         
         {/* Pagination */}
-        {productosResponse && productosResponse.total > 0 && (
+        {productosResponse && totalProductos > 0 && (
           <div className="flex flex-col gap-3 border-t px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div className="text-sm text-muted-foreground">
-              Mostrando {((page - 1) * 10) + 1} a {Math.min(page * 10, productosResponse.total)} de {productosResponse.total} productos
+              Mostrando {((page - 1) * pageSize) + 1} a {Math.min(page * pageSize, totalProductos)} de {totalProductos} productos
             </div>
             <div className="grid grid-cols-2 gap-2 sm:flex">
               <Button 
@@ -232,7 +229,7 @@ export function ProductosList() {
                 variant="outline" 
                 size="sm" 
                 onClick={() => setPage(p => p + 1)}
-                disabled={page * 10 >= productosResponse.total}
+                disabled={page >= totalPages}
               >
                 Siguiente
               </Button>

@@ -16,7 +16,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isSocialMenuOpen, setIsSocialMenuOpen] = useState(false);
   const socialMenuRef = useRef<HTMLDivElement | null>(null);
-  const whatsappUrl = "https://wa.me/50222223333?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20la%20renta%20de%20maquinaria.";
+    const whatsappUrl = "https://wa.me/50258433796?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20la%20renta%20de%20maquinaria.";
 
   const navLinks = [
     { href: "/", label: "Inicio" },
@@ -163,7 +163,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background font-sans">
-      <header className="sticky top-0 z-50 w-full bg-[#ff2800] text-white shadow-[0_12px_28px_rgba(90,15,6,0.26)]">
+      <header className="sticky top-0 z-50 w-full bg-[#FF2800] text-white shadow-[0_12px_28px_rgba(90,15,6,0.26)]">
         <div className="container mx-auto flex h-20 items-center justify-between gap-4 px-4 md:h-[92px] md:px-8 lg:gap-8">
           <Link
             href="/"
@@ -194,7 +194,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               />
               <button
                 type="submit"
-                className="mr-1 rounded-md bg-[#FF2800] px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#d91f00] hover:shadow-sm"
+                className="mr-1 rounded-md bg-[#FF2800] px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"
               >
                 Buscar
               </button>
@@ -229,7 +229,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <Button
                 asChild
                 size="icon"
-                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(80,12,5,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#fff8d6] hover:text-[#d91f00] hover:shadow-md"
+                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(80,12,5,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#fff0ea] hover:text-[#FF2800] hover:shadow-md"
               >
                 <Link href="/admin/dashboard" aria-label="Abrir panel administrativo" title="Panel administrativo">
                   <LayoutDashboard className="h-5 w-5" />
@@ -240,7 +240,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <Button
                 asChild
                 size="icon"
-                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(80,12,5,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#fff8d6] hover:text-[#d91f00] hover:shadow-md"
+                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(80,12,5,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#fff0ea] hover:text-[#FF2800] hover:shadow-md"
               >
                 <Link href="/admin/login" aria-label="Acceder al administrador" title="Acceso administrador">
                   <LockKeyhole className="h-5 w-5" />
@@ -262,7 +262,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
         {/* Mobile Nav */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-white/15 bg-[#ff2800] px-4 py-4 shadow-md">
+          <div className="md:hidden border-t border-white/15 bg-[#FF2800] px-4 py-4 shadow-md">
             <form onSubmit={handleHeaderSearch} className="relative mb-4">
               <div className="flex h-11 items-center rounded-md border bg-white shadow-sm">
                 <Search className="ml-3 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -349,7 +349,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               WhatsApp
             </a>
             <a
-              href="tel:+50222223333"
+              href="tel:+50258433796"
               className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold transition-colors hover:bg-primary/5 hover:text-primary"
               onClick={() => setIsSocialMenuOpen(false)}
             >
@@ -400,7 +400,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>Zona 4, Ciudad de Guatemala</li>
               <li>info@indesa.com.gt</li>
-              <li>+502 2222-3333</li>
+              <li>+502 5843-3796</li>
             </ul>
           </div>
           <div>

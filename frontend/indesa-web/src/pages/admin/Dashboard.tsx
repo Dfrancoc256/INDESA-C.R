@@ -53,9 +53,9 @@ export function Dashboard() {
         />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7 lg:items-start">
         {/* Recent Reservations */}
-        <Card className="lg:col-span-4">
+        <Card className="h-fit lg:col-span-4 lg:self-start">
           <CardHeader>
             <CardTitle>Reservas Recientes</CardTitle>
             <CardDescription>
@@ -67,12 +67,12 @@ export function Dashboard() {
               <div className="space-y-2">
                 {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-12 w-full" />)}
               </div>
-            ) : reservasRecientes?.length === 0 ? (
+            ) : (reservasRecientes?.slice(0, 5) ?? []).length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No hay reservas recientes
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <div className="max-h-[430px] overflow-y-auto overflow-x-auto pr-2">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -83,7 +83,7 @@ export function Dashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {reservasRecientes?.map((reserva) => (
+                    {(reservasRecientes?.slice(0, 5) ?? []).map((reserva) => (
                       <TableRow key={reserva.id}>
                         <TableCell className="font-medium">
                           {reserva.cliente_nombre}
@@ -114,7 +114,7 @@ export function Dashboard() {
         </Card>
 
         {/* Low Stock Alerts */}
-        <Card className="lg:col-span-3">
+        <Card className="h-fit lg:col-span-3 lg:self-start">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-500" />

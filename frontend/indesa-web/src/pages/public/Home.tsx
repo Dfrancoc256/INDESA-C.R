@@ -8,6 +8,7 @@ import {
   getInitials,
   getTarifaPrincipal,
   getTarifasProducto,
+  getPrecioReferenciaProducto,
   getTodayDate,
 } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -184,17 +185,6 @@ export function Home() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const scrollToCatalog = () => {
-    const catalogSection = document.getElementById("catalogo-productos");
-    if (!catalogSection) return;
-
-    const headerOffset = 112;
-    const top = catalogSection.getBoundingClientRect().top + window.scrollY - headerOffset;
-
-    window.scrollTo({ top, behavior: "smooth" });
-    window.history.replaceState(null, "", "#catalogo-productos");
-  };
-
   const openReservaModal = (producto: HomeProduct) => {
     const tarifaPrincipal = getTarifaPrincipal(producto);
     setSelectedProduct(producto);
@@ -278,7 +268,7 @@ export function Home() {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Hero Section */}
-      <section className="relative flex min-h-[430px] items-center overflow-hidden bg-zinc-950 py-12 text-white md:min-h-[500px] md:py-16 lg:min-h-[540px]">
+      <section className="relative flex min-h-[370px] items-center overflow-hidden bg-zinc-950 py-10 text-white md:min-h-[430px] md:py-12 lg:min-h-[460px]">
         <div className="absolute inset-0">
           {heroSlides.map((slide, index) => (
             <img
@@ -303,13 +293,10 @@ export function Home() {
               {heroSlides[activeSlide].description}
             </p>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button
-                type="button"
-                size="lg"
-                onClick={scrollToCatalog}
-                className="h-12 px-6 text-base shadow-lg transition-all duration-200 hover:-translate-y-0.5"
-              >
-                Ver Catálogo <ArrowRight className="ml-2 h-5 w-5" />
+              <Button asChild size="lg" className="h-12 px-6 text-base shadow-lg transition-all duration-200 hover:-translate-y-0.5">
+                <Link href="/catalogo">
+                  Ver Catálogo <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="h-12 bg-white/10 px-6 text-base text-white border-white/30 backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/20 hover:text-white">
                 <Link href="/reservar">Reservar</Link>
@@ -333,9 +320,9 @@ export function Home() {
       </section>
 
       {/* Product Catalog */}
-      <section id="catalogo-productos" className="bg-gray-50 py-10 md:py-14">
+      <section id="catalogo-productos" className="bg-gray-50 py-7 md:py-10">
         <div className="container mx-auto px-4 md:px-8">
-          <div className="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+          <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
               <h2 className="text-3xl font-bold tracking-tight">Catálogo de Productos</h2>
             </div>
@@ -371,7 +358,9 @@ export function Home() {
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {productosCatalogo.map((producto) => {
               const agotado = (producto.cantidad ?? 0) <= 0;
+              const tarifasDisponibles = getTarifasProducto(producto);
               const tarifa = getTarifaPrincipal(producto);
+              const precioReferencia = getPrecioReferenciaProducto(producto);
 
               return (
                 <Card key={producto.id} className="group relative overflow-hidden border bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:scale-[1.01] hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10">
@@ -428,10 +417,25 @@ export function Home() {
                     <p className="mb-4 line-clamp-2 min-h-10 text-sm text-muted-foreground">
                       {producto.descripcion}
                     </p>
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      {tarifasDisponibles.map((tarifaVisible) => (
+                        <span
+                          key={tarifaVisible.tipo}
+                          className="rounded-full border border-primary/15 bg-primary/5 px-2.5 py-1 text-[11px] font-semibold text-primary"
+                        >
+                          {tarifaVisible.label}: {formatCurrency(tarifaVisible.value)}
+                        </span>
+                      ))}
+                    </div>
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         <div className="text-xl font-bold text-primary">{formatCurrency(tarifa.value)}</div>
                         <div className="text-xs font-medium text-muted-foreground">por {tarifa.suffix}</div>
+                        {precioReferencia > 0 && (
+                          <div className="mt-1 text-[11px] font-medium text-muted-foreground">
+                            Referencia base: {formatCurrency(precioReferencia)}
+                          </div>
+                        )}
                       </div>
                       <Link href={`/producto/${producto.id}`} className="text-sm font-semibold text-muted-foreground transition-all duration-200 hover:text-primary group-hover:translate-x-1">
                         Detalle
@@ -526,6 +530,13 @@ export function Home() {
                   <div className="mt-2 text-primary font-bold">
                     {formatCurrency(getTarifaPrincipal(selectedProduct).value)}
                     <span className="ml-1 text-xs font-medium text-muted-foreground">por {getTarifaPrincipal(selectedProduct).suffix}</span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {tarifasReserva.map((tarifa) => (
+                      <span key={tarifa.tipo} className="rounded-full border border-primary/15 bg-primary/5 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                        {tarifa.label}: {formatCurrency(tarifa.value)}
+                      </span>
+                    ))}
                   </div>
                   <div className="mt-2 text-sm text-muted-foreground">{getDisponibilidadLabel(selectedProduct)}</div>
                 </div>
@@ -684,3 +695,4 @@ export function Home() {
     </div>
   );
 }
+

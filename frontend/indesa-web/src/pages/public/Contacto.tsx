@@ -69,7 +69,7 @@ export function Contacto() {
                   <p className="text-muted-foreground leading-relaxed">
                     PBX: +502 2222-3333<br />
                     Ventas Directas: +502 5555-4444<br />
-                    Soporte Técnico: +502 2222-3334
+                    Soporte Técnico: +502 5843-3796
                   </p>
                 </div>
               </div>

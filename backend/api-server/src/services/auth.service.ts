@@ -16,14 +16,14 @@ export async function login(email: string, password: string) {
   }
 
   // Obtener rol con permisos desde BD
-  const roles = await db.select().from(rolesTable).where(eq(rolesTable.id, usuario.roleId)).limit(1);
+  const roles = await db.select().from(rolesTable).where(eq(rolesTable.id, usuario.role_id)).limit(1);
   const rol = roles[0];
   if (!rol) throw Object.assign(new Error("Rol no encontrado"), { status: 500 });
 
   const payload = {
     sub: usuario.id,
     email: usuario.email,
-    roleId: usuario.roleId,
+    roleId: usuario.role_id,
     rolNombre: rol.nombre,
   };
 
@@ -74,7 +74,7 @@ export async function refresh(refreshToken: string) {
     throw Object.assign(new Error("Usuario inactivo"), { status: 401 });
   }
 
-  const roles = await db.select().from(rolesTable).where(eq(rolesTable.id, usuario.roleId)).limit(1);
+  const roles = await db.select().from(rolesTable).where(eq(rolesTable.id, usuario.role_id)).limit(1);
   const rol = roles[0];
   if (!rol) throw Object.assign(new Error("Rol no encontrado"), { status: 500 });
 
@@ -89,7 +89,7 @@ export async function refresh(refreshToken: string) {
   });
 
   return {
-    access_token: signAccessToken({ sub: usuario.id, email: usuario.email, roleId: usuario.roleId, rolNombre: rol.nombre }),
+    access_token: signAccessToken({ sub: usuario.id, email: usuario.email, roleId: usuario.role_id, rolNombre: rol.nombre }),
     refresh_token: newRefresh,
     expires_in: 900,
     usuario: {

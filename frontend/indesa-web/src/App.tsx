@@ -5,6 +5,8 @@ import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { AdminLayout } from '@/components/layout/AdminLayout';
+import { hasPermission } from '@/lib/permissions';
+import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
 
 // Pages
@@ -44,6 +46,30 @@ function Redirect({ to }: { to: string }) {
   }, [setLocation, to]);
 
   return null;
+}
+
+function RequirePermission({
+  permission,
+  fallback,
+  children,
+}: {
+  permission: string;
+  fallback: string;
+  children: React.ReactNode;
+}) {
+  const { usuario, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && !hasPermission(usuario, permission)) {
+      setLocation(fallback);
+    }
+  }, [isLoading, permission, fallback, setLocation, usuario]);
+
+  if (isLoading) return null;
+  if (!hasPermission(usuario, permission)) return null;
+
+  return <>{children}</>;
 }
 
 function ScrollToTop() {
@@ -109,31 +135,31 @@ function Router() {
 
       {/* Admin Protected Routes */}
       <Route path="/admin/dashboard">
-        <AdminLayout><Dashboard /></AdminLayout>
+        <AdminLayout><RequirePermission permission="dashboard.ver" fallback="/admin/productos"><Dashboard /></RequirePermission></AdminLayout>
       </Route>
       <Route path="/admin/productos/nuevo">
-        <AdminLayout><ProductoNuevo /></AdminLayout>
+        <AdminLayout><RequirePermission permission="productos.crear" fallback="/admin/productos"><ProductoNuevo /></RequirePermission></AdminLayout>
       </Route>
       <Route path="/admin/productos/editar/:id">
-        <AdminLayout><ProductoEditar /></AdminLayout>
+        <AdminLayout><RequirePermission permission="productos.editar" fallback="/admin/productos"><ProductoEditar /></RequirePermission></AdminLayout>
       </Route>
       <Route path="/admin/productos">
-        <AdminLayout><ProductosList /></AdminLayout>
+        <AdminLayout><RequirePermission permission="productos.ver" fallback="/admin/reservas"><ProductosList /></RequirePermission></AdminLayout>
       </Route>
       <Route path="/admin/categorias">
-        <AdminLayout><Categorias /></AdminLayout>
+        <AdminLayout><RequirePermission permission="categorias.ver" fallback="/admin/productos"><Categorias /></RequirePermission></AdminLayout>
       </Route>
       <Route path="/admin/inventario">
-        <AdminLayout><Inventario /></AdminLayout>
+        <AdminLayout><RequirePermission permission="inventario.ver" fallback="/admin/productos"><Inventario /></RequirePermission></AdminLayout>
       </Route>
       <Route path="/admin/reservas">
-        <AdminLayout><Reservas /></AdminLayout>
+        <AdminLayout><RequirePermission permission="reservas.ver" fallback="/admin/productos"><Reservas /></RequirePermission></AdminLayout>
       </Route>
       <Route path="/admin/usuarios">
-        <AdminLayout><Usuarios /></AdminLayout>
+        <AdminLayout><RequirePermission permission="usuarios.ver" fallback="/admin/productos"><Usuarios /></RequirePermission></AdminLayout>
       </Route>
       <Route path="/admin/finanzas">
-        <AdminLayout><Finanzas /></AdminLayout>
+        <AdminLayout><RequirePermission permission="finanzas.ver" fallback="/admin/productos"><Finanzas /></RequirePermission></AdminLayout>
       </Route>
       <Route path="/admin">
         <Redirect to="/admin/dashboard" />

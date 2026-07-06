@@ -8,11 +8,11 @@ export async function findAllUsuarios() {
       nombre: usuariosTable.nombre,
       apellido: usuariosTable.apellido,
       email: usuariosTable.email,
-      roleId: usuariosTable.roleId,
-      rolNombre: rolesTable.nombre,
+      role_id: usuariosTable.roleId,
+      rol_nombre: rolesTable.nombre,
       activo: usuariosTable.activo,
-      lastLogin: usuariosTable.lastLogin,
-      createdAt: usuariosTable.createdAt,
+      last_login: usuariosTable.lastLogin,
+      created_at: usuariosTable.createdAt,
     })
     .from(usuariosTable)
     .leftJoin(rolesTable, eq(usuariosTable.roleId, rolesTable.id))
@@ -26,11 +26,11 @@ export async function findUsuarioById(id: number) {
       nombre: usuariosTable.nombre,
       apellido: usuariosTable.apellido,
       email: usuariosTable.email,
-      roleId: usuariosTable.roleId,
-      rolNombre: rolesTable.nombre,
+      role_id: usuariosTable.roleId,
+      rol_nombre: rolesTable.nombre,
       activo: usuariosTable.activo,
-      lastLogin: usuariosTable.lastLogin,
-      createdAt: usuariosTable.createdAt,
+      last_login: usuariosTable.lastLogin,
+      created_at: usuariosTable.createdAt,
     })
     .from(usuariosTable)
     .leftJoin(rolesTable, eq(usuariosTable.roleId, rolesTable.id))
@@ -47,8 +47,8 @@ export async function findUsuarioByEmail(email: string) {
       apellido: usuariosTable.apellido,
       email: usuariosTable.email,
       passwordHash: usuariosTable.passwordHash,
-      roleId: usuariosTable.roleId,
-      rolNombre: rolesTable.nombre,
+      role_id: usuariosTable.roleId,
+      rol_nombre: rolesTable.nombre,
       activo: usuariosTable.activo,
     })
     .from(usuariosTable)
@@ -65,7 +65,14 @@ export async function createUsuario(data: {
   passwordHash: string;
   roleId: number;
 }) {
-  const rows = await db.insert(usuariosTable).values(data).returning();
+  const rows = await db.insert(usuariosTable).values({
+    nombre: data.nombre,
+    apellido: data.apellido ?? null,
+    email: data.email,
+    passwordHash: data.passwordHash,
+    roleId: data.roleId,
+    activo: true,
+  }).returning();
   return rows[0];
 }
 

@@ -3,9 +3,10 @@ import * as service from "../services/reservas.service";
 
 export async function list(req: Request, res: Response): Promise<void> {
   try {
-    const { estado, page, limit } = req.query as Record<string, string>;
+    const { estado, busqueda, page, limit } = req.query as Record<string, string>;
     const data = await service.listReservas({
       estado,
+      busqueda,
       page: page ? Number(page) : 1,
       limit: limit ? Number(limit) : 20,
     });
@@ -17,7 +18,7 @@ export async function list(req: Request, res: Response): Promise<void> {
 
 export async function getOne(req: Request, res: Response): Promise<void> {
   try {
-    const data = await service.getReserva(Number(req.params["id"]));
+    const data = await service.getReservaDetalle(Number(req.params["id"]));
     res.json(data);
   } catch (err: any) {
     res.status(err.status ?? 500).json({ error: err.message });
