@@ -8,6 +8,7 @@ import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { errorMessages } from "@/lib/errorMessages";
 import {
   Form,
   FormControl,
@@ -38,12 +39,27 @@ export function Login() {
     try {
       setIsLoading(true);
       await login(data);
-      // AuthContext handles the redirect
     } catch (error: any) {
+      const apiStatus = Number(error?.status) || 0;
+      let friendlyMessage = error?.message || errorMessages.generic;
+
+      if (apiStatus === 401) {
+        friendlyMessage = errorMessages.login401;
+      } else if (apiStatus >= 500) {
+        friendlyMessage = errorMessages.login500;
+      }
+
+      if (apiStatus === 401) {
+        form.setError("password", {
+          type: "manual",
+          message: friendlyMessage,
+        });
+      }
+
       toast({
         variant: "destructive",
         title: "Error al iniciar sesión",
-        description: error?.message || "Revisa tus credenciales e intenta nuevamente.",
+        description: friendlyMessage,
       });
     } finally {
       setIsLoading(false);

@@ -7,7 +7,9 @@ import { PublicLayout } from '@/components/layout/PublicLayout';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { hasPermission } from '@/lib/permissions';
 import { useAuth } from '@/contexts/AuthContext';
-import { useEffect } from 'react';
+import { Component, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { TriangleAlert, RefreshCw } from 'lucide-react';
 
 // Pages
 import NotFound from '@/pages/not-found';
@@ -37,6 +39,46 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+class AppErrorBoundary extends Component<
+  { children: React.ReactNode },
+  { hasError: boolean }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4 py-12 text-center">
+          <div className="max-w-lg rounded-xl border bg-white p-8 shadow-xl">
+            <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+              <TriangleAlert className="h-7 w-7" />
+            </div>
+            <h1 className="text-2xl font-bold">Ocurrió un problema inesperado</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Refresque la página para continuar. Si el problema persiste, revise la conexión con el servidor.
+            </p>
+            <div className="mt-6 flex justify-center gap-3">
+              <Button onClick={() => window.location.reload()} className="gap-2">
+                <RefreshCw className="h-4 w-4" />
+                Recargar
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 function Redirect({ to }: { to: string }) {
   const [, setLocation] = useLocation();
@@ -181,8 +223,10 @@ function App() {
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
           <AuthProvider>
-            <ScrollToTop />
-            <Router />
+            <AppErrorBoundary>
+              <ScrollToTop />
+              <Router />
+            </AppErrorBoundary>
           </AuthProvider>
         </WouterRouter>
         <Toaster />

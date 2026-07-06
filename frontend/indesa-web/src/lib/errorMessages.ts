@@ -1,0 +1,17 @@
+export const errorMessages = {
+  generic: "No fue posible completar la acción en este momento. Intente nuevamente.",
+  loadData: "No fue posible cargar la información en este momento. Por favor, intente nuevamente.",
+  login401: "Correo o contraseña incorrectos. Verifique sus datos e intente nuevamente.",
+  login500: "No fue posible iniciar sesión en este momento. Inténtelo nuevamente más tarde.",
+  createUser: "No fue posible registrar el usuario. Verifique los datos e intente nuevamente.",
+  updateUser: "No fue posible actualizar el usuario. Verifique los datos e intente nuevamente.",
+  resetPassword: "No fue posible restablecer la contraseña. Intente nuevamente.",
+  toggleUser: "No fue posible cambiar el estado del usuario. Intente nuevamente.",
+  createProduct: "No fue posible guardar el producto. Verifique los datos e intente nuevamente.",
+  updateProduct: "No fue posible actualizar el producto. Verifique los datos e intente nuevamente.",
+  createCategory: "No fue posible guardar la categoría. Verifique el nombre e intente nuevamente.",
+  updateCategory: "No fue posible actualizar la categoría. Verifique los datos e intente nuevamente.",
+  updateInventory: "No fue posible actualizar el inventario. Verifique los datos e intente nuevamente.",
+  updateReservation: "No fue posible actualizar la reserva. Intente nuevamente.",
+  createReservation: "No fue posible registrar la reserva. Verifique los datos e intente nuevamente.",
+};

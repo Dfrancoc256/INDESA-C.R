@@ -39,4 +39,27 @@ app.use("/api", apiRateLimit);
 // Rutas
 app.use("/api", router);
 
+app.use((req, res) => {
+  res.status(404).json({ error: "Ruta no encontrada" });
+});
+
+app.use((err: any, req: any, res: any, next: any) => {
+  if (res.headersSent) {
+    return next(err);
+  }
+
+  const status = Number(err?.status) || 500;
+  const message =
+    status >= 500
+      ? "Error interno del servidor"
+      : err?.message || "Solicitud no procesable";
+
+  logger.error({ err, method: req?.method, url: req?.url, status }, "Unhandled API error");
+
+  res.status(status).json({
+    error: message,
+    ...(status >= 500 ? { requestId: req?.id } : {}),
+  });
+});
+
 export default app;

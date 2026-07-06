@@ -335,7 +335,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           }`}
         >
           <div className="border-b px-4 py-3">
-            <div className="text-sm font-bold text-foreground">Contacto rápido</div>
+            <div className="text-sm font-bold text-foreground">Contactos</div>
             <div className="text-xs text-muted-foreground">Cotiza o resuelve dudas con INDESA.</div>
           </div>
           <div className="p-2">
@@ -370,11 +370,11 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         <button
           type="button"
           onClick={() => setIsSocialMenuOpen((current) => !current)}
-          aria-label={isSocialMenuOpen ? "Cerrar redes sociales" : "Abrir redes sociales"}
+          aria-label={isSocialMenuOpen ? "Cerrar contactos" : "Abrir contactos"}
           title={isSocialMenuOpen ? "Cerrar contacto" : "Abrir contacto"}
           className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl shadow-primary/25 transition-all duration-200 hover:-translate-y-1 hover:bg-primary/90 hover:shadow-2xl"
         >
-          <FaWhatsapp className="h-6 w-6" />
+          <Phone className="h-6 w-6" />
         </button>
       </div>
 

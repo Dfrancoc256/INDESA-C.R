@@ -35,26 +35,16 @@ function readEnvFile(filePath: string): void {
   }
 }
 
-function findEnvFile(startDirectory: string): string | null {
-  let current = path.resolve(startDirectory);
-
-  while (true) {
-    const envPath = path.join(current, ".env");
-    if (fs.existsSync(envPath)) return envPath;
-
-    const parent = path.dirname(current);
-    if (parent === current) return null;
-
-    current = parent;
-  }
-}
-
 const currentFileDirectory = path.dirname(fileURLToPath(import.meta.url));
-const searchRoots = [process.cwd(), currentFileDirectory];
+const backendPackageDirectory = path.resolve(currentFileDirectory, "..", "..");
+const envCandidates = [
+  process.env["INDESA_ENV_FILE"],
+  path.join(backendPackageDirectory, ".env.local"),
+  path.join(backendPackageDirectory, ".env"),
+].filter((candidate): candidate is string => Boolean(candidate));
 
-for (const root of searchRoots) {
-  const envPath = findEnvFile(root);
-  if (envPath) {
+for (const envPath of envCandidates) {
+  if (fs.existsSync(envPath)) {
     readEnvFile(envPath);
     break;
   }
