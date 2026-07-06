@@ -348,7 +348,7 @@ export function Home() {
             </div>
           ) : isCatalogoError ? (
             <div className="rounded-lg border bg-white p-8 text-center text-muted-foreground">
-              No se pudo cargar el catálogo. Verifica que el backend esté activo.
+              No fue posible cargar el catálogo en este momento. Por favor, inténtelo nuevamente en unos instantes.
             </div>
           ) : productosCatalogo.length === 0 ? (
             <div className="rounded-lg border bg-white p-8 text-center text-muted-foreground">
@@ -695,4 +695,5 @@ export function Home() {
     </div>
   );
 }
+
 

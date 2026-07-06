@@ -24,7 +24,7 @@ pnpm install
 ```
 
 Copia `.env.example` como `.env` y ajusta `DATABASE_URL` y `JWT_SECRET`.
-El backend carga ese archivo automaticamente al iniciar en local.
+El backend carga ese archivo automaticamente al iniciar. Para el servidor usa la base PostgreSQL local del VPS en `localhost`.
 
 ## Base de datos
 
@@ -38,7 +38,7 @@ psql "$DATABASE_URL" -f database/seed.sql
 Para crear rapidamente la base minima del login local:
 
 ```bash
-psql "postgresql://postgres:INDESA@localhost:5432/INDESA" -f database/crear-db-login.sql
+psql "postgresql://indesa_user:6789juanpatito.@localhost:5432/indesa" -f database/crear-db-login.sql
 ```
 
 Usuario de prueba:

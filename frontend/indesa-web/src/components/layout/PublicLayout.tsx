@@ -1,8 +1,9 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, LayoutDashboard, LockKeyhole, Mail, Menu, MessageCircle, Phone, Search, X } from "lucide-react";
+import { ArrowRight, LayoutDashboard, LockKeyhole, Mail, Menu, Phone, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { FaWhatsapp } from "react-icons/fa";
 import { getListProductosQueryKey, useListProductos, type Producto } from "@workspace/api-client-react";
 import { formatCurrency, getInitials, getTarifaPrincipal } from "@/lib/utils";
 import logoIndesa from "@/assets/logo-indesa-wordmark.png";
@@ -345,7 +346,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold text-[#128C7E] transition-colors hover:bg-[#128C7E]/10 hover:text-[#075E54]"
               onClick={() => setIsSocialMenuOpen(false)}
             >
-              <MessageCircle className="h-4 w-4 text-[#128C7E]" />
+              <FaWhatsapp className="h-4 w-4 text-[#128C7E]" />
               WhatsApp
             </a>
             <a
@@ -370,10 +371,10 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           type="button"
           onClick={() => setIsSocialMenuOpen((current) => !current)}
           aria-label={isSocialMenuOpen ? "Cerrar redes sociales" : "Abrir redes sociales"}
-          className="inline-flex h-14 items-center gap-3 rounded-full bg-primary px-5 font-semibold text-white shadow-xl shadow-primary/25 transition-all duration-200 hover:-translate-y-1 hover:bg-primary/90 hover:shadow-2xl"
+          title={isSocialMenuOpen ? "Cerrar contacto" : "Abrir contacto"}
+          className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl shadow-primary/25 transition-all duration-200 hover:-translate-y-1 hover:bg-primary/90 hover:shadow-2xl"
         >
-          <Phone className="h-5 w-5" />
-          Contacto
+          <FaWhatsapp className="h-6 w-6" />
         </button>
       </div>
 
@@ -419,3 +420,4 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
