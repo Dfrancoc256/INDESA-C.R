@@ -150,7 +150,7 @@ export function Catalogo() {
             <div>
               <h1 className="mb-2 text-2xl font-bold tracking-tight md:text-3xl">Catálogo de Maquinaria</h1>
               <p className="max-w-xl text-sm leading-relaxed text-muted-foreground md:text-base">
-                Encuentra maquinaria, equipos de apoyo y repuestos con operador coordinado por INDESA.
+                Encuentra maquinaria, equipos de apoyo coordinado por INDESA.
               </p>
             </div>
             <div className="w-fit rounded-md border bg-gray-50 px-3 py-2 text-sm font-semibold text-muted-foreground">
