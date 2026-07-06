@@ -39,7 +39,35 @@ export function Contacto() {
       </div>
 
       <div className="container mx-auto px-4 md:px-8 py-12 md:py-20">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="border-0 shadow-lg">
+              <CardContent className="p-8">
+                <h2 className="text-3xl font-bold mb-4">Misión</h2>
+                <p className="text-muted-foreground leading-relaxed">
+                  Brindar soluciones integrales de alquiler de maquinaria y equipo para la construcción,
+                  ofreciendo equipos confiables, seguros y de alta calidad que contribuyan al éxito de los
+                  proyectos de nuestros clientes, respaldados por un servicio eficiente, asesoría especializada
+                  y un compromiso permanente con la excelencia.
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-0 shadow-lg">
+              <CardContent className="p-8">
+                <h2 className="text-3xl font-bold mb-4">Visión</h2>
+                <p className="text-muted-foreground leading-relaxed">
+                  Ser la empresa líder y referente en el alquiler de maquinaria y equipo para la construcción
+                  en Guatemala, reconocida por la calidad de nuestros servicios, la innovación de nuestras
+                  soluciones, la confianza de nuestros clientes y nuestra contribución al desarrollo de la
+                  infraestructura del país.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 max-w-6xl mx-auto mt-2">
           
           {/* Contact Info */}
           <div>
@@ -53,9 +81,9 @@ export function Contacto() {
                 <div>
                   <h3 className="font-bold text-lg mb-1">Dirección Principal</h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    Avenida Reforma 9-55, Zona 10<br />
-                    Edificio Reforma 10, Nivel 5<br />
-                    Ciudad de Guatemala, Guatemala 01010
+                    29 calle 14-24 zona 13<br />
+                    Colonia La Libertad<br />
+                    Ciudad de Guatemala, Guatemala
                   </p>
                 </div>
               </div>
@@ -67,9 +95,8 @@ export function Contacto() {
                 <div>
                   <h3 className="font-bold text-lg mb-1">Teléfonos</h3>
                   <p className="text-muted-foreground leading-relaxed">
-                    PBX: +502 2222-3333<br />
-                    Ventas Directas: +502 5555-4444<br />
-                    Soporte Técnico: +502 5843-3796
+                    Oficina: +502 2298-4932<br />
+                    WhatsApp: +502 5214-9029
                   </p>
                 </div>
               </div>
@@ -103,11 +130,15 @@ export function Contacto() {
               </div>
             </div>
 
-            {/* Simulated Map */}
-            <div className="mt-10 bg-gray-200 h-64 rounded-lg w-full flex items-center justify-center border text-muted-foreground shadow-inner">
-              <span className="flex items-center gap-2">
-                <MapPin className="h-5 w-5" /> Mapa de Ubicación
-              </span>
+            {/* Map */}
+            <div className="mt-10 overflow-hidden rounded-lg border shadow-inner">
+              <iframe
+                title="Ubicación INDESA"
+                src="https://www.google.com/maps?q=29%20calle%2014-24%20zona%2013%20colonia%20la%20libertad%20ciudad%20de%20guatemala&output=embed"
+                className="h-72 w-full"
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
             </div>
           </div>
 

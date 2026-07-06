@@ -9,6 +9,24 @@ import { formatCurrency, getInitials, getTarifaPrincipal } from "@/lib/utils";
 import logoIndesa from "@/assets/logo-indesa-wordmark.png";
 import logoIndesaCompleto from "@/assets/logo-indesa-transparent.png";
 
+const companyInfo = {
+  addressLines: [
+    "29 calle 14-24 zona 13",
+    "Colonia La Libertad",
+    "Ciudad de Guatemala, Guatemala",
+  ],
+  phones: [
+    { label: "Oficina", value: "+502 2298-4932" },
+    { label: "WhatsApp", value: "+502 5214-9029" },
+  ],
+  emails: [
+    { label: "Ventas", value: "ventas@indesa.com.gt" },
+    { label: "Información", value: "info@indesa.com.gt" },
+    { label: "Proveedores", value: "compras@indesa.com.gt" },
+  ],
+  facebook: "https://www.facebook.com/profile.php?id=61591360179036",
+};
+
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   const [location, setLocation] = useLocation();
@@ -17,7 +35,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isSocialMenuOpen, setIsSocialMenuOpen] = useState(false);
   const socialMenuRef = useRef<HTMLDivElement | null>(null);
-    const whatsappUrl = "https://wa.me/50258433796?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20la%20renta%20de%20maquinaria.";
+  const whatsappUrl = "https://wa.me/50252149029?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20la%20renta%20de%20maquinaria.";
 
   const navLinks = [
     { href: "/", label: "Inicio" },
@@ -379,37 +397,45 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       <footer className="border-t bg-muted/40 py-12">
-        <div className="container mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
-          <div>
-            <div className="flex items-center gap-2 text-primary mb-4">
-              <img src={logoIndesaCompleto} alt="INDESA" className="h-20 w-auto max-w-[150px] object-contain" />
-            </div>
-            <p className="text-sm text-muted-foreground">
+          <div className="container mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div>
+              <div className="flex items-center gap-2 text-primary mb-4">
+                <img src={logoIndesaCompleto} alt="INDESA" className="h-20 w-auto max-w-[150px] object-contain" />
+              </div>
+              <p className="text-sm text-muted-foreground">
               Maquinaria, repuestos y equipos industriales de alta calidad para empresas y profesionales en Guatemala.
-            </p>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-4">Enlaces</h4>
+              </p>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Enlaces</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/catalogo" className="hover:text-primary">Catálogo de Productos</Link></li>
               <li><Link href="/reservar" className="hover:text-primary">Realizar Reserva</Link></li>
               <li><Link href="/contacto" className="hover:text-primary">Contacto</Link></li>
             </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-4">Contacto</h4>
-            <ul className="space-y-2 text-sm text-muted-foreground">
-              <li>Zona 4, Ciudad de Guatemala</li>
-              <li>info@indesa.com.gt</li>
-              <li>+502 5843-3796</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="font-semibold mb-4">Horario</h4>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Contacto</h4>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+              <li>{companyInfo.addressLines[0]}</li>
+              <li>{companyInfo.addressLines[1]}</li>
+              <li>{companyInfo.addressLines[2]}</li>
+              <li>{companyInfo.phones[0].value}</li>
+              <li>{companyInfo.phones[1].value}</li>
+              <li>{companyInfo.emails[1].value}</li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="font-semibold mb-4">Horario</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>Lunes a Viernes: 8:00 - 17:00</li>
               <li>Sábados: 8:00 - 12:00</li>
               <li>Domingos: Cerrado</li>
+              <li>
+                <a href={companyInfo.facebook} target="_blank" rel="noreferrer" className="hover:text-primary">
+                  Facebook oficial
+                </a>
+              </li>
             </ul>
           </div>
         </div>
