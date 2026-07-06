@@ -8,6 +8,10 @@ import { apiRateLimit } from "./middlewares/rate-limit.middleware";
 
 const app: Express = express();
 
+// Cuando la app corre detrás de Nginx/Cloudflare/otro proxy, Express debe
+// confiar en el encabezado X-Forwarded-For para leer la IP real del cliente.
+app.set("trust proxy", Number(process.env["TRUST_PROXY"] ?? 1));
+
 // Seguridad HTTP headers
 app.use(helmet());
 
