@@ -28,10 +28,10 @@ export function Contacto() {
   return (
     <div className="bg-white min-h-screen">
       {/* Header */}
-      <div className="bg-zinc-900 text-white py-16 md:py-24">
+      <div className="bg-[#FF2800] text-white py-16 md:py-24">
         <div className="container mx-auto px-4 md:px-8 max-w-4xl text-center">
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">Contacto</h1>
-          <p className="text-zinc-300 text-lg md:text-xl">
+          <p className="text-white/90 text-lg md:text-xl">
             Estamos listos para atender sus requerimientos industriales. 
             Contáctenos para cotizaciones, asesoría técnica o soporte.
           </p>

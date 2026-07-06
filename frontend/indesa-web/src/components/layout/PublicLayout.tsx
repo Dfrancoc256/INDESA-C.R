@@ -105,6 +105,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   });
   const searchSuggestions = normalizedSearch ? searchResponse?.data ?? [] : [];
   const showSearchSuggestions = isSearchFocused && Boolean(normalizedSearch);
+  const isHomePage = location === "/";
 
   const goToProduct = (producto: Producto) => {
     setHeaderSearch(producto.nombre);
@@ -342,7 +343,11 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         <div className="h-0.5 w-full bg-black" />
       </header>
 
-      <main className="flex-1 flex flex-col">{children}</main>
+      <main className={`flex-1 flex flex-col ${isHomePage ? "pt-0" : "pt-20 md:pt-[92px]"}`}>
+        <div key={location} className="flex min-h-full flex-col animate-route-enter">
+          {children}
+        </div>
+      </main>
 
       <div ref={socialMenuRef} className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3">
         <div

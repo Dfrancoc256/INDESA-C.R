@@ -235,12 +235,29 @@
     to { transform: translateX(calc(-50% - 0.5rem)); }
   }
 
+  @keyframes indesa-route-enter {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+      filter: blur(2px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+      filter: blur(0);
+    }
+  }
+
   .indesa-auto-strip {
     animation: indesa-strip-scroll 28s linear infinite;
   }
 
   .indesa-auto-strip:hover {
     animation-play-state: paused;
+  }
+
+  .animate-route-enter {
+    animation: indesa-route-enter 320ms ease-out both;
   }
 
   input[type='search']::-webkit-search-cancel-button { @apply hidden; }
