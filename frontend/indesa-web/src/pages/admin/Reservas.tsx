@@ -17,6 +17,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { invalidateCatalogData } from "@/lib/queryInvalidation";
 import { useAuth } from "@/contexts/AuthContext";
 import { hasPermission } from "@/lib/permissions";
+import { errorMessages } from "@/lib/errorMessages";
 
 function formatDateOnly(value?: string | Date | null) {
   if (!value) return "Sin fecha";
@@ -66,14 +67,14 @@ export function Reservas() {
   const estadoMutation = useUpdateReservaEstado({
     mutation: {
       onSuccess: async () => {
-        toast({ title: "Estado actualizado", description: "La reserva ha cambiado de estado exitosamente." });
+        toast({ title: "Estado actualizado", description: "La reserva se actualizó correctamente." });
         await invalidateCatalogData(queryClient);
         await refetch();
         setIsNotaOpen(false);
         setNotaEstado("");
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "Error", description: err?.message || "No se pudo actualizar el estado." });
+        toast({ variant: "destructive", title: "No fue posible actualizar la reserva", description: err?.message || errorMessages.updateReservation });
       }
     }
   });

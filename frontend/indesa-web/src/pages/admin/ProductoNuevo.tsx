@@ -16,6 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { isValidImageSource, readImageFileAsDataUrl } from "@/lib/imageUpload";
 import { invalidateCatalogData } from "@/lib/queryInvalidation";
+import { errorMessages } from "@/lib/errorMessages";
 
 const precioTiempoSchema = z.preprocess(
   (value) => value === "" || value === null || value === undefined ? null : value,
@@ -57,8 +58,8 @@ export function ProductoNuevo() {
     } catch (error) {
       toast({
         variant: "destructive",
-        title: "Imagen no valida",
-        description: error instanceof Error ? error.message : "No se pudo cargar la imagen.",
+        title: "No fue posible cargar la imagen",
+        description: error instanceof Error ? error.message : errorMessages.generic,
       });
     }
   };
@@ -82,12 +83,12 @@ export function ProductoNuevo() {
   const createMutation = useCreateProducto({
     mutation: {
       onSuccess: async () => {
-        toast({ title: "Producto creado", description: "El producto ha sido guardado exitosamente." });
+        toast({ title: "Producto creado", description: "El producto fue guardado correctamente." });
         await invalidateCatalogData(queryClient);
         setLocation("/admin/productos");
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "Error al crear", description: err?.message || "Verifique los datos e intente nuevamente." });
+        toast({ variant: "destructive", title: "No fue posible crear el producto", description: err?.message || errorMessages.createProduct });
       }
     }
   });
@@ -95,14 +96,14 @@ export function ProductoNuevo() {
   const createCategoriaMutation = useCreateCategoria({
     mutation: {
       onSuccess: async (categoria) => {
-        toast({ title: "Categoría creada", description: "Ya puedes usarla en este producto." });
+        toast({ title: "Categoría creada", description: "Ya puede usarla en este producto." });
         await invalidateCatalogData(queryClient);
         await refetchCategorias();
         form.setValue("categoria_id", categoria.id);
         setNuevaCategoria("");
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "Error al crear categoría", description: err?.message || "Verifique el nombre e intente nuevamente." });
+        toast({ variant: "destructive", title: "No fue posible crear la categoría", description: err?.message || errorMessages.createCategory });
       },
     },
   });

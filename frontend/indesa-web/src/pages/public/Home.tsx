@@ -36,6 +36,7 @@ import { useEffect, useState, type FormEvent } from "react";
 import { useCreateReserva, useListProductos, type Producto } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateCatalogData } from "@/lib/queryInvalidation";
+import { errorMessages } from "@/lib/errorMessages";
 import bannerTools from "@/assets/images/banner-tools.png";
 import bannerWarehouse from "@/assets/images/banner-warehouse.png";
 import bannerMaterials from "@/assets/images/banner-materials.png";
@@ -158,7 +159,7 @@ export function Home() {
   const reservaMutation = useCreateReserva({
     mutation: {
       onError: (err: any) => {
-        const message = err?.message || "Verifique los datos e intente nuevamente.";
+        const message = err?.message || errorMessages.createReservation;
         const shouldRefreshCatalog = /producto no encontrado|desactivado|no disponible/i.test(message);
 
         if (shouldRefreshCatalog) {
@@ -168,7 +169,7 @@ export function Home() {
 
         toast({
           variant: "destructive",
-          title: "No se pudo registrar la reserva",
+          title: "No fue posible registrar la reserva",
           description: shouldRefreshCatalog
             ? `${message} Actualizamos el catálogo para mostrar la disponibilidad real.`
             : message,
@@ -348,7 +349,7 @@ export function Home() {
             </div>
           ) : isCatalogoError ? (
             <div className="rounded-lg border bg-white p-8 text-center text-muted-foreground">
-              No fue posible cargar el catálogo en este momento. Por favor, inténtelo nuevamente en unos instantes.
+              No fue posible cargar el catálogo en este momento. Por favor, intente nuevamente en unos instantes.
             </div>
           ) : productosCatalogo.length === 0 ? (
             <div className="rounded-lg border bg-white p-8 text-center text-muted-foreground">

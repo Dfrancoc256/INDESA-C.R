@@ -38,6 +38,7 @@ export function Login() {
   const onSubmit = async (data: LoginValues) => {
     try {
       setIsLoading(true);
+      form.clearErrors();
       await login(data);
     } catch (error: any) {
       const apiStatus = Number(error?.status) || 0;
@@ -50,6 +51,10 @@ export function Login() {
       }
 
       if (apiStatus === 401) {
+        form.setError("email", {
+          type: "manual",
+          message: errorMessages.login401,
+        });
         form.setError("password", {
           type: "manual",
           message: friendlyMessage,

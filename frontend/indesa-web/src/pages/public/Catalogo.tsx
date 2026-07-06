@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter, SlidersHorizontal, AlertCircle } from "lucide-react";
+import { errorMessages } from "@/lib/errorMessages";
 
 const pageSize = 12;
 
@@ -271,7 +272,7 @@ export function Catalogo() {
                 <AlertCircle className="h-12 w-12 text-destructive mb-4 opacity-80" />
                 <h3 className="text-xl font-bold mb-2">No fue posible cargar el catálogo</h3>
                 <p className="text-muted-foreground mb-6">
-                  Por favor, inténtelo nuevamente en unos instantes o verifique la conexión con el servidor.
+                  Por favor, intente nuevamente en unos instantes o verifique la conexión con el servidor.
                 </p>
               </div>
             ) : productosPagina.length === 0 ? (

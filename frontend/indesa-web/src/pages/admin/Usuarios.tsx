@@ -18,6 +18,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
+import { errorMessages } from "@/lib/errorMessages";
 
 const usuarioCreateSchema = z.object({
   nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
@@ -74,13 +75,13 @@ export function Usuarios() {
   const createMutation = useCreateUsuario({
     mutation: {
       onSuccess: () => {
-        toast({ title: "Usuario creado", description: "El usuario ha sido registrado en el sistema." });
+        toast({ title: "Usuario creado", description: "El usuario fue registrado correctamente." });
         refetch();
         setIsCrearOpen(false);
         createForm.reset();
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "Error", description: err?.message || "No se pudo crear el usuario." });
+        toast({ variant: "destructive", title: "No fue posible crear el usuario", description: err?.message || errorMessages.createUser });
       }
     }
   });
@@ -88,12 +89,12 @@ export function Usuarios() {
   const updateMutation = useUpdateUsuario({
     mutation: {
       onSuccess: () => {
-        toast({ title: "Usuario actualizado", description: "Los datos han sido actualizados exitosamente." });
+        toast({ title: "Usuario actualizado", description: "Los datos del usuario se actualizaron correctamente." });
         refetch();
         setIsEditarOpen(false);
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "Error", description: err?.message || "No se pudo actualizar el usuario." });
+        toast({ variant: "destructive", title: "No fue posible actualizar el usuario", description: err?.message || errorMessages.updateUser });
       }
     }
   });
@@ -101,12 +102,12 @@ export function Usuarios() {
   const resetMutation = useResetUsuarioPassword({
     mutation: {
       onSuccess: () => {
-        toast({ title: "Contraseña restablecida", description: "La contraseña ha sido cambiada exitosamente." });
+        toast({ title: "Contraseña restablecida", description: "La contraseña se cambió correctamente." });
         setIsResetOpen(false);
         resetForm.reset();
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "Error", description: err?.message || "No se pudo restablecer la contraseña." });
+        toast({ variant: "destructive", title: "No fue posible restablecer la contraseña", description: err?.message || errorMessages.resetPassword });
       }
     }
   });
@@ -114,11 +115,11 @@ export function Usuarios() {
   const toggleMutation = useToggleUsuario({
     mutation: {
       onSuccess: () => {
-        toast({ title: "Estado actualizado", description: "El estado del usuario ha sido modificado." });
+        toast({ title: "Estado actualizado", description: "El estado del usuario se modificó correctamente." });
         refetch();
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "Error", description: err?.message || "No se pudo cambiar el estado." });
+        toast({ variant: "destructive", title: "No fue posible cambiar el estado del usuario", description: err?.message || errorMessages.toggleUser });
       }
     }
   });

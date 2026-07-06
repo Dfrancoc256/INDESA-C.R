@@ -18,6 +18,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateCatalogData } from "@/lib/queryInvalidation";
+import { errorMessages } from "@/lib/errorMessages";
 
 const inventarioSchema = z.object({
   cantidad: z.coerce.number().min(0, "La cantidad debe ser mayor o igual a 0"),
@@ -57,14 +58,14 @@ export function Inventario() {
   const updateMutation = useUpdateInventario({
     mutation: {
       onSuccess: async () => {
-        toast({ title: "Inventario actualizado", description: "El ajuste se ha registrado correctamente." });
+        toast({ title: "Inventario actualizado", description: "El ajuste se registró correctamente." });
         await invalidateCatalogData(queryClient);
         await queryClient.invalidateQueries({ queryKey: getGetMovimientosInventarioQueryKey(productoSeleccionado as number) });
         setIsAjusteOpen(false);
         setProductoSeleccionado(null);
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "Error", description: err?.message || "No se pudo actualizar el inventario." });
+        toast({ variant: "destructive", title: "No fue posible actualizar el inventario", description: err?.message || errorMessages.updateInventory });
       }
     }
   });
