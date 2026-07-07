@@ -24,6 +24,7 @@ import {
 } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateCatalogData } from "@/lib/queryInvalidation";
+import { FaWhatsapp } from "react-icons/fa";
 
 const reservaGlobalSchema = z.object({
   cliente_nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
@@ -43,6 +44,11 @@ const reservaGlobalSchema = z.object({
 
 type ReservaGlobalValues = z.infer<typeof reservaGlobalSchema>;
 const todayDate = getTodayDate();
+const whatsappPhone = "50252149029";
+
+function onlyDigits(value: string) {
+  return value.replace(/\D/g, "");
+}
 
 export function Reservar() {
   const { toast } = useToast();
@@ -181,6 +187,18 @@ export function Reservar() {
   const totalEstimado = productoSeleccionado && tarifaSeleccionada
     ? tarifaSeleccionada.value * unidadesTarifa * (Number(form.watch("cantidad")) || 1)
     : 0;
+  const productImage = productoSeleccionado?.imagen_url;
+  const whatsappUrl = productoSeleccionado
+    ? `https://wa.me/${whatsappPhone}?text=${encodeURIComponent([
+        "Hola, quiero información para reservar este equipo:",
+        `Producto: ${productoSeleccionado.nombre}`,
+        `Tarifa: ${formatCurrency(getTarifaPrincipal(productoSeleccionado).value)} por ${getTarifaPrincipal(productoSeleccionado).suffix}`,
+        `Disponibles: ${productoSeleccionado.cantidad ?? "Consultar"}`,
+        `Nombre: ${form.watch("cliente_nombre") || "Pendiente"}`,
+        `Teléfono: ${form.watch("cliente_telefono") || "Pendiente"}`,
+        `Correo: ${form.watch("cliente_email") || "Pendiente"}`,
+      ].join("\n"))}`
+    : `https://wa.me/${whatsappPhone}`;
 
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
@@ -266,10 +284,24 @@ export function Reservar() {
                       />
 
                       {productoSeleccionado && (
-                        <div className="bg-gray-50 border rounded-md p-4 flex justify-between items-center">
+                        <div className="grid gap-4 rounded-md border bg-gray-50 p-4 md:grid-cols-[180px_1fr]">
+                          <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-md bg-white shadow-sm">
+                            {productImage ? (
+                              <img
+                                src={productImage}
+                                alt={productoSeleccionado.nombre}
+                                className="max-h-full max-w-full object-contain p-2"
+                              />
+                            ) : (
+                              <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-gray-300">
+                                {productoSeleccionado.nombre.slice(0, 1)}
+                              </div>
+                            )}
+                          </div>
                           <div>
-                            <div className="font-medium">{productoSeleccionado.nombre}</div>
-                            <div className="text-primary font-bold">
+                            <div className="text-xs font-medium text-muted-foreground">{productoSeleccionado.categoria_nombre}</div>
+                            <div className="text-2xl font-bold leading-tight">{productoSeleccionado.nombre}</div>
+                            <div className="mt-2 text-primary font-bold">
                               {formatCurrency(getTarifaPrincipal(productoSeleccionado).value)}
                               <span className="ml-1 text-xs font-medium text-muted-foreground">
                                 por {getTarifaPrincipal(productoSeleccionado).suffix}
@@ -280,21 +312,52 @@ export function Reservar() {
                                 Precio base de referencia: {formatCurrency(getPrecioReferenciaProducto(productoSeleccionado))}
                               </div>
                             )}
-                            <div className="mt-2 flex flex-wrap gap-2">
+                            <div className="mt-3 flex flex-wrap gap-2">
                               {tarifasProducto.map((tarifa) => (
                                 <span key={tarifa.tipo} className="rounded-full border border-primary/15 bg-primary/5 px-2.5 py-1 text-[11px] font-semibold text-primary">
                                   {tarifa.label}: {formatCurrency(tarifa.value)}
                                 </span>
                               ))}
                             </div>
+                            <div className="mt-3 text-sm text-muted-foreground">
+                              {productoSeleccionado.cantidad === 0 ? (
+                                <span className="font-bold text-destructive">Agotado</span>
+                              ) : (
+                                <span className="font-semibold text-green-600">Disponibles: {productoSeleccionado.cantidad}</span>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-right">
-                            <div className="text-sm text-muted-foreground">Disponibilidad</div>
-                            {productoSeleccionado.cantidad === 0 ? (
-                              <span className="text-destructive font-bold text-sm">Agotado</span>
-                            ) : (
-                              <span className="text-green-600 font-bold text-sm">En Stock</span>
-                            )}
+                        </div>
+                      )}
+
+                      {productoSeleccionado && (
+                        <div className="rounded-md border bg-white px-4 py-3 text-sm text-muted-foreground">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="rounded-full bg-primary/10 px-2 py-1 text-xs font-semibold text-primary">Opciones de reserva</span>
+                            <span>Elige producto, modalidad, fechas y cantidad.</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {productoSeleccionado && (
+                        <div className="grid gap-4 rounded-md border bg-gray-50 p-4 md:grid-cols-2">
+                          <div>
+                            <div className="text-sm font-semibold">Acción rápida</div>
+                            <p className="mt-1 text-sm text-muted-foreground">
+                              Puedes enviar la consulta por WhatsApp con los datos de esta reserva o guardar la solicitud desde aquí.
+                            </p>
+                          </div>
+                          <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                            <Button asChild type="button" variant="outline" className="gap-2">
+                              <a href={whatsappUrl} target="_blank" rel="noreferrer">
+                                <FaWhatsapp className="h-4 w-4 text-[#128C7E]" />
+                                Consultar por WhatsApp
+                              </a>
+                            </Button>
+                            <Button type="submit" className="gap-2">
+                              <ClipboardList className="h-4 w-4" />
+                              Enviar solicitud
+                            </Button>
                           </div>
                         </div>
                       )}
@@ -307,10 +370,13 @@ export function Reservar() {
                             <FormLabel>Cantidad *</FormLabel>
                             <FormControl>
                               <Input 
-                                type="number" 
+                                type="text" 
                                 min="1" 
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                                 className="w-full sm:w-1/3"
-                                {...field} 
+                                {...field}
+                                onChange={(event) => field.onChange(onlyDigits(event.target.value))}
                               />
                             </FormControl>
                             <FormMessage />
@@ -356,9 +422,16 @@ export function Reservar() {
                               render={({ field }) => (
                                 <FormItem>
                                   <FormLabel>{tarifaSeleccionada.plural} *</FormLabel>
-                                  <FormControl>
-                                    <Input type="number" min="1" {...field} />
-                                  </FormControl>
+                              <FormControl>
+                                <Input
+                                  type="text"
+                                  min="1"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  {...field}
+                                  onChange={(event) => field.onChange(onlyDigits(event.target.value))}
+                                />
+                              </FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
@@ -442,7 +515,13 @@ export function Reservar() {
                             <FormItem>
                               <FormLabel>Teléfono Celular *</FormLabel>
                               <FormControl>
-                                <Input placeholder="Para confirmar vía WhatsApp" {...field} />
+                                <Input
+                                  placeholder="Solo números"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  {...field}
+                                  onChange={(event) => field.onChange(onlyDigits(event.target.value))}
+                                />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -487,15 +566,28 @@ export function Reservar() {
                     </div>
 
                     <div className="pt-8">
-                      <Button 
-                        type="submit" 
-                        size="lg" 
-                        className="w-full h-14 text-lg"
-                        disabled={reservaMutation.isPending || (productoSeleccionado && productoSeleccionado.cantidad === 0)}
-                      >
-                        {reservaMutation.isPending ? "Procesando Solicitud..." : "Enviar Solicitud de Reserva"}
-                      </Button>
-                      <p className="text-center text-sm text-muted-foreground mt-4">
+                      <div className="flex flex-col gap-3 sm:flex-row">
+                        <Button
+                          asChild
+                          type="button"
+                          variant="outline"
+                          className="h-14 w-full gap-2 sm:w-1/2"
+                        >
+                          <a href={whatsappUrl} target="_blank" rel="noreferrer">
+                            <FaWhatsapp className="h-4 w-4 text-[#128C7E]" />
+                            Consultar por WhatsApp
+                          </a>
+                        </Button>
+                        <Button 
+                          type="submit" 
+                          size="lg" 
+                          className="h-14 w-full text-lg sm:w-1/2"
+                          disabled={reservaMutation.isPending || (productoSeleccionado && productoSeleccionado.cantidad === 0)}
+                        >
+                          {reservaMutation.isPending ? "Procesando Solicitud..." : "Enviar Solicitud de Reserva"}
+                        </Button>
+                      </div>
+                      <p className="mt-4 text-center text-sm text-muted-foreground">
                         Esta reserva no requiere pago inmediato. Un asesor le enviará la cotización final y los métodos de pago.
                       </p>
                     </div>
