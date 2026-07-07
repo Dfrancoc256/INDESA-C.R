@@ -37,9 +37,10 @@ import { useCreateReserva, useListProductos, type Producto } from "@workspace/ap
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateCatalogData } from "@/lib/queryInvalidation";
 import { errorMessages } from "@/lib/errorMessages";
-import bannerTools from "@/assets/images/banner-tools.png";
-import bannerWarehouse from "@/assets/images/banner-warehouse.png";
-import bannerMaterials from "@/assets/images/banner-materials.png";
+import bannerPrincipal1 from "@/assets/images/banner-principal-1.png";
+import bannerPrincipal2 from "@/assets/images/banner-principal-2.png";
+import bannerPrincipal3 from "@/assets/images/banner-principal-3.png";
+import bannerPrincipal4 from "@/assets/images/banner-principal-4.png";
 
 type HomeProduct = Producto;
 
@@ -72,25 +73,32 @@ const emptyReservaForm: ReservaFormState = {
 
 const heroSlides = [
   {
-    image: bannerTools,
+    image: bannerPrincipal1,
     label: "Maquinaria industrial",
-    title: "Maquinaria y Equipo Industrial de Alto Rendimiento",
+    title: "¿Necesitas rentar maquinaria o un servicio?",
     description:
-      "Conectamos a empresas y profesionales con maquinaria, equipos y componentes listos para trabajo pesado.",
+      "Conectamos a empresas y profesionales con maquinaria lista para trabajo pesado.",
   },
   {
-    image: bannerWarehouse,
+    image: bannerPrincipal2,
     label: "Inventario de maquinaria",
     title: "Equipos organizados para reservas más rápidas",
     description:
-      "Consulte disponibilidad, prepare solicitudes y reserve equipos desde una experiencia clara y dinámica.",
+      "Consulte disponibilidad y reserve equipos desde una experiencia clara y dinámica.",
   },
   {
-    image: bannerMaterials,
+    image: bannerPrincipal3,
     label: "Repuestos y componentes",
     title: "Componentes listos para industria, obra y mantenimiento",
     description:
-      "Apoye sus operaciones con repuestos, accesorios y maquinaria auxiliar de disponibilidad visible.",
+      "Apoye sus operaciones con repuestos, accesorios y maquinaria auxiliar.",
+  },
+  {
+    image: bannerPrincipal4,
+    label: "Soluciones INDESA",
+    title: "Soluciones pensadas para obra, industria y mantenimiento",
+    description:
+      "Encuentre equipos confiables para distintos tipos de proyectos con respaldo y atención cercana.",
   },
 ];
 

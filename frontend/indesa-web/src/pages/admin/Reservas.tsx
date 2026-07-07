@@ -1,5 +1,5 @@
-import { useListReservas, useUpdateReservaEstado, useGetReserva, getGetReservaQueryKey, ListReservasEstado } from "@workspace/api-client-react";
-import { useState } from "react";
+import { useListReservas, useUpdateReservaEstado, useGetReserva, getGetReservaQueryKey, ListReservasEstado, useListProductos, useCreateReserva } from "@workspace/api-client-react";
+import { useEffect, useMemo, useState } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,12 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Filter, Phone, Mail, FileText, CheckCircle, Truck, XCircle, Clock } from "lucide-react";
+import { Search, Filter, Phone, Mail, FileText, CheckCircle, Truck, XCircle, Clock, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { invalidateCatalogData } from "@/lib/queryInvalidation";
 import { useAuth } from "@/contexts/AuthContext";
 import { hasPermission } from "@/lib/permissions";
@@ -43,8 +44,75 @@ export function Reservas() {
   const [isNotaOpen, setIsNotaOpen] = useState(false);
   const [notaEstado, setNotaEstado] = useState("");
   const [nuevoEstado, setNuevoEstado] = useState<any>(null);
+  const [isAgregarOpen, setIsAgregarOpen] = useState(false);
+  const [agregarForm, setAgregarForm] = useState({
+    cliente_nombre: "",
+    cliente_email: "",
+    cliente_telefono: "",
+    producto_id: "",
+    cantidad: "1",
+    fecha_inicio: "",
+    fecha_fin: "",
+    tipo_tarifa: "dia",
+    unidades_tarifa: "1",
+    notas: "",
+  });
   const canEditReservas = hasPermission(usuario, "reservas.editar");
   const reservasColSpan = canEditReservas ? 6 : 5;
+
+  const { data: productosResponse } = useListProductos({ page: 1, limit: 100, orden: "nombre_asc" } as any);
+  const productosDisponibles = useMemo(() => productosResponse?.data ?? [], [productosResponse]);
+  const productoAgregar = useMemo(
+    () => productosDisponibles.find((producto: any) => producto.id.toString() === agregarForm.producto_id) ?? null,
+    [productosDisponibles, agregarForm.producto_id]
+  );
+
+  const createReservaMutation = useCreateReserva({
+    mutation: {
+      onSuccess: async () => {
+        toast({ title: "Reserva agregada", description: "La reserva manual se registró correctamente." });
+        await invalidateCatalogData(queryClient);
+        await refetch();
+        setIsAgregarOpen(false);
+        setAgregarForm({
+          cliente_nombre: "",
+          cliente_email: "",
+          cliente_telefono: "",
+          producto_id: "",
+          cantidad: "1",
+          fecha_inicio: "",
+          fecha_fin: "",
+          tipo_tarifa: "dia",
+          unidades_tarifa: "1",
+          notas: "",
+        });
+      },
+      onError: (err: any) => {
+        toast({
+          variant: "destructive",
+          title: "No fue posible registrar la reserva",
+          description: err?.message || errorMessages.createReservation,
+        });
+      },
+    },
+  });
+
+  useEffect(() => {
+    if (!agregarForm.fecha_inicio) return;
+    if (agregarForm.tipo_tarifa === "dia") return;
+
+    const base = new Date(`${agregarForm.fecha_inicio}T00:00:00`);
+    if (Number.isNaN(base.getTime())) return;
+
+    const dias = Math.max(1, Number(agregarForm.unidades_tarifa || 1));
+    const fechaFin = new Date(base);
+
+    if (agregarForm.tipo_tarifa === "semana") fechaFin.setDate(fechaFin.getDate() + (dias * 7) - 1);
+    if (agregarForm.tipo_tarifa === "mes") fechaFin.setMonth(fechaFin.getMonth() + dias);
+    if (agregarForm.tipo_tarifa === "base") fechaFin.setDate(fechaFin.getDate() + dias - 1);
+
+    setAgregarForm((prev) => ({ ...prev, fecha_fin: fechaFin.toISOString().slice(0, 10) }));
+  }, [agregarForm.fecha_inicio, agregarForm.tipo_tarifa, agregarForm.unidades_tarifa]);
 
   const busquedaNormalizada = busqueda.trim();
 
@@ -107,12 +175,25 @@ export function Reservas() {
   };
 
   const reservasFiltradas = reservasResponse?.data ?? [];
+  const precioProductoAgregar = productoAgregar ? (productoAgregar.precio_dia || productoAgregar.precio_semana || productoAgregar.precio_mes || productoAgregar.precio || 0) : 0;
+  const diasAgregar = agregarForm.fecha_inicio && agregarForm.fecha_fin
+    ? Math.max(1, Math.ceil((new Date(`${agregarForm.fecha_fin}T00:00:00`).getTime() - new Date(`${agregarForm.fecha_inicio}T00:00:00`).getTime()) / 86400000) + 1)
+    : 1;
+  const totalAgregar = Number(agregarForm.cantidad || 1) * Number(agregarForm.unidades_tarifa || 1) * precioProductoAgregar;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col justify-between items-start gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Reservas</h1>
-        <p className="text-muted-foreground">Gestiona las solicitudes de reserva de los clientes.</p>
+      <div className="flex flex-col justify-between items-start gap-2 md:flex-row md:items-end">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Reservas</h1>
+          <p className="text-muted-foreground">Gestiona las solicitudes de reserva de los clientes.</p>
+        </div>
+        {canEditReservas && (
+          <Button className="gap-2" onClick={() => setIsAgregarOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Agregar
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -285,6 +366,180 @@ export function Reservas() {
           </div>
         )}
       </Card>
+
+      <Dialog open={isAgregarOpen} onOpenChange={setIsAgregarOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Agregar reserva manual</DialogTitle>
+            <DialogDescription>
+              Registra un apartado directamente desde administración.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2 md:col-span-2">
+              <Label>Cliente / Empresa</Label>
+              <Input
+                value={agregarForm.cliente_nombre}
+                onChange={(e) => setAgregarForm((prev) => ({ ...prev, cliente_nombre: e.target.value }))}
+                placeholder="Nombre o razón social"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Correo electrónico</Label>
+              <Input
+                type="email"
+                value={agregarForm.cliente_email}
+                onChange={(e) => setAgregarForm((prev) => ({ ...prev, cliente_email: e.target.value }))}
+                placeholder="correo@empresa.com"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Teléfono</Label>
+              <Input
+                value={agregarForm.cliente_telefono}
+                onChange={(e) => setAgregarForm((prev) => ({ ...prev, cliente_telefono: e.target.value }))}
+                placeholder="502..."
+              />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label>Producto</Label>
+              <Select
+                value={agregarForm.producto_id}
+                onValueChange={(value) => setAgregarForm((prev) => ({ ...prev, producto_id: value }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione un producto" />
+                </SelectTrigger>
+                <SelectContent>
+                  {productosDisponibles.map((producto: any) => (
+                    <SelectItem key={producto.id} value={producto.id.toString()}>
+                      {producto.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Cantidad</Label>
+              <Input
+                type="number"
+                min="1"
+                value={agregarForm.cantidad}
+                onChange={(e) => setAgregarForm((prev) => ({ ...prev, cantidad: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Modalidad</Label>
+              <Select
+                value={agregarForm.tipo_tarifa}
+                onValueChange={(value) => setAgregarForm((prev) => ({ ...prev, tipo_tarifa: value, unidades_tarifa: "1" }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="dia">Día</SelectItem>
+                  <SelectItem value="semana">Semana</SelectItem>
+                  <SelectItem value="mes">Mes</SelectItem>
+                  <SelectItem value="base">Base</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Fecha inicio</Label>
+              <Input
+                type="date"
+                value={agregarForm.fecha_inicio}
+                onChange={(e) => setAgregarForm((prev) => ({ ...prev, fecha_inicio: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Fecha fin</Label>
+              <Input
+                type="date"
+                value={agregarForm.fecha_fin}
+                onChange={(e) => setAgregarForm((prev) => ({ ...prev, fecha_fin: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Unidades tarifa</Label>
+              <Input
+                type="number"
+                min="1"
+                value={agregarForm.unidades_tarifa}
+                onChange={(e) => setAgregarForm((prev) => ({ ...prev, unidades_tarifa: e.target.value }))}
+              />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label>Notas</Label>
+              <Textarea
+                value={agregarForm.notas}
+                onChange={(e) => setAgregarForm((prev) => ({ ...prev, notas: e.target.value }))}
+                placeholder="Detalles del apartado, condiciones o comentarios"
+              />
+            </div>
+          </div>
+
+          <div className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
+            <div>Total estimado: <span className="font-semibold text-foreground">{formatCurrency(totalAgregar)}</span></div>
+            <div>Días aproximados: <span className="font-semibold text-foreground">{diasAgregar}</span></div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAgregarOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={() => {
+                if (!agregarForm.producto_id || !agregarForm.cliente_nombre.trim() || !agregarForm.cliente_email.trim() || !agregarForm.cliente_telefono.trim() || !agregarForm.fecha_inicio || !agregarForm.fecha_fin) {
+                  toast({ variant: "destructive", title: "Faltan datos", description: "Complete los campos obligatorios antes de agregar la reserva." });
+                  return;
+                }
+
+                const productoId = Number(agregarForm.producto_id);
+                const cantidadSolicitada = Number(agregarForm.cantidad || 1);
+
+                createReservaMutation.mutate({
+                  data: {
+                    productoId,
+                    producto_id: productoId,
+                    clienteNombre: agregarForm.cliente_nombre,
+                    cliente_nombre: agregarForm.cliente_nombre,
+                    clienteEmail: agregarForm.cliente_email,
+                    cliente_email: agregarForm.cliente_email,
+                    clienteTelefono: agregarForm.cliente_telefono,
+                    cliente_telefono: agregarForm.cliente_telefono,
+                    cantidad: cantidadSolicitada,
+                    fechaInicio: agregarForm.fecha_inicio,
+                    fecha_inicio: agregarForm.fecha_inicio,
+                    fechaFin: agregarForm.fecha_fin,
+                    fecha_fin: agregarForm.fecha_fin,
+                    tipoTarifa: agregarForm.tipo_tarifa as any,
+                    tipo_tarifa: agregarForm.tipo_tarifa as any,
+                    unidadesTarifa: Number(agregarForm.unidades_tarifa || 1),
+                    unidades_tarifa: Number(agregarForm.unidades_tarifa || 1),
+                    notas: agregarForm.notas || undefined,
+                    precio_unitario: precioProductoAgregar,
+                    total_estimado: totalAgregar,
+                    estado: "pendiente",
+                  } as any,
+                });
+              }}
+              disabled={createReservaMutation.isPending}
+            >
+              {createReservaMutation.isPending ? "Guardando..." : "Agregar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal de Detalle */}
       <Dialog open={isDetalleOpen} onOpenChange={setIsDetalleOpen}>

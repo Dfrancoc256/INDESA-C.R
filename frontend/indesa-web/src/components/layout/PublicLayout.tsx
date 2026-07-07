@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, LayoutDashboard, LockKeyhole, Mail, Menu, Phone, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { FaWhatsapp } from "react-icons/fa";
+import { FaFacebookF, FaWhatsapp } from "react-icons/fa";
 import { getListProductosQueryKey, useListProductos, type Producto } from "@workspace/api-client-react";
 import { formatCurrency, getInitials, getTarifaPrincipal } from "@/lib/utils";
 import logoIndesa from "@/assets/logo-indesa-wordmark.png";
@@ -11,8 +11,7 @@ import logoIndesaCompleto from "@/assets/logo-indesa-transparent.png";
 
 const companyInfo = {
   addressLines: [
-    "29 calle 14-24 zona 13",
-    "Colonia La Libertad",
+    "29 calle 14-24 zona 13, Colonia La Libertad",
     "Ciudad de Guatemala, Guatemala",
   ],
   phones: [
@@ -20,9 +19,8 @@ const companyInfo = {
     { label: "WhatsApp", value: "+502 5214-9029" },
   ],
   emails: [
-    { label: "Ventas", value: "ventas@indesa.com.gt" },
-    { label: "Información", value: "info@indesa.com.gt" },
-    { label: "Proveedores", value: "compras@indesa.com.gt" },
+    { label: "Rentas", value: "rentas@somosindesa.com" },
+    { label: "Gerencia", value: "gerencia@somosindesa.com" },
   ],
   facebook: "https://www.facebook.com/profile.php?id=61591360179036",
 };
@@ -41,7 +39,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
     { href: "/", label: "Inicio" },
     { href: "/catalogo", label: "Catálogo" },
     { href: "/reservar", label: "Reservar" },
-    { href: "/contacto", label: "Contacto" },
+    { href: "/contacto", label: "Nosotros" },
   ];
 
   const isActive = (href: string) => {
@@ -105,7 +103,6 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   });
   const searchSuggestions = normalizedSearch ? searchResponse?.data ?? [] : [];
   const showSearchSuggestions = isSearchFocused && Boolean(normalizedSearch);
-  const isHomePage = location === "/";
 
   const goToProduct = (producto: Producto) => {
     setHeaderSearch(producto.nombre);
@@ -183,7 +180,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background font-sans">
-      <header className="sticky top-0 z-50 w-full bg-[#FF2800] text-white shadow-[0_12px_28px_rgba(90,15,6,0.26)]">
+      <header className="fixed inset-x-0 top-0 z-50 w-full bg-[#FF2800] text-white shadow-[0_12px_28px_rgba(90,15,6,0.26)]">
         <div className="container mx-auto flex h-20 items-center justify-between gap-4 px-4 md:h-[92px] md:px-8 lg:gap-8">
           <Link
             href="/"
@@ -343,7 +340,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         <div className="h-0.5 w-full bg-black" />
       </header>
 
-      <main className={`flex-1 flex flex-col ${isHomePage ? "pt-0" : "pt-20 md:pt-[92px]"}`}>
+      <main className="flex-1 flex flex-col pt-20 md:pt-[92px]">
         <div key={location} className="flex min-h-full flex-col animate-route-enter">
           {children}
         </div>
@@ -402,13 +399,13 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       </div>
 
       <footer className="border-t bg-muted/40 py-12">
-          <div className="container mx-auto px-4 md:px-8 grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="container mx-auto grid grid-cols-1 gap-8 px-4 md:grid-cols-5 md:px-8">
             <div>
               <div className="flex items-center gap-2 text-primary mb-4">
                 <img src={logoIndesaCompleto} alt="INDESA" className="h-20 w-auto max-w-[150px] object-contain" />
               </div>
               <p className="text-sm text-muted-foreground">
-              Maquinaria, repuestos y equipos industriales de alta calidad para empresas y profesionales en Guatemala.
+              Maquinaria, equipos industriales de alta calidad para empresas y profesionales en Guatemala.
               </p>
             </div>
             <div>
@@ -416,7 +413,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/catalogo" className="hover:text-primary">Catálogo de Productos</Link></li>
               <li><Link href="/reservar" className="hover:text-primary">Realizar Reserva</Link></li>
-              <li><Link href="/contacto" className="hover:text-primary">Contacto</Link></li>
+              <li><Link href="/contacto" className="hover:text-primary">Nosotros</Link></li>
             </ul>
             </div>
             <div>
@@ -427,6 +424,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <li>{companyInfo.addressLines[2]}</li>
               <li>{companyInfo.phones[0].value}</li>
               <li>{companyInfo.phones[1].value}</li>
+              <li>{companyInfo.emails[0].value}</li>
               <li>{companyInfo.emails[1].value}</li>
               </ul>
             </div>
@@ -436,13 +434,26 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <li>Lunes a Viernes: 8:00 - 17:00</li>
               <li>Sábados: 8:00 - 12:00</li>
               <li>Domingos: Cerrado</li>
-              <li>
-                <a href={companyInfo.facebook} target="_blank" rel="noreferrer" className="hover:text-primary">
-                  Facebook oficial
-                </a>
-              </li>
             </ul>
           </div>
+            <div>
+              <h4 className="font-semibold mb-4">Redes sociales</h4>
+              <ul className="space-y-3 text-sm text-muted-foreground">
+                <li>
+                  <a
+                    href={companyInfo.facebook}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 font-medium hover:text-primary"
+                  >
+                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#1877F2] text-white">
+                      <FaFacebookF className="h-4 w-4" />
+                    </span>
+                    Facebook
+                  </a>
+                </li>
+              </ul>
+            </div>
         </div>
         <div className="container mx-auto px-4 md:px-8 mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
           &copy; {new Date().getFullYear()} INDESA. Todos los derechos reservados.
