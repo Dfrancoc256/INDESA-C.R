@@ -431,8 +431,6 @@ export function Home() {
                     </div>
                     <div className="flex items-center justify-between gap-3">
                       <div>
-                        <div className="text-xl font-bold text-primary">{formatCurrency(tarifa.value)}</div>
-                        <div className="text-xs font-medium text-muted-foreground">por {tarifa.suffix}</div>
                         {precioReferencia > 0 && (
                           <div className="mt-1 text-[11px] font-medium text-muted-foreground">
                             Referencia base: {formatCurrency(precioReferencia)}
@@ -516,13 +514,13 @@ export function Home() {
 
           {selectedProduct && (
             <form onSubmit={handleReservaSubmit} className="space-y-5">
-              <div className="grid gap-5 rounded-md border bg-muted/40 p-4 sm:grid-cols-[260px_1fr]">
+              <div className="grid gap-5 rounded-md border bg-muted/40 p-4 sm:grid-cols-[330px_1fr]">
                 <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-md bg-white shadow-sm">
                   {selectedProduct.imagen_url ? (
                     <img
                       src={selectedProduct.imagen_url}
                       alt={selectedProduct.nombre}
-                      className="max-h-full max-w-full object-contain p-2"
+                      className="max-h-full max-w-full object-contain p-1"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-gray-300">

@@ -378,7 +378,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               Llamar
             </a>
             <a
-              href="mailto:info@indesa.com.gt"
+              href="mailto:rentas@somosindesa.com"
               className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold transition-colors hover:bg-primary/5 hover:text-primary"
               onClick={() => setIsSocialMenuOpen(false)}
             >
