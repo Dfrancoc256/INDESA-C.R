@@ -270,9 +270,9 @@ export function Catalogo() {
             ) : isError ? (
               <div className="flex flex-col items-center rounded-lg border bg-white p-10 text-center">
                 <AlertCircle className="h-12 w-12 text-destructive mb-4 opacity-80" />
-                <h3 className="text-xl font-bold mb-2">No fue posible cargar el catálogo</h3>
+                <h3 className="text-xl font-bold mb-2">No pudimos cargar el catálogo</h3>
                 <p className="text-muted-foreground mb-6">
-                  Por favor, intente nuevamente en unos instantes o verifique la conexión con el servidor.
+                  Intenta nuevamente en unos segundos o revisa la conexión con el servidor.
                 </p>
               </div>
             ) : productosPagina.length === 0 ? (

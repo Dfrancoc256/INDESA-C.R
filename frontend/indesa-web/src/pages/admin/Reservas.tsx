@@ -30,6 +30,10 @@ function formatDateOnly(value?: string | Date | null) {
   });
 }
 
+function onlyDigits(value: string) {
+  return value.replace(/\D/g, "");
+}
+
 export function Reservas() {
   const { usuario } = useAuth();
   const { toast } = useToast();
@@ -195,6 +199,10 @@ export function Reservas() {
       unidades_tarifa: "1",
       notas: "",
     });
+  };
+
+  const setNumericField = (field: "cliente_telefono" | "cantidad" | "unidades_tarifa", value: string) => {
+    setAgregarForm((prev) => ({ ...prev, [field]: onlyDigits(value) }));
   };
 
   const handleGuardarReservaManual = () => {
@@ -466,6 +474,37 @@ export function Reservas() {
             </DialogDescription>
           </DialogHeader>
 
+          <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/30 p-3">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={resetAgregarForm}
+              disabled={createReservaMutation.isPending}
+            >
+              Limpiar formulario
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                const hoy = new Date().toISOString().slice(0, 10);
+                setAgregarForm((prev) => ({
+                  ...prev,
+                  fecha_inicio: hoy,
+                  fecha_fin: hoy,
+                }));
+              }}
+              disabled={createReservaMutation.isPending}
+            >
+              Usar fecha de hoy
+            </Button>
+            <div className="ml-auto text-xs text-muted-foreground">
+              Los campos numéricos aceptan solo números.
+            </div>
+          </div>
+
           {agregarError && (
             <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
               {agregarError}
@@ -496,8 +535,10 @@ export function Reservas() {
               <Label>Teléfono</Label>
               <Input
                 value={agregarForm.cliente_telefono}
-                onChange={(e) => setAgregarForm((prev) => ({ ...prev, cliente_telefono: e.target.value }))}
-                placeholder="502..."
+                onChange={(e) => setNumericField("cliente_telefono", e.target.value)}
+                placeholder="Solo números"
+                inputMode="numeric"
+                pattern="[0-9]*"
               />
             </div>
 
@@ -523,10 +564,12 @@ export function Reservas() {
             <div className="space-y-2">
               <Label>Cantidad</Label>
               <Input
-                type="number"
+                type="text"
                 min="1"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={agregarForm.cantidad}
-                onChange={(e) => setAgregarForm((prev) => ({ ...prev, cantidad: e.target.value }))}
+                onChange={(e) => setNumericField("cantidad", e.target.value)}
               />
             </div>
 
@@ -569,10 +612,12 @@ export function Reservas() {
             <div className="space-y-2">
               <Label>Unidades tarifa</Label>
               <Input
-                type="number"
+                type="text"
                 min="1"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 value={agregarForm.unidades_tarifa}
-                onChange={(e) => setAgregarForm((prev) => ({ ...prev, unidades_tarifa: e.target.value }))}
+                onChange={(e) => setNumericField("unidades_tarifa", e.target.value)}
               />
             </div>
 
@@ -587,6 +632,10 @@ export function Reservas() {
           </div>
 
           <div className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
+            <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide">
+              <span className="rounded-full bg-primary/10 px-2 py-1 text-primary">Vista previa</span>
+              <span>La reserva se guardará con los datos ingresados</span>
+            </div>
             <div>Total estimado: <span className="font-semibold text-foreground">{formatCurrency(totalAgregar)}</span></div>
             <div>Días aproximados: <span className="font-semibold text-foreground">{diasAgregar}</span></div>
           </div>
@@ -607,6 +656,7 @@ export function Reservas() {
               type="button"
               onClick={handleGuardarReservaManual}
               disabled={createReservaMutation.isPending}
+              className="gap-2"
             >
               {createReservaMutation.isPending ? "Guardando..." : "Guardar reserva"}
             </Button>

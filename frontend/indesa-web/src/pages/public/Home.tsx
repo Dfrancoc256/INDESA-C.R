@@ -350,7 +350,7 @@ export function Home() {
             </div>
           ) : isCatalogoError ? (
             <div className="rounded-lg border bg-white p-8 text-center text-muted-foreground">
-              No fue posible cargar el catálogo en este momento. Por favor, intente nuevamente en unos instantes.
+              No pudimos cargar el catálogo en este momento. Intenta nuevamente en unos segundos.
             </div>
           ) : productosCatalogo.length === 0 ? (
             <div className="rounded-lg border bg-white p-8 text-center text-muted-foreground">
