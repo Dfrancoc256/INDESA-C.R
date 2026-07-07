@@ -495,17 +495,17 @@ export function Home() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-primary py-14 text-white">
-        <div className="container mx-auto px-4 text-center md:px-8">
-          <h2 className="mb-4 text-3xl font-bold">¿Necesita un pedido especial o a granel?</h2>
-          <p className="mx-auto mb-8 max-w-2xl text-lg text-primary-foreground/80">
+      <section className="bg-primary py-16 text-white">
+        <div className="container mx-auto max-w-4xl px-4 text-center md:px-8">
+          <h2 className="mb-4 text-3xl font-bold md:text-4xl">¿Necesita un pedido especial o a granel?</h2>
+          <p className="mx-auto mb-10 max-w-3xl text-lg leading-relaxed text-primary-foreground/90 md:text-xl">
             Nuestro equipo está preparado para atender las necesidades específicas de su operación.
           </p>
-          <div className="flex flex-col justify-center gap-4 sm:flex-row">
-            <Button asChild size="lg" variant="secondary" className="text-primary">
+          <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+            <Button asChild size="lg" variant="secondary" className="h-14 min-w-[240px] px-8 text-base text-primary">
               <Link href="/contacto">Contactar a Ventas</Link>
             </Button>
-            <Button asChild size="lg" className="border-0 bg-black text-white hover:bg-zinc-800">
+            <Button asChild size="lg" className="h-14 min-w-[220px] border-0 bg-black px-8 text-base text-white hover:bg-zinc-800">
               <Link href="/catalogo">Ver más equipos</Link>
             </Button>
           </div>

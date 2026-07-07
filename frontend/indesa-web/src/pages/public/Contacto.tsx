@@ -121,7 +121,7 @@ export function Contacto() {
           <div className="mt-10 overflow-hidden rounded-lg border shadow-inner">
             <iframe
               title="Ubicación INDESA"
-              src="https://www.google.com/maps?q=29%20calle%2014-24%20zona%2013%2C%20colonia%20la%20libertad%2C%20ciudad%20de%20guatemala&output=embed"
+              src="https://maps.app.goo.gl/4WmFa7TqaWjcb1K27"
               className="h-72 w-full"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
