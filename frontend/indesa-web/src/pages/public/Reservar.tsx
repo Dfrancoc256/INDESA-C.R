@@ -314,7 +314,7 @@ export function Reservar() {
                             )}
                             <div className="mt-3 flex flex-wrap gap-2">
                               {tarifasProducto.map((tarifa) => (
-                                <span key={tarifa.tipo} className="rounded-full border border-primary/15 bg-primary/5 px-2.5 py-1 text-[11px] font-semibold text-primary">
+                                <span key={tarifa.tipo} className="rounded-full border border-black/15 bg-black/5 px-2.5 py-1 text-[11px] font-semibold text-black">
                                   {tarifa.label}: {formatCurrency(tarifa.value)}
                                 </span>
                               ))}

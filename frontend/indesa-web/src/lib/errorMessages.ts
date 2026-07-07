@@ -3,6 +3,7 @@ export const errorMessages = {
   loadData: "No pudimos cargar la información solicitada. Intenta nuevamente.",
   login401: "El correo o la contraseña no son correctos. Revisa tus datos e intenta nuevamente.",
   login500: "No fue posible iniciar sesión ahora. Inténtalo nuevamente más tarde.",
+  sessionExpired: "Tu sesión expiró. Vuelve a ingresar para continuar.",
   createUser: "No fue posible registrar el usuario. Revisa los datos e intenta nuevamente.",
   updateUser: "No fue posible actualizar el usuario. Revisa los datos e intenta nuevamente.",
   resetPassword: "No fue posible restablecer la contraseña. Intenta nuevamente.",
