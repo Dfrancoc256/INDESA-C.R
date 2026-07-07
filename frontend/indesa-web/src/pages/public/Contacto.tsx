@@ -2,6 +2,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
 
 export function Contacto() {
+  const googleMapsUrl = "https://maps.app.goo.gl/thbNvAJQZdETskmB7?g_st=ic";
+  const embeddedMapUrl = "https://www.google.com/maps?q=29+calle+14-24+zona+13,+Colonia+La+Libertad,+Ciudad+de+Guatemala,+Guatemala&z=16&output=embed";
+
   return (
     <div className="min-h-screen bg-white">
       <div className="bg-[#FF2800] py-16 text-white md:py-24">
@@ -121,11 +124,22 @@ export function Contacto() {
           <div className="mt-10 overflow-hidden rounded-lg border shadow-inner">
             <iframe
               title="Ubicación INDESA"
-              src="https://maps.app.goo.gl/4WmFa7TqaWjcb1K27"
-              className="h-72 w-full"
+              src={embeddedMapUrl}
+              className="h-[340px] w-full border-0 md:h-[420px]"
               loading="lazy"
               referrerPolicy="no-referrer-when-downgrade"
             />
+          </div>
+
+          <div className="mt-4 flex justify-end">
+            <a
+              href={googleMapsUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-primary/90"
+            >
+              Abrir en Google Maps
+            </a>
           </div>
         </section>
       </div>

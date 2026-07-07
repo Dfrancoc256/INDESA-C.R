@@ -370,8 +370,8 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               WhatsApp
             </a>
             <a
-              href="tel:+50258433796"
-              className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold transition-colors hover:bg-primary/5 hover:text-primary"
+              href="tel:+50222984932"
+              className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold transition-colors hover:bg-primary/5 hover:text-primary touch-manipulation"
               onClick={() => setIsSocialMenuOpen(false)}
             >
               <Phone className="h-4 w-4 text-primary" />
@@ -379,7 +379,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
             </a>
             <a
               href="mailto:rentas@somosindesa.com"
-              className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold transition-colors hover:bg-primary/5 hover:text-primary"
+              className="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold transition-colors hover:bg-primary/5 hover:text-primary touch-manipulation"
               onClick={() => setIsSocialMenuOpen(false)}
             >
               <Mail className="h-4 w-4 text-primary" />

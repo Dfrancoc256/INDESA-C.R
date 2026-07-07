@@ -460,7 +460,7 @@ export function Reservas() {
 
       <Dialog open={isAgregarOpen} onOpenChange={setIsAgregarOpen}>
         <DialogContent
-          className="max-w-3xl"
+          className="w-[calc(100vw-1rem)] max-h-[calc(100dvh-1rem)] max-w-3xl overflow-y-auto overscroll-contain p-4 sm:p-6"
           onInteractOutside={() => {
             if (!createReservaMutation.isPending) {
               setAgregarError("");
@@ -640,7 +640,7 @@ export function Reservas() {
             <div>Días aproximados: <span className="font-semibold text-foreground">{diasAgregar}</span></div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
               variant="outline"
               type="button"
@@ -656,7 +656,7 @@ export function Reservas() {
               type="button"
               onClick={handleGuardarReservaManual}
               disabled={createReservaMutation.isPending}
-              className="gap-2"
+              className="gap-2 w-full sm:w-auto"
             >
               {createReservaMutation.isPending ? "Guardando..." : "Guardar reserva"}
             </Button>

@@ -61,7 +61,8 @@ function CatalogImage({ src, name, index }: { src?: string | null; name: string;
       <img
         src={src}
         alt={name}
-        loading={index < 4 ? "eager" : "lazy"}
+        loading={index < 8 ? "eager" : "lazy"}
+        fetchPriority={index < 4 ? "high" : "low"}
         decoding="async"
         sizes="(min-width: 1536px) 25vw, (min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
         onLoad={() => setImageState("loaded")}

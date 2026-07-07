@@ -56,7 +56,7 @@ type ReservaFormState = {
   notas: string;
 };
 
-const whatsappPhone = "50222223333";
+const whatsappPhone = "50252149029";
 const todayDate = getTodayDate();
 
 const emptyReservaForm: ReservaFormState = {
@@ -187,6 +187,21 @@ export function Home() {
     return () => window.clearInterval(timer);
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const sources = [
+      ...heroSlides.map((slide) => slide.image),
+      ...productosCatalogo.slice(0, 6).map((producto) => producto.imagen_url).filter(Boolean) as string[],
+    ];
+
+    sources.forEach((src) => {
+      const image = new window.Image();
+      image.decoding = "async";
+      image.src = src;
+    });
+  }, [productosCatalogo]);
+
   const openReservaModal = (producto: HomeProduct) => {
     const tarifaPrincipal = getTarifaPrincipal(producto);
     setSelectedProduct(producto);
@@ -273,14 +288,17 @@ export function Home() {
       <section className="relative flex min-h-[330px] items-center overflow-hidden bg-zinc-950 py-8 text-white md:min-h-[390px] md:py-10 lg:min-h-[420px]">
         <div className="absolute inset-0">
           {heroSlides.map((slide, index) => (
-            <img
-              key={slide.label}
-              src={slide.image}
-              alt={slide.label}
-              className={`absolute inset-0 h-full w-full object-cover transition-all duration-1000 ease-out ${
-                activeSlide === index ? "scale-100 opacity-80" : "scale-105 opacity-0"
-              }`}
-            />
+              <img
+                key={slide.label}
+                src={slide.image}
+                alt={slide.label}
+                loading={index === activeSlide ? "eager" : "eager"}
+                fetchPriority={index === activeSlide ? "high" : "low"}
+                decoding="async"
+                className={`absolute inset-0 h-full w-full object-cover transition-all duration-1000 ease-out ${
+                  activeSlide === index ? "scale-100 opacity-80" : "scale-105 opacity-0"
+                }`}
+              />
           ))}
         </div>
         <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/50 to-zinc-950/10" />
@@ -358,7 +376,7 @@ export function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
-              {productosCatalogo.map((producto) => {
+              {productosCatalogo.map((producto, index) => {
               const agotado = (producto.cantidad ?? 0) <= 0;
               const tarifasDisponibles = getTarifasProducto(producto);
               const tarifa = getTarifaPrincipal(producto);
@@ -373,6 +391,9 @@ export function Home() {
                       <img
                         src={producto.imagen_url}
                         alt={producto.nombre}
+                        loading="eager"
+                        fetchPriority={index < 3 ? "high" : "low"}
+                        decoding="async"
                         className="h-full w-full bg-white object-contain p-4 transition-transform duration-700 group-hover:scale-105"
                       />
                     ) : (
