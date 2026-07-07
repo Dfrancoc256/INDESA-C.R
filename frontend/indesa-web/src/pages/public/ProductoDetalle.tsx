@@ -212,12 +212,12 @@ export function ProductoDetalle() {
             {/* Imagen y Detalles Visuales */}
             <div className="space-y-4 lg:sticky lg:top-28">
               <div className="relative overflow-hidden rounded-xl border bg-white shadow-md">
-                <div className="aspect-[16/11] max-h-[520px] w-full bg-gray-100 lg:aspect-[5/4]">
+                <div className="aspect-[16/11] max-h-[520px] w-full bg-white lg:aspect-[5/4]">
                   {imageSrc && !imageFailed ? (
                     <img
                       src={imageSrc}
                       alt={productoActual.nombre}
-                      className="h-full w-full object-cover"
+                      className="h-full w-full bg-white object-contain p-4"
                       onError={() => setImageFailed(true)}
                     />
                   ) : (

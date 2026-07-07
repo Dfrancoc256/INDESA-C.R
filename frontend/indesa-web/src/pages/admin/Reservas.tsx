@@ -45,6 +45,7 @@ export function Reservas() {
   const [notaEstado, setNotaEstado] = useState("");
   const [nuevoEstado, setNuevoEstado] = useState<any>(null);
   const [isAgregarOpen, setIsAgregarOpen] = useState(false);
+  const [agregarError, setAgregarError] = useState("");
   const [agregarForm, setAgregarForm] = useState({
     cliente_nombre: "",
     cliente_email: "",
@@ -70,6 +71,7 @@ export function Reservas() {
   const createReservaMutation = useCreateReserva({
     mutation: {
       onSuccess: async () => {
+        setAgregarError("");
         toast({ title: "Reserva agregada", description: "La reserva manual se registró correctamente." });
         await invalidateCatalogData(queryClient);
         await refetch();
@@ -88,10 +90,15 @@ export function Reservas() {
         });
       },
       onError: (err: any) => {
+        const friendlyMessage =
+          err?.response?.data?.message ||
+          err?.message ||
+          errorMessages.createReservation;
+        setAgregarError(friendlyMessage);
         toast({
           variant: "destructive",
           title: "No fue posible registrar la reserva",
-          description: err?.message || errorMessages.createReservation,
+          description: friendlyMessage,
         });
       },
     },
@@ -172,6 +179,82 @@ export function Reservas() {
   const verDetalle = (reserva: any) => {
     setReservaSeleccionada(reserva);
     setIsDetalleOpen(true);
+  };
+
+  const resetAgregarForm = () => {
+    setAgregarError("");
+    setAgregarForm({
+      cliente_nombre: "",
+      cliente_email: "",
+      cliente_telefono: "",
+      producto_id: "",
+      cantidad: "1",
+      fecha_inicio: "",
+      fecha_fin: "",
+      tipo_tarifa: "dia",
+      unidades_tarifa: "1",
+      notas: "",
+    });
+  };
+
+  const handleGuardarReservaManual = () => {
+    const clienteNombre = agregarForm.cliente_nombre.trim();
+    const clienteEmail = agregarForm.cliente_email.trim();
+    const clienteTelefono = agregarForm.cliente_telefono.trim();
+    const fechaInicio = agregarForm.fecha_inicio;
+    const fechaFin = agregarForm.fecha_fin;
+    const productoId = Number(agregarForm.producto_id);
+    const cantidadSolicitada = Number(agregarForm.cantidad || 1);
+    const unidadesTarifa = Number(agregarForm.unidades_tarifa || 1);
+
+    if (!productoId || !clienteNombre || !clienteEmail || !clienteTelefono || !fechaInicio || !fechaFin) {
+      const message = "Completa cliente, producto, teléfono, fechas y correo antes de guardar.";
+      setAgregarError(message);
+      toast({ variant: "destructive", title: "Faltan datos", description: message });
+      return;
+    }
+
+    if (Number.isNaN(productoId) || Number.isNaN(cantidadSolicitada) || cantidadSolicitada < 1 || Number.isNaN(unidadesTarifa) || unidadesTarifa < 1) {
+      const message = "La cantidad y las unidades de tarifa deben ser números válidos mayores a cero.";
+      setAgregarError(message);
+      toast({ variant: "destructive", title: "Datos inválidos", description: message });
+      return;
+    }
+
+    if (new Date(`${fechaFin}T00:00:00`).getTime() < new Date(`${fechaInicio}T00:00:00`).getTime()) {
+      const message = "La fecha final no puede ser anterior a la fecha de inicio.";
+      setAgregarError(message);
+      toast({ variant: "destructive", title: "Fechas inválidas", description: message });
+      return;
+    }
+
+    setAgregarError("");
+
+    createReservaMutation.mutate({
+      data: {
+        productoId,
+        producto_id: productoId,
+        clienteNombre,
+        cliente_nombre: clienteNombre,
+        clienteEmail,
+        cliente_email: clienteEmail,
+        clienteTelefono,
+        cliente_telefono: clienteTelefono,
+        cantidad: cantidadSolicitada,
+        fechaInicio,
+        fecha_inicio: fechaInicio,
+        fechaFin,
+        fecha_fin: fechaFin,
+        tipoTarifa: agregarForm.tipo_tarifa as any,
+        tipo_tarifa: agregarForm.tipo_tarifa as any,
+        unidadesTarifa,
+        unidades_tarifa: unidadesTarifa,
+        notas: agregarForm.notas?.trim() || undefined,
+        precio_unitario: precioProductoAgregar,
+        total_estimado: totalAgregar,
+        estado: "pendiente",
+      } as any,
+    });
   };
 
   const reservasFiltradas = reservasResponse?.data ?? [];
@@ -368,13 +451,26 @@ export function Reservas() {
       </Card>
 
       <Dialog open={isAgregarOpen} onOpenChange={setIsAgregarOpen}>
-        <DialogContent className="max-w-3xl">
+        <DialogContent
+          className="max-w-3xl"
+          onInteractOutside={() => {
+            if (!createReservaMutation.isPending) {
+              setAgregarError("");
+            }
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Agregar reserva manual</DialogTitle>
             <DialogDescription>
               Registra un apartado directamente desde administración.
             </DialogDescription>
           </DialogHeader>
+
+          {agregarError && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {agregarError}
+            </div>
+          )}
 
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2 md:col-span-2">
@@ -496,46 +592,23 @@ export function Reservas() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAgregarOpen(false)}>Cancelar</Button>
             <Button
+              variant="outline"
+              type="button"
               onClick={() => {
-                if (!agregarForm.producto_id || !agregarForm.cliente_nombre.trim() || !agregarForm.cliente_email.trim() || !agregarForm.cliente_telefono.trim() || !agregarForm.fecha_inicio || !agregarForm.fecha_fin) {
-                  toast({ variant: "destructive", title: "Faltan datos", description: "Complete los campos obligatorios antes de agregar la reserva." });
-                  return;
-                }
-
-                const productoId = Number(agregarForm.producto_id);
-                const cantidadSolicitada = Number(agregarForm.cantidad || 1);
-
-                createReservaMutation.mutate({
-                  data: {
-                    productoId,
-                    producto_id: productoId,
-                    clienteNombre: agregarForm.cliente_nombre,
-                    cliente_nombre: agregarForm.cliente_nombre,
-                    clienteEmail: agregarForm.cliente_email,
-                    cliente_email: agregarForm.cliente_email,
-                    clienteTelefono: agregarForm.cliente_telefono,
-                    cliente_telefono: agregarForm.cliente_telefono,
-                    cantidad: cantidadSolicitada,
-                    fechaInicio: agregarForm.fecha_inicio,
-                    fecha_inicio: agregarForm.fecha_inicio,
-                    fechaFin: agregarForm.fecha_fin,
-                    fecha_fin: agregarForm.fecha_fin,
-                    tipoTarifa: agregarForm.tipo_tarifa as any,
-                    tipo_tarifa: agregarForm.tipo_tarifa as any,
-                    unidadesTarifa: Number(agregarForm.unidades_tarifa || 1),
-                    unidades_tarifa: Number(agregarForm.unidades_tarifa || 1),
-                    notas: agregarForm.notas || undefined,
-                    precio_unitario: precioProductoAgregar,
-                    total_estimado: totalAgregar,
-                    estado: "pendiente",
-                  } as any,
-                });
+                setIsAgregarOpen(false);
+                resetAgregarForm();
               }}
               disabled={createReservaMutation.isPending}
             >
-              {createReservaMutation.isPending ? "Guardando..." : "Agregar"}
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleGuardarReservaManual}
+              disabled={createReservaMutation.isPending}
+            >
+              {createReservaMutation.isPending ? "Guardando..." : "Guardar reserva"}
             </Button>
           </DialogFooter>
         </DialogContent>

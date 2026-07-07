@@ -180,7 +180,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-background font-sans">
-      <header className="fixed inset-x-0 top-0 z-50 w-full bg-[#FF2800] text-white shadow-[0_12px_28px_rgba(90,15,6,0.26)]">
+      <header className="fixed inset-x-0 top-0 z-50 w-full bg-[#FF2800] text-white shadow-[0_12px_28px_rgba(255,40,0,0.26)]">
         <div className="container mx-auto flex h-20 items-center justify-between gap-4 px-4 md:h-[92px] md:px-8 lg:gap-8">
           <Link
             href="/"
@@ -194,7 +194,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           </Link>
 
           <form onSubmit={handleHeaderSearch} className="relative hidden w-full max-w-[430px] xl:block">
-            <div className="flex h-11 items-center rounded-md border border-white/60 bg-white shadow-[0_8px_18px_rgba(80,12,5,0.18)] transition-all duration-200 focus-within:border-[#111111] focus-within:shadow-[0_10px_24px_rgba(80,12,5,0.26)]">
+            <div className="flex h-11 items-center rounded-md border border-white/60 bg-white shadow-[0_8px_18px_rgba(255,40,0,0.18)] transition-all duration-200 focus-within:border-[#111111] focus-within:shadow-[0_10px_24px_rgba(255,40,0,0.26)]">
               <Search className="ml-3 h-4 w-4 shrink-0 text-muted-foreground" />
               <input
                 type="search"
@@ -211,7 +211,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               />
               <button
                 type="submit"
-                className="mr-1 rounded-md bg-[#FF2800] px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm"
+                className="mr-1 rounded-md bg-[#FF2800] px-4 py-2 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_8px_18px_rgba(255,40,0,0.22)]"
               >
                 Buscar
               </button>
@@ -246,7 +246,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <Button
                 asChild
                 size="icon"
-                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(80,12,5,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#fff0ea] hover:text-[#FF2800] hover:shadow-md"
+                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(255,40,0,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#ffe4df] hover:text-[#FF2800] hover:shadow-[0_10px_22px_rgba(255,40,0,0.22)]"
               >
                 <Link href="/admin/dashboard" aria-label="Abrir panel administrativo" title="Panel administrativo">
                   <LayoutDashboard className="h-5 w-5" />
@@ -257,7 +257,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <Button
                 asChild
                 size="icon"
-                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(80,12,5,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#fff0ea] hover:text-[#FF2800] hover:shadow-md"
+                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(255,40,0,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#ffe4df] hover:text-[#FF2800] hover:shadow-[0_10px_22px_rgba(255,40,0,0.22)]"
               >
                 <Link href="/admin/login" aria-label="Acceder al administrador" title="Acceso administrador">
                   <LockKeyhole className="h-5 w-5" />

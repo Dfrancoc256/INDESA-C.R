@@ -93,13 +93,6 @@ const heroSlides = [
     description:
       "Apoye sus operaciones con repuestos, accesorios y maquinaria auxiliar.",
   },
-  {
-    image: bannerPrincipal4,
-    label: "Soluciones INDESA",
-    title: "Soluciones pensadas para obra, industria y mantenimiento",
-    description:
-      "Encuentre equipos confiables para distintos tipos de proyectos con respaldo y atención cercana.",
-  },
 ];
 
 function getDisponibilidadLabel(producto: HomeProduct) {
@@ -277,7 +270,7 @@ export function Home() {
   return (
     <div className="flex min-h-screen flex-col">
       {/* Hero Section */}
-      <section className="relative flex min-h-[370px] items-center overflow-hidden bg-zinc-950 py-10 text-white md:min-h-[430px] md:py-12 lg:min-h-[460px]">
+      <section className="relative flex min-h-[330px] items-center overflow-hidden bg-zinc-950 py-8 text-white md:min-h-[390px] md:py-10 lg:min-h-[420px]">
         <div className="absolute inset-0">
           {heroSlides.map((slide, index) => (
             <img
@@ -285,13 +278,13 @@ export function Home() {
               src={slide.image}
               alt={slide.label}
               className={`absolute inset-0 h-full w-full object-cover transition-all duration-1000 ease-out ${
-                activeSlide === index ? "scale-100 opacity-45" : "scale-105 opacity-0"
+                activeSlide === index ? "scale-100 opacity-80" : "scale-105 opacity-0"
               }`}
             />
           ))}
         </div>
-        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/85 to-zinc-950/20" />
-        <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-zinc-950 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/50 to-zinc-950/10" />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-zinc-950 to-transparent" />
 
         <div className="container relative z-10 mx-auto px-4 md:px-8">
           <div className="max-w-2xl">
@@ -380,7 +373,7 @@ export function Home() {
                       <img
                         src={producto.imagen_url}
                         alt={producto.nombre}
-                        className="h-full w-full object-contain p-2 transition-transform duration-700 group-hover:scale-105"
+                        className="h-full w-full bg-white object-contain p-4 transition-transform duration-700 group-hover:scale-105"
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gray-100 text-4xl font-bold text-gray-300 transition-transform duration-500 group-hover:scale-105">
@@ -524,9 +517,13 @@ export function Home() {
           {selectedProduct && (
             <form onSubmit={handleReservaSubmit} className="space-y-5">
               <div className="grid gap-5 rounded-md border bg-muted/40 p-4 sm:grid-cols-[260px_1fr]">
-                <div className="relative aspect-[4/3] overflow-hidden rounded-md bg-white shadow-sm">
+                <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-md bg-white shadow-sm">
                   {selectedProduct.imagen_url ? (
-                    <img src={selectedProduct.imagen_url} alt={selectedProduct.nombre} className="h-full w-full object-contain p-2" />
+                    <img
+                      src={selectedProduct.imagen_url}
+                      alt={selectedProduct.nombre}
+                      className="max-h-full max-w-full object-contain p-2"
+                    />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-gray-300">
                       {getInitials(selectedProduct.nombre)}
