@@ -61,7 +61,7 @@ function CatalogImage({ src, name, index }: { src?: string | null; name: string;
       <img
         src={src}
         alt={name}
-        loading={index < 8 ? "eager" : "lazy"}
+        loading={index < 4 ? "eager" : "lazy"}
         fetchPriority={index < 4 ? "high" : "low"}
         decoding="async"
         sizes="(min-width: 1536px) 25vw, (min-width: 1280px) 33vw, (min-width: 640px) 50vw, 100vw"
@@ -115,12 +115,22 @@ export function Catalogo() {
 
   const categoriaId = categoria === "todas" ? undefined : Number(categoria);
   const { data: categorias = [], isLoading: isLoadingCategorias } = useListCategorias();
+  const listQueryKey = ["catalogo-publico", page, debouncedSearchQuery || "", categoriaId ?? "todas", orden] as const;
   const { data: productosResponse, isLoading: isLoadingProductos, isFetching: isFetchingProductos, isError } = useListProductos({
     page,
     limit: pageSize,
     busqueda: debouncedSearchQuery || undefined,
     categoria_id: categoriaId,
     orden,
+  }, {
+    query: {
+      queryKey: listQueryKey,
+      staleTime: 5 * 60 * 1000,
+      gcTime: 15 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      placeholderData: (previousData) => previousData,
+    },
   });
 
   useEffect(() => {
@@ -324,6 +334,9 @@ export function Catalogo() {
                         </CardTitle>
                       </CardHeader>
                       <CardContent className="flex-1 p-3 pt-0 transition-transform duration-300 group-hover:-translate-y-0.5">
+                        <p className="mb-3 line-clamp-2 min-h-10 text-sm text-muted-foreground">
+                          {producto.descripcion}
+                        </p>
                         <div className="mb-2 text-xl font-bold text-primary">
                           {formatCurrency(tarifa.value)}
                           <span className="ml-1 text-xs font-medium text-muted-foreground">/{tarifa.suffix}</span>
@@ -331,7 +344,7 @@ export function Catalogo() {
                         {tarifas.length > 1 && (
                           <div className="flex flex-wrap gap-1.5 text-[11px] font-medium text-muted-foreground">
                             {tarifas.slice(1).map((item) => (
-                              <span key={item.suffix} className="rounded-full border bg-gray-50 px-2 py-0.5">
+                              <span key={item.suffix} className="rounded-full border border-black/10 bg-white px-2 py-0.5 shadow-sm">
                                 {item.label}: {formatCurrency(item.value)}
                               </span>
                             ))}

@@ -33,7 +33,7 @@ import {
 } from "lucide-react";
 import { FaWhatsapp } from "react-icons/fa";
 import { useEffect, useState, type FormEvent } from "react";
-import { useCreateReserva, useListProductos, type Producto } from "@workspace/api-client-react";
+import { listProductos, useCreateReserva, useListProductos, type Producto, getListProductosQueryKey, getGetProductoQueryKey, getProducto } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateCatalogData } from "@/lib/queryInvalidation";
 import { errorMessages } from "@/lib/errorMessages";
@@ -201,6 +201,38 @@ export function Home() {
       image.src = src;
     });
   }, [productosCatalogo]);
+
+  useEffect(() => {
+    void queryClient.prefetchQuery({
+      queryKey: getListProductosQueryKey({
+        page: 1,
+        limit: 12,
+        orden: "nombre_asc",
+      }),
+      queryFn: () =>
+        listProductos({
+          page: 1,
+          limit: 12,
+          orden: "nombre_asc",
+        }),
+      staleTime: 5 * 60 * 1000,
+    });
+  }, [queryClient]);
+
+  useEffect(() => {
+    if (!productosCatalogo.length) return;
+
+    const visibleProducts = productosCatalogo.slice(0, 3);
+    void Promise.allSettled(
+      visibleProducts.map((producto) =>
+        queryClient.prefetchQuery({
+          queryKey: getGetProductoQueryKey(Number(producto.id)),
+          queryFn: () => getProducto(Number(producto.id)),
+          staleTime: 5 * 60 * 1000,
+        })
+      ),
+    );
+  }, [productosCatalogo, queryClient]);
 
   const openReservaModal = (producto: HomeProduct) => {
     const tarifaPrincipal = getTarifaPrincipal(producto);
@@ -391,8 +423,8 @@ export function Home() {
                       <img
                         src={producto.imagen_url}
                         alt={producto.nombre}
-                        loading="eager"
-                        fetchPriority={index < 3 ? "high" : "low"}
+                        loading={index < 2 ? "eager" : "lazy"}
+                        fetchPriority={index < 2 ? "high" : "low"}
                         decoding="async"
                         className="h-full w-full bg-white object-contain p-4 transition-transform duration-700 group-hover:scale-105"
                       />
@@ -440,11 +472,15 @@ export function Home() {
                     <p className="mb-4 line-clamp-2 min-h-10 text-sm text-muted-foreground">
                       {producto.descripcion}
                     </p>
+                    <div className="mb-2 text-xl font-bold text-primary">
+                      {formatCurrency(tarifa.value)}
+                      <span className="ml-1 text-xs font-medium text-muted-foreground">/{tarifa.suffix}</span>
+                    </div>
                     <div className="mb-4 flex flex-wrap gap-2">
                       {tarifasDisponibles.map((tarifaVisible) => (
                         <span
                           key={tarifaVisible.tipo}
-                          className="rounded-full border border-black/15 bg-black/5 px-2.5 py-1 text-[11px] font-semibold text-black"
+                          className="rounded-full border border-black/10 bg-white px-2.5 py-1 text-[11px] font-semibold text-muted-foreground shadow-sm"
                         >
                           {tarifaVisible.label}: {formatCurrency(tarifaVisible.value)}
                         </span>

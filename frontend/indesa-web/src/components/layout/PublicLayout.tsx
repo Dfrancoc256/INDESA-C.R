@@ -32,6 +32,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   const [headerSearch, setHeaderSearch] = useState("");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isSocialMenuOpen, setIsSocialMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const socialMenuRef = useRef<HTMLDivElement | null>(null);
   const whatsappUrl = "https://wa.me/50252149029?text=Hola%2C%20quiero%20informaci%C3%B3n%20sobre%20la%20renta%20de%20maquinaria.";
 
@@ -72,6 +73,35 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isSocialMenuOpen]);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const target = event.target as Node | null;
+      if (target && mobileMenuRef.current?.contains(target)) return;
+      setIsMobileMenuOpen(false);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setIsSearchFocused(false);
+  }, [location]);
 
   const handleHeaderSearch = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -279,7 +309,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
 
         {/* Mobile Nav */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-white/15 bg-[#FF2800] px-4 py-4 shadow-md">
+          <div ref={mobileMenuRef} className="md:hidden border-t border-white/15 bg-[#FF2800] px-4 py-4 shadow-md">
             <form onSubmit={handleHeaderSearch} className="relative mb-4">
               <div className="flex h-11 items-center rounded-md border bg-white shadow-sm">
                 <Search className="ml-3 h-4 w-4 shrink-0 text-muted-foreground" />
@@ -346,7 +376,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         </div>
       </main>
 
-      <div ref={socialMenuRef} className="fixed bottom-5 right-5 z-50 flex flex-col items-end gap-3">
+      <div ref={socialMenuRef} className="fixed bottom-24 right-4 z-50 flex flex-col items-end gap-3 sm:bottom-5 sm:right-5">
         <div
           className={`w-72 overflow-hidden rounded-md border bg-white shadow-2xl transition-all duration-300 ${
             isSocialMenuOpen

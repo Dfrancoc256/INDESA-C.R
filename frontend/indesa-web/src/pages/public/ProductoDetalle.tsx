@@ -52,7 +52,15 @@ export function ProductoDetalle() {
   const [imageFailed, setImageFailed] = useState(false);
 
   const { data: productoActual, isLoading } = useGetProducto(productoId, {
-    query: { enabled: productoId > 0, queryKey: getGetProductoQueryKey(productoId) }
+    query: {
+      enabled: productoId > 0,
+      queryKey: getGetProductoQueryKey(productoId),
+      staleTime: 5 * 60 * 1000,
+      gcTime: 15 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      placeholderData: (previousData) => previousData,
+    }
   });
   const imageSrc = productoActual?.imagen_url ?? "";
   const categoriaNombre = productoActual?.categoria_nombre ?? "Maquinaria";
@@ -217,6 +225,9 @@ export function ProductoDetalle() {
                     <img
                       src={imageSrc}
                       alt={productoActual.nombre}
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="async"
                       className="h-full w-full bg-white object-contain p-4"
                       onError={() => setImageFailed(true)}
                     />
