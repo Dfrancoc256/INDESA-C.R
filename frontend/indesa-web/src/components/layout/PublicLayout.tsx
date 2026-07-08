@@ -276,7 +276,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <Button
                 asChild
                 size="icon"
-                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(255,40,0,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#ffe4df] hover:text-[#FF2800] hover:shadow-[0_10px_22px_rgba(255,40,0,0.22)]"
+                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(255,40,0,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[rgba(255,40,0,0.10)] hover:text-[#FF2800] hover:shadow-[0_10px_22px_rgba(255,40,0,0.22)]"
               >
                 <Link href="/admin/dashboard" aria-label="Abrir panel administrativo" title="Panel administrativo">
                   <LayoutDashboard className="h-5 w-5" />
@@ -287,7 +287,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <Button
                 asChild
                 size="icon"
-                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(255,40,0,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#ffe4df] hover:text-[#FF2800] hover:shadow-[0_10px_22px_rgba(255,40,0,0.22)]"
+                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(255,40,0,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[rgba(255,40,0,0.10)] hover:text-[#FF2800] hover:shadow-[0_10px_22px_rgba(255,40,0,0.22)]"
               >
                 <Link href="/admin/login" aria-label="Acceder al administrador" title="Acceso administrador">
                   <LockKeyhole className="h-5 w-5" />
@@ -349,14 +349,14 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               ))}
               <div className="pt-3 mt-2 border-t">
                 {isAuthenticated ? (
-                  <Button asChild className="w-full gap-2 bg-white text-[#FF2800] hover:bg-[#fff8d6]">
+                  <Button asChild className="w-full gap-2 bg-white text-[#FF2800] hover:bg-[rgba(255,40,0,0.10)]">
                     <Link href="/admin/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
                       <LayoutDashboard className="h-4 w-4" />
                       Panel Admin
                     </Link>
                   </Button>
                 ) : (
-                  <Button asChild className="w-full gap-2 bg-white text-[#FF2800] hover:bg-[#fff8d6]">
+                  <Button asChild className="w-full gap-2 bg-white text-[#FF2800] hover:bg-[rgba(255,40,0,0.10)]">
                     <Link href="/admin/login" onClick={() => setIsMobileMenuOpen(false)}>
                       <LockKeyhole className="h-4 w-4" />
                       Acceso

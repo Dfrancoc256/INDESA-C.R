@@ -99,8 +99,8 @@
   --muted:        220 10% 93%;
   --muted-foreground: 220 10% 48%;
 
-  --accent:       9 100% 95%;          /* rojo muy suave para acentos */
-  --accent-foreground: 9 100% 28%;
+  --accent:       9 100% 50%;          /* #FF2800 — Ferrari red */
+  --accent-foreground: 0 0% 100%;
 
   --destructive:  9 100% 50%;
   --destructive-foreground: 0 0% 100%;
@@ -177,8 +177,8 @@
   --muted:        220 18% 18%;
   --muted-foreground: 220 10% 55%;
 
-  --accent:       0 60% 20%;
-  --accent-foreground: 0 70% 80%;
+  --accent:       9 100% 50%;
+  --accent-foreground: 0 0% 100%;
 
   --destructive:  9 100% 50%;
   --destructive-foreground: 0 0% 100%;
