@@ -344,7 +344,7 @@ export function Reservar() {
                           <div>
                             <div className="text-sm font-semibold">Acción rápida</div>
                             <p className="mt-1 text-sm text-muted-foreground">
-                              Puedes enviar la consulta por WhatsApp con los datos de esta reserva o guardar la solicitud desde aquí.
+                              Puedes revisar la información y confirmar la reserva desde aquí. La solicitud quedará guardada y recibirás la confirmación por correo.
                             </p>
                           </div>
                           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -354,9 +354,9 @@ export function Reservar() {
                                 Consultar por WhatsApp
                               </a>
                             </Button>
-                            <Button type="submit" className="gap-2">
+                          <Button type="submit" className="gap-2">
                               <ClipboardList className="h-4 w-4" />
-                              Enviar solicitud
+                              Confirmar reserva
                             </Button>
                           </div>
                         </div>
@@ -584,11 +584,11 @@ export function Reservar() {
                           className="h-14 w-full text-lg sm:w-1/2"
                           disabled={reservaMutation.isPending || (productoSeleccionado && productoSeleccionado.cantidad === 0)}
                         >
-                          {reservaMutation.isPending ? "Procesando Solicitud..." : "Enviar Solicitud de Reserva"}
+                          {reservaMutation.isPending ? "Confirmando Reserva..." : "Confirmar Reserva"}
                         </Button>
                       </div>
                       <p className="mt-4 text-center text-sm text-muted-foreground">
-                        Esta reserva no requiere pago inmediato. Un asesor le enviará la cotización final y los métodos de pago.
+                        Esta reserva no requiere pago inmediato. La solicitud quedará registrada y un asesor te enviará la confirmación por correo.
                       </p>
                     </div>
                   </form>

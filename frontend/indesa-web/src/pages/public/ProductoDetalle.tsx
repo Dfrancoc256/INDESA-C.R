@@ -203,8 +203,8 @@ export function ProductoDetalle() {
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-4">¡Reserva Confirmada!</h2>
             <p className="text-lg text-gray-600 mb-8">
-              Su solicitud para <strong>{productoActual.nombre}</strong> ha sido recibida correctamente. 
-              Un asesor se comunicará con usted para coordinar disponibilidad, operador y condiciones de uso.
+              Su solicitud para <strong>{productoActual.nombre}</strong> ha sido recibida correctamente.
+              Un asesor se comunicará con usted para coordinar disponibilidad, operador y condiciones de uso y le enviará la confirmación por correo.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Button asChild size="lg">
@@ -265,7 +265,7 @@ export function ProductoDetalle() {
                     Reserva guiada
                   </div>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Te acompañamos en el proceso para confirmar disponibilidad y condiciones.
+                    Te acompañamos en el proceso para confirmar la reserva y condiciones.
                   </p>
                 </div>
               </div>
@@ -318,7 +318,7 @@ export function ProductoDetalle() {
                       Confirmación rápida
                     </div>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Revisamos tu solicitud y te respondemos con el siguiente paso lo antes posible.
+                      Revisamos tu solicitud y te enviamos la confirmación por correo lo antes posible.
                     </p>
                   </div>
                 </div>

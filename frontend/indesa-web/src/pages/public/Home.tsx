@@ -300,15 +300,10 @@ export function Home() {
       onSuccess: async () => {
         await invalidateCatalogData(queryClient);
         await refetchCatalogo();
-        window.open(buildWhatsAppUrl(selectedProduct, {
-          ...reservaForm,
-          fecha_fin: fechaFinCalculada,
-          unidades_tarifa: String(unidadesTarifa),
-        }), "_blank", "noopener,noreferrer");
         setReservaOpen(false);
         toast({
-          title: "Solicitud registrada",
-          description: "La reserva quedó en administración y se abrió WhatsApp para seguimiento.",
+          title: "Reserva confirmada",
+          description: "Tu solicitud fue registrada correctamente. Te enviaremos la confirmación por correo.",
         });
       },
     });
@@ -555,7 +550,7 @@ export function Home() {
           <DialogHeader>
             <DialogTitle>Datos de reserva</DialogTitle>
             <DialogDescription>
-              Completa los datos y los enviaremos por WhatsApp para confirmar disponibilidad.
+              Completa los datos y confirma tu reserva. La solicitud quedará registrada y recibirás la confirmación por correo.
             </DialogDescription>
           </DialogHeader>
 
@@ -736,7 +731,7 @@ export function Home() {
                 </Button>
                 <Button type="submit" className="gap-2" disabled={reservaMutation.isPending}>
                   <ClipboardList className="h-4 w-4" />
-                  {reservaMutation.isPending ? "Enviando..." : "Enviar datos de reserva"}
+                  {reservaMutation.isPending ? "Confirmando..." : "Confirmar reserva"}
                 </Button>
               </div>
             </form>
