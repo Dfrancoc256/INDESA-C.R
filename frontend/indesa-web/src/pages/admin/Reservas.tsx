@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Filter, Phone, Mail, FileText, CheckCircle, Truck, XCircle, Clock, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useReservaDisponibilidad } from "@/hooks/use-reserva-disponibilidad";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -19,6 +20,7 @@ import { invalidateCatalogData } from "@/lib/queryInvalidation";
 import { useAuth } from "@/contexts/AuthContext";
 import { hasPermission } from "@/lib/permissions";
 import { errorMessages } from "@/lib/errorMessages";
+import { calcularUnidadesTarifa, getTarifaPrincipal, getTarifasProducto } from "@/lib/utils";
 
 function formatDateOnly(value?: string | Date | null) {
   if (!value) return "Sin fecha";
@@ -71,6 +73,25 @@ export function Reservas() {
     () => productosDisponibles.find((producto: any) => producto.id.toString() === agregarForm.producto_id) ?? null,
     [productosDisponibles, agregarForm.producto_id]
   );
+  const tarifasProductoAgregar = useMemo(
+    () => (productoAgregar ? getTarifasProducto(productoAgregar) : []),
+    [productoAgregar]
+  );
+  const tarifaAgregarSeleccionada = useMemo(
+    () => tarifasProductoAgregar.find((tarifa) => tarifa.tipo === agregarForm.tipo_tarifa) ?? (productoAgregar ? getTarifaPrincipal(productoAgregar) : null),
+    [tarifasProductoAgregar, agregarForm.tipo_tarifa, productoAgregar]
+  );
+  const fechaInicioAgregar = agregarForm.fecha_inicio;
+  const fechaFinAgregar = agregarForm.fecha_fin;
+  const cantidadAgregarSolicitada = Number(agregarForm.cantidad || 1);
+  const disponibilidadAgregar = useReservaDisponibilidad({
+    productoId: productoAgregar?.id ?? null,
+    fechaInicio: fechaInicioAgregar || null,
+    fechaFin: fechaFinAgregar || null,
+    cantidad: cantidadAgregarSolicitada,
+  });
+  const stockDisponibleAgregar = disponibilidadAgregar.data?.stockDisponible ?? (productoAgregar?.cantidad ?? 0);
+  const reservaAgregarPermitida = disponibilidadAgregar.data?.permitido ?? ((productoAgregar?.cantidad ?? 0) >= cantidadAgregarSolicitada);
 
   const createReservaMutation = useCreateReserva({
     mutation: {
@@ -133,6 +154,14 @@ export function Reservas() {
     estado: estadoFilter !== "todas" ? estadoFilter as ListReservasEstado : undefined,
     busqueda: busquedaNormalizada || undefined,
   } as any);
+  const reservasFiltradas = useMemo(() => {
+    const items = reservasResponse?.data ?? [];
+    return [...items].sort((a, b) => {
+      const dateA = new Date(a.created_at ?? 0).getTime();
+      const dateB = new Date(b.created_at ?? 0).getTime();
+      return dateB - dateA;
+    });
+  }, [reservasResponse]);
 
   const reservaDetalleId = reservaSeleccionada?.id ?? 0;
   const { data: reservaDetalle } = useGetReserva(reservaDetalleId, {
@@ -236,7 +265,26 @@ export function Reservas() {
       return;
     }
 
+    if (disponibilidadAgregar.isFetching) {
+      const message = "Estamos comprobando el stock para las fechas seleccionadas. Intenta nuevamente en unos segundos.";
+      setAgregarError(message);
+      toast({ variant: "destructive", title: "Validando disponibilidad", description: message });
+      return;
+    }
+
+    if (!reservaAgregarPermitida) {
+      const message = disponibilidadAgregar.data
+        ? `Solo quedan ${disponibilidadAgregar.data.stockDisponible} unidades disponibles para esas fechas.`
+        : "No hay stock suficiente para las fechas seleccionadas.";
+      setAgregarError(message);
+      toast({ variant: "destructive", title: "Stock insuficiente", description: message });
+      return;
+    }
+
     setAgregarError("");
+    const unidadesCalculadas = calcularUnidadesTarifa(agregarForm.tipo_tarifa, fechaInicio, fechaFin, unidadesTarifa);
+    const precioUnitario = tarifaAgregarSeleccionada?.value ?? 0;
+    const totalCalculado = Number(cantidadSolicitada || 1) * unidadesCalculadas * precioUnitario;
 
     createReservaMutation.mutate({
       data: {
@@ -255,22 +303,20 @@ export function Reservas() {
         fecha_fin: fechaFin,
         tipoTarifa: agregarForm.tipo_tarifa as any,
         tipo_tarifa: agregarForm.tipo_tarifa as any,
-        unidadesTarifa,
-        unidades_tarifa: unidadesTarifa,
+        unidadesTarifa: unidadesCalculadas,
+        unidades_tarifa: unidadesCalculadas,
         notas: agregarForm.notas?.trim() || undefined,
-        precio_unitario: precioProductoAgregar,
-        total_estimado: totalAgregar,
+        precio_unitario: precioUnitario,
+        total_estimado: totalCalculado,
         estado: "pendiente",
       } as any,
     });
   };
 
-  const reservasFiltradas = reservasResponse?.data ?? [];
-  const precioProductoAgregar = productoAgregar ? (productoAgregar.precio_dia || productoAgregar.precio_semana || productoAgregar.precio_mes || productoAgregar.precio || 0) : 0;
   const diasAgregar = agregarForm.fecha_inicio && agregarForm.fecha_fin
     ? Math.max(1, Math.ceil((new Date(`${agregarForm.fecha_fin}T00:00:00`).getTime() - new Date(`${agregarForm.fecha_inicio}T00:00:00`).getTime()) / 86400000) + 1)
     : 1;
-  const totalAgregar = Number(agregarForm.cantidad || 1) * Number(agregarForm.unidades_tarifa || 1) * precioProductoAgregar;
+  const totalAgregar = Number(agregarForm.cantidad || 1) * Number(agregarForm.unidades_tarifa || 1) * (tarifaAgregarSeleccionada?.value ?? 0);
 
   return (
     <div className="space-y-6">
@@ -640,6 +686,17 @@ export function Reservas() {
             <div>Días aproximados: <span className="font-semibold text-foreground">{diasAgregar}</span></div>
           </div>
 
+          <div className={`rounded-md border px-4 py-3 text-sm ${
+            reservaAgregarPermitida ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"
+          }`}>
+            <div className="font-semibold">
+              {reservaAgregarPermitida ? "Stock disponible para estas fechas." : "Stock insuficiente para estas fechas."}
+            </div>
+            <div className="mt-1 text-xs">
+              Disponibles: {stockDisponibleAgregar} · Comprometidas: {disponibilidadAgregar.data?.stockComprometido ?? 0} · Solicitadas: {cantidadAgregarSolicitada}
+            </div>
+          </div>
+
           <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
               variant="outline"
@@ -655,7 +712,7 @@ export function Reservas() {
             <Button
               type="button"
               onClick={handleGuardarReservaManual}
-              disabled={createReservaMutation.isPending}
+              disabled={createReservaMutation.isPending || !reservaAgregarPermitida || disponibilidadAgregar.isFetching}
               className="gap-2 w-full sm:w-auto"
             >
               {createReservaMutation.isPending ? "Guardando..." : "Guardar reserva"}

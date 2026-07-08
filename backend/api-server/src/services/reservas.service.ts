@@ -146,6 +146,47 @@ export async function listReservas(params: { estado?: string; busqueda?: string;
   return repo.findAllReservas(params);
 }
 
+export async function getDisponibilidadReserva(input: {
+  productoId?: number;
+  fechaInicio?: string;
+  fechaFin?: string;
+  cantidad?: number;
+}) {
+  const productoId = Number(input.productoId);
+  if (!Number.isInteger(productoId) || productoId < 1) {
+    throw Object.assign(new Error("productoId es obligatorio"), { status: 400 });
+  }
+
+  const fechaInicio = toDateOnly(input.fechaInicio, "fechaInicio");
+  const fechaFin = toDateOnly(input.fechaFin, "fechaFin");
+  const cantidadSolicitada = Math.max(1, Number(input.cantidad) || 1);
+
+  const producto = await productosRepo.findProductoById(productoId);
+  if (!producto) {
+    throw Object.assign(new Error("Producto no encontrado"), { status: 404 });
+  }
+
+  const inventario = await inventarioRepo.findInventarioByProducto(productoId);
+  const stockActual = inventario?.cantidad ?? 0;
+  const stockComprometido = await repo.getReservaStockComprometido({
+    productoId,
+    fechaInicio,
+    fechaFin,
+  });
+  const stockDisponible = Math.max(0, stockActual - stockComprometido);
+
+  return {
+    productoId,
+    fechaInicio,
+    fechaFin,
+    cantidadSolicitada,
+    stockActual,
+    stockComprometido,
+    stockDisponible,
+    permitido: stockDisponible >= cantidadSolicitada,
+  };
+}
+
 export async function getReserva(id: number) {
   const reserva = await repo.findReservaById(id);
   if (!reserva) throw Object.assign(new Error("Reserva no encontrada"), { status: 404 });
@@ -174,9 +215,16 @@ export async function createReserva(input: ReservaInput) {
   // Verificar stock suficiente (no decrementar aún — solo reservar)
   const inventario = await inventarioRepo.findInventarioByProducto(data.productoId);
   const stockActual = inventario?.cantidad ?? 0;
-  if (stockActual < data.cantidad) {
+  const stockComprometido = await repo.getReservaStockComprometido({
+    productoId: data.productoId,
+    fechaInicio: data.fechaInicio,
+    fechaFin: data.fechaFin,
+  });
+  const stockDisponible = Math.max(0, stockActual - stockComprometido);
+
+  if (stockDisponible < data.cantidad) {
     throw Object.assign(
-      new Error(`Stock insuficiente. Disponible: ${stockActual}`),
+      new Error(`Stock insuficiente para las fechas seleccionadas. Disponible: ${stockDisponible}`),
       { status: 400 }
     );
   }

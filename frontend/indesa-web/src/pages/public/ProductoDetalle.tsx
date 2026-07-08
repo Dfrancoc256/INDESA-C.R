@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ArrowLeft, CheckCircle2, AlertTriangle, BadgeCheck, Package, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useReservaDisponibilidad } from "@/hooks/use-reserva-disponibilidad";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -119,6 +120,26 @@ export function ProductoDetalle() {
       return;
     }
 
+    if (disponibilidadReserva.isFetching) {
+      toast({
+        variant: "destructive",
+        title: "Validando disponibilidad",
+        description: "Estamos comprobando el stock para las fechas seleccionadas. Intenta nuevamente en unos segundos.",
+      });
+      return;
+    }
+
+    if (!reservaPermitida) {
+      toast({
+        variant: "destructive",
+        title: "Stock insuficiente",
+        description: disponibilidadReserva.data
+          ? `Solo quedan ${disponibilidadReserva.data.stockDisponible} unidades disponibles para esas fechas.`
+          : "No hay stock suficiente para las fechas seleccionadas.",
+      });
+      return;
+    }
+
     const tarifa = getTarifasProducto(productoActual).find((item) => item.tipo === data.tipo_tarifa) ?? getTarifaPrincipal(productoActual);
     const fechaFin = data.tipo_tarifa === "dia"
       ? data.fecha_fin
@@ -183,7 +204,16 @@ export function ProductoDetalle() {
     : calcularFechaFinPorTarifa(fechaInicio, tipoTarifa, form.watch("unidades_tarifa"));
   const unidadesTarifa = calcularUnidadesTarifa(tipoTarifa, fechaInicio, fechaFin, form.watch("unidades_tarifa"));
   const diasReserva = getDiasEntreFechas(fechaInicio, fechaFin);
-  const totalEstimado = tarifaSeleccionada.value * unidadesTarifa * (Number(form.watch("cantidad")) || 1);
+  const cantidadSolicitada = Number(form.watch("cantidad")) || 1;
+  const totalEstimado = tarifaSeleccionada.value * unidadesTarifa * cantidadSolicitada;
+  const disponibilidadReserva = useReservaDisponibilidad({
+    productoId: productoActual.id,
+    fechaInicio,
+    fechaFin,
+    cantidad: cantidadSolicitada,
+  });
+  const stockDisponiblePorFecha = disponibilidadReserva.data?.stockDisponible ?? cantidadDisponible;
+  const reservaPermitida = disponibilidadReserva.data?.permitido ?? (cantidadDisponible >= cantidadSolicitada);
 
   return (
     <div className="bg-gray-50 min-h-screen pb-20">
@@ -510,6 +540,16 @@ export function ProductoDetalle() {
                             Estimado: {formatCurrency(totalEstimado)} ({unidadesTarifa} {unidadesTarifa === 1 ? tarifaSeleccionada.suffix : tarifaSeleccionada.plural})
                           </span>
                         </div>
+                        <div className={`rounded-md border px-4 py-3 text-sm ${
+                          reservaPermitida ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"
+                        }`}>
+                          <div className="font-semibold">
+                            {reservaPermitida ? "Stock disponible para estas fechas." : "Stock insuficiente para estas fechas."}
+                          </div>
+                          <div className="mt-1 text-xs">
+                            Disponibles: {stockDisponiblePorFecha} · Comprometidas: {disponibilidadReserva.data?.stockComprometido ?? 0} · Solicitadas: {cantidadSolicitada}
+                          </div>
+                        </div>
 
                         <FormField
                           control={form.control}
@@ -531,11 +571,11 @@ export function ProductoDetalle() {
 
                         <div className="pt-2">
                           <Button 
-                            type="submit" 
-                            size="lg" 
-                            className="h-12 w-full text-base font-bold md:h-14 md:text-lg"
-                            disabled={reservaMutation.isPending}
-                          >
+                          type="submit" 
+                          size="lg" 
+                          className="h-12 w-full text-base font-bold md:h-14 md:text-lg"
+                          disabled={reservaMutation.isPending || !reservaPermitida || disponibilidadReserva.isFetching}
+                        >
                             {reservaMutation.isPending ? "Procesando..." : "Confirmar Reserva"}
                           </Button>
                           <p className="text-center text-xs text-muted-foreground mt-4">

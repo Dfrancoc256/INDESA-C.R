@@ -1,5 +1,5 @@
 import { db, reservasTable, productosTable } from "@workspace/db";
-import { and, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
+import { and, desc, eq, ilike, or, sql, type SQL, inArray, lte, gte } from "drizzle-orm";
 
 function decimalToNumber(value: string | null): number | null {
   return value === null ? null : Number(value);
@@ -185,4 +185,25 @@ export async function findReservasRecientes(limit = 10) {
     .orderBy(desc(reservasTable.createdAt))
     .limit(limit)
     .then((rows) => rows.map(mapReservaRow));
+}
+
+export async function getReservaStockComprometido(params: {
+  productoId: number;
+  fechaInicio: string;
+  fechaFin: string;
+}) {
+  const { productoId, fechaInicio, fechaFin } = params;
+  const [row] = await db
+    .select({
+      comprometido: sql<number>`coalesce(sum(${reservasTable.cantidad}), 0)::int`,
+    })
+    .from(reservasTable)
+    .where(and(
+      eq(reservasTable.productoId, productoId),
+      inArray(reservasTable.estado, ["pendiente", "confirmada"]),
+      lte(reservasTable.fechaInicio, fechaFin),
+      gte(reservasTable.fechaFin, fechaInicio),
+    ));
+
+  return Number(row?.comprometido ?? 0);
 }

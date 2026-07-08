@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { CheckCircle2, ClipboardList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useReservaDisponibilidad } from "@/hooks/use-reserva-disponibilidad";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -150,6 +151,26 @@ export function Reservar() {
       }
     }
 
+    if (disponibilidadReserva.isFetching) {
+      toast({
+        variant: "destructive",
+        title: "Validando disponibilidad",
+        description: "Estamos comprobando el stock para las fechas seleccionadas. Intenta nuevamente en unos segundos.",
+      });
+      return;
+    }
+
+    if (!reservaPermitida) {
+      toast({
+        variant: "destructive",
+        title: "Stock insuficiente",
+        description: disponibilidadReserva.data
+          ? `Solo quedan ${disponibilidadReserva.data.stockDisponible} unidades disponibles para esas fechas.`
+          : "No hay stock suficiente para las fechas seleccionadas.",
+      });
+      return;
+    }
+
     if (!productoSeleccionado) return;
 
     const tarifa = getTarifasProducto(productoSeleccionado).find((item) => item.tipo === data.tipo_tarifa) ?? getTarifaPrincipal(productoSeleccionado);
@@ -184,9 +205,18 @@ export function Reservar() {
     : calcularFechaFinPorTarifa(fechaInicio, tipoTarifa, form.watch("unidades_tarifa"));
   const unidadesTarifa = calcularUnidadesTarifa(tipoTarifa, fechaInicio, fechaFin, form.watch("unidades_tarifa"));
   const diasReserva = getDiasEntreFechas(fechaInicio, fechaFin);
+  const cantidadSolicitada = Number(form.watch("cantidad")) || 1;
   const totalEstimado = productoSeleccionado && tarifaSeleccionada
-    ? tarifaSeleccionada.value * unidadesTarifa * (Number(form.watch("cantidad")) || 1)
+    ? tarifaSeleccionada.value * unidadesTarifa * cantidadSolicitada
     : 0;
+  const disponibilidadReserva = useReservaDisponibilidad({
+    productoId: productoSeleccionado?.id ?? null,
+    fechaInicio,
+    fechaFin,
+    cantidad: cantidadSolicitada,
+  });
+  const stockDisponiblePorFecha = disponibilidadReserva.data?.stockDisponible ?? (productoSeleccionado?.cantidad ?? 0);
+  const reservaPermitida = disponibilidadReserva.data?.permitido ?? ((productoSeleccionado?.cantidad ?? 0) >= cantidadSolicitada);
   const productImage = productoSeleccionado?.imagen_url;
   const whatsappUrl = productoSeleccionado
     ? `https://wa.me/${whatsappPhone}?text=${encodeURIComponent([
@@ -489,6 +519,16 @@ export function Reservar() {
                           </span>
                         )}
                       </div>
+                      <div className={`rounded-md border px-4 py-3 text-sm ${
+                        reservaPermitida ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"
+                      }`}>
+                        <div className="font-semibold">
+                          {reservaPermitida ? "Stock disponible para estas fechas." : "Stock insuficiente para estas fechas."}
+                        </div>
+                        <div className="mt-1 text-xs">
+                          Disponibles: {stockDisponiblePorFecha} · Comprometidas: {disponibilidadReserva.data?.stockComprometido ?? 0} · Solicitadas: {cantidadSolicitada}
+                        </div>
+                      </div>
                     </div>
 
                     <div className="space-y-4 pt-6 mt-6 border-t">
@@ -582,7 +622,7 @@ export function Reservar() {
                           type="submit" 
                           size="lg" 
                           className="h-14 w-full text-lg sm:w-1/2"
-                          disabled={reservaMutation.isPending || (productoSeleccionado && productoSeleccionado.cantidad === 0)}
+                          disabled={reservaMutation.isPending || !reservaPermitida || disponibilidadReserva.isFetching}
                         >
                           {reservaMutation.isPending ? "Confirmando Reserva..." : "Confirmar Reserva"}
                         </Button>

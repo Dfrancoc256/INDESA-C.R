@@ -34,6 +34,21 @@ export async function create(req: Request, res: Response): Promise<void> {
   }
 }
 
+export async function disponibilidad(req: Request, res: Response): Promise<void> {
+  try {
+    const { productoId, fechaInicio, fechaFin, cantidad } = req.query as Record<string, string>;
+    const data = await service.getDisponibilidadReserva({
+      productoId: Number(productoId),
+      fechaInicio,
+      fechaFin,
+      cantidad: cantidad ? Number(cantidad) : 1,
+    });
+    res.json(data);
+  } catch (err: any) {
+    res.status(err.status ?? 400).json({ error: err.message });
+  }
+}
+
 export async function updateEstado(req: Request, res: Response): Promise<void> {
   try {
     const { estado, notas } = req.body;

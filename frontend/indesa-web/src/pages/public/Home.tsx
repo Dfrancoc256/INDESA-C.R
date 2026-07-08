@@ -8,7 +8,6 @@ import {
   getInitials,
   getTarifaPrincipal,
   getTarifasProducto,
-  getPrecioReferenciaProducto,
   getTodayDate,
 } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,6 +36,7 @@ import { listProductos, useCreateReserva, useListProductos, type Producto, getLi
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateCatalogData } from "@/lib/queryInvalidation";
 import { errorMessages } from "@/lib/errorMessages";
+import { useReservaDisponibilidad } from "@/hooks/use-reserva-disponibilidad";
 import bannerPrincipal1 from "@/assets/images/banner-principal-1.png";
 import bannerPrincipal2 from "@/assets/images/banner-principal-2.png";
 import bannerPrincipal3 from "@/assets/images/banner-principal-3.png";
@@ -153,9 +153,18 @@ export function Home() {
     Number(reservaForm.unidades_tarifa) || 1
   );
   const diasReserva = getDiasEntreFechas(reservaForm.fecha_inicio, fechaFinCalculada);
+  const cantidadSolicitada = Number(reservaForm.cantidad) || 1;
   const totalEstimado = selectedProduct && tarifaSeleccionada
-    ? tarifaSeleccionada.value * unidadesTarifa * (Number(reservaForm.cantidad) || 1)
+    ? tarifaSeleccionada.value * unidadesTarifa * cantidadSolicitada
     : 0;
+  const disponibilidadReserva = useReservaDisponibilidad({
+    productoId: selectedProduct?.id ?? null,
+    fechaInicio: reservaForm.fecha_inicio || null,
+    fechaFin: fechaFinCalculada || null,
+    cantidad: cantidadSolicitada,
+  });
+  const stockDisponiblePorFecha = disponibilidadReserva.data?.stockDisponible ?? (selectedProduct?.cantidad ?? 0);
+  const reservaPermitida = disponibilidadReserva.data?.permitido ?? ((selectedProduct?.cantidad ?? 0) >= cantidadSolicitada);
 
   const reservaMutation = useCreateReserva({
     mutation: {
@@ -272,6 +281,26 @@ export function Home() {
       });
       void refetchCatalogo();
       setReservaOpen(false);
+      return;
+    }
+
+    if (disponibilidadReserva.isFetching) {
+      toast({
+        variant: "destructive",
+        title: "Validando disponibilidad",
+        description: "Estamos comprobando el stock para las fechas seleccionadas. Intenta nuevamente en unos segundos.",
+      });
+      return;
+    }
+
+    if (!reservaPermitida) {
+      toast({
+        variant: "destructive",
+        title: "Stock insuficiente",
+        description: disponibilidadReserva.data
+          ? `Solo quedan ${disponibilidadReserva.data.stockDisponible} unidades disponibles para esas fechas.`
+          : "No hay stock suficiente para las fechas seleccionadas.",
+      });
       return;
     }
 
@@ -407,7 +436,6 @@ export function Home() {
               const agotado = (producto.cantidad ?? 0) <= 0;
               const tarifasDisponibles = getTarifasProducto(producto);
               const tarifa = getTarifaPrincipal(producto);
-              const precioReferencia = getPrecioReferenciaProducto(producto);
 
               return (
                 <Card key={producto.id} className="group relative overflow-hidden border bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:scale-[1.01] hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10">
@@ -472,12 +500,17 @@ export function Home() {
                       <span className="ml-1 text-xs font-medium text-muted-foreground">/{tarifa.suffix}</span>
                     </div>
                     <div className="flex items-center justify-between gap-3">
-                      <div>
-                        {precioReferencia > 0 && (
-                          <div className="mt-1 text-[11px] font-medium text-muted-foreground">
-                            Referencia base: {formatCurrency(precioReferencia)}
-                          </div>
-                        )}
+                      <div className="flex flex-wrap gap-2">
+                        {tarifasDisponibles.length > 1 && tarifasDisponibles
+                          .filter((item) => item.tipo !== "dia")
+                          .map((item) => (
+                            <span
+                              key={item.tipo}
+                              className="rounded-full border border-black/10 bg-white px-2.5 py-1 text-[11px] font-medium text-black"
+                            >
+                              {item.label}: {formatCurrency(item.value)}
+                            </span>
+                          ))}
                       </div>
                       <Link href={`/producto/${producto.id}`} className="text-sm font-semibold text-muted-foreground transition-all duration-200 hover:text-primary group-hover:translate-x-1">
                         Detalle
@@ -709,6 +742,18 @@ export function Home() {
                     </span>
                   )}
                 </div>
+                {selectedProduct && (
+                  <div className={`rounded-md border px-4 py-3 text-sm sm:col-span-2 ${
+                    reservaPermitida ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"
+                  }`}>
+                    <div className="font-semibold">
+                      {reservaPermitida ? "Stock disponible para estas fechas." : "Stock insuficiente para estas fechas."}
+                    </div>
+                    <div className="mt-1 text-xs">
+                      Disponibles: {stockDisponiblePorFecha} · Comprometidas: {disponibilidadReserva.data?.stockComprometido ?? 0} · Solicitadas: {cantidadSolicitada}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -729,7 +774,7 @@ export function Home() {
                     Consultar por WhatsApp
                   </a>
                 </Button>
-                <Button type="submit" className="gap-2" disabled={reservaMutation.isPending}>
+                <Button type="submit" className="gap-2" disabled={reservaMutation.isPending || !reservaPermitida || disponibilidadReserva.isFetching}>
                   <ClipboardList className="h-4 w-4" />
                   {reservaMutation.isPending ? "Confirmando..." : "Confirmar reserva"}
                 </Button>

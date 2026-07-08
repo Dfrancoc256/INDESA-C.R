@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter, SlidersHorizontal, AlertCircle } from "lucide-react";
 import { errorMessages } from "@/lib/errorMessages";
+import { getTarifasProducto } from "@/lib/utils";
 
 const pageSize = 12;
 
@@ -307,6 +308,7 @@ export function Catalogo() {
                 <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                   {productosPagina.map((producto, index) => {
                     const tarifa = getTarifaPrincipal(producto);
+                    const tarifas = getTarifasProducto(producto);
                     return (
                     <Card key={producto.id} className="group relative flex overflow-hidden flex-col border bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:scale-[1.01] hover:border-primary/40 hover:shadow-2xl hover:shadow-primary/10">
                       <span className="absolute inset-x-0 top-0 z-10 h-1 origin-left scale-x-0 bg-primary transition-transform duration-300 group-hover:scale-x-100" />
@@ -338,6 +340,18 @@ export function Catalogo() {
                         <div className="mb-2 text-xl font-bold text-primary">
                           {formatCurrency(tarifa.value)}
                           <span className="ml-1 text-xs font-medium text-muted-foreground">/{tarifa.suffix}</span>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {tarifas
+                            .filter((item) => item.tipo !== "dia")
+                            .map((item) => (
+                              <span
+                                key={item.tipo}
+                                className="rounded-full border border-black/10 bg-white px-2.5 py-1 text-[11px] font-medium text-black"
+                              >
+                                {item.label}: {formatCurrency(item.value)}
+                              </span>
+                            ))}
                         </div>
                       </CardContent>
                       <CardFooter className="p-3 pt-0">

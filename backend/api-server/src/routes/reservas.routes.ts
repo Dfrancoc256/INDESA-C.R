@@ -8,6 +8,7 @@ const router = Router();
 
 // Pública: crear reserva
 router.post("/",               reservasRateLimit, ctrl.create);
+router.get("/disponibilidad",   ctrl.disponibilidad);
 
 // Protegidas
 router.get("/",                authMiddleware, requirePermiso("reservas.ver"),    ctrl.list);
