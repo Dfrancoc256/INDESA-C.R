@@ -2,6 +2,7 @@ import * as repo from "../repositories/reservas.repository";
 import * as inventarioRepo from "../repositories/inventario.repository";
 import * as productosRepo from "../repositories/productos.repository";
 import { notificarReservaPorWhatsApp } from "../lib/whatsapp";
+import { notificarReservaPorCorreo } from "../lib/email";
 import { logger } from "../lib/logger";
 
 type TipoTarifa = "dia" | "semana" | "mes" | "base";
@@ -218,6 +219,23 @@ export async function createReserva(input: ReservaInput) {
       await repo.marcarWhatsappEnviado(reserva.id);
     }
   }).catch((err) => logger.error({ err }, "Error asíncrono en notificación WhatsApp"));
+
+  void notificarReservaPorCorreo({
+    reservaId: reserva.id,
+    clienteNombre: data.clienteNombre,
+    clienteEmail: data.clienteEmail,
+    clienteTelefono: data.clienteTelefono,
+    productoNombre: producto.nombre,
+    cantidad: data.cantidad,
+    fechaInicio: data.fechaInicio,
+    fechaFin: data.fechaFin,
+    diasReserva: data.diasReserva,
+    tipoTarifa: tarifa.tipoTarifa,
+    unidadesTarifa: tarifa.unidadesTarifa,
+    precioUnitario: tarifa.precioUnitario,
+    totalEstimado: tarifa.totalEstimado,
+    notas: data.notas,
+  }).catch((err) => logger.error({ err }, "Error asíncrono en notificación de correo"));
 
   return repo.findReservaById(reserva.id);
 }

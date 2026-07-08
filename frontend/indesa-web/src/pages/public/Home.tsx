@@ -476,16 +476,6 @@ export function Home() {
                       {formatCurrency(tarifa.value)}
                       <span className="ml-1 text-xs font-medium text-muted-foreground">/{tarifa.suffix}</span>
                     </div>
-                    <div className="mb-4 flex flex-wrap gap-2">
-                      {tarifasDisponibles.map((tarifaVisible) => (
-                        <span
-                          key={tarifaVisible.tipo}
-                          className="rounded-full border border-black/10 bg-white px-2.5 py-1 text-[11px] font-semibold text-muted-foreground shadow-sm"
-                        >
-                          {tarifaVisible.label}: {formatCurrency(tarifaVisible.value)}
-                        </span>
-                      ))}
-                    </div>
                     <div className="flex items-center justify-between gap-3">
                       <div>
                         {precioReferencia > 0 && (
