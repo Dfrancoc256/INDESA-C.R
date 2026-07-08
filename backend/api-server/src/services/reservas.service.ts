@@ -187,6 +187,65 @@ export async function getDisponibilidadReserva(input: {
   };
 }
 
+function addDaysISO(date: string, days: number) {
+  const parsed = new Date(`${date}T00:00:00`);
+  parsed.setDate(parsed.getDate() + days);
+  return parsed.toISOString().slice(0, 10);
+}
+
+export async function getCalendarioDisponibilidad(input: {
+  productoId?: number;
+  desde?: string;
+  hasta?: string;
+}) {
+  const productoId = Number(input.productoId);
+  if (!Number.isInteger(productoId) || productoId < 1) {
+    throw Object.assign(new Error("productoId es obligatorio"), { status: 400 });
+  }
+
+  const desde = toDateOnly(input.desde, "desde");
+  const hasta = toDateOnly(input.hasta, "hasta");
+
+  if (new Date(`${hasta}T00:00:00`).getTime() < new Date(`${desde}T00:00:00`).getTime()) {
+    throw Object.assign(new Error("La fecha final no puede ser anterior a la fecha inicial"), { status: 400 });
+  }
+
+  const producto = await productosRepo.findProductoById(productoId);
+  if (!producto) {
+    throw Object.assign(new Error("Producto no encontrado"), { status: 404 });
+  }
+
+  const inventario = await inventarioRepo.findInventarioByProducto(productoId);
+  const stockActual = inventario?.cantidad ?? 0;
+  const reservasComprometidas = await repo.findReservasComprometidasPorProducto({
+    productoId,
+    fechaInicio: desde,
+    fechaFin: hasta,
+  });
+
+  const fechasBloqueadas: string[] = [];
+  const totalDias = Math.max(1, calcularDiasReserva(desde, hasta));
+
+  for (let i = 0; i < totalDias; i += 1) {
+    const fechaActual = addDaysISO(desde, i);
+    const comprometidas = reservasComprometidas
+      .filter((reserva) => reserva.fecha_inicio <= fechaActual && reserva.fecha_fin >= fechaActual)
+      .reduce((total, reserva) => total + Number(reserva.cantidad ?? 0), 0);
+
+    if (comprometidas >= stockActual) {
+      fechasBloqueadas.push(fechaActual);
+    }
+  }
+
+  return {
+    productoId,
+    desde,
+    hasta,
+    stockActual,
+    fechasBloqueadas,
+  };
+}
+
 export async function getReserva(id: number) {
   const reserva = await repo.findReservaById(id);
   if (!reserva) throw Object.assign(new Error("Reserva no encontrada"), { status: 404 });

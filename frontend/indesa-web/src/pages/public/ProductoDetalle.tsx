@@ -20,6 +20,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { ArrowLeft, CheckCircle2, AlertTriangle, BadgeCheck, Package, ShieldCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useReservaDisponibilidad } from "@/hooks/use-reserva-disponibilidad";
+import { ReservationDatePicker } from "@/components/reservation-date-picker";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -258,7 +259,7 @@ export function ProductoDetalle() {
                       loading="eager"
                       fetchPriority="high"
                       decoding="async"
-                      className="h-full w-full bg-white object-contain p-4"
+                      className="h-full w-full bg-white object-contain p-2 scale-[1.06] md:scale-[1.12]"
                       onError={() => setImageFailed(true)}
                     />
                   ) : (
@@ -494,44 +495,47 @@ export function ProductoDetalle() {
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                          <FormField
-                            control={form.control}
-                            name="fecha_inicio"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Fecha de inicio *</FormLabel>
-                                <FormControl>
-                                  <Input
-                                    type="date"
-                                    min={todayDate}
-                                    {...field}
-                                    onChange={(event) => {
-                                      field.onChange(event);
-                                      const fechaFin = form.getValues("fecha_fin");
-                                      if (fechaFin < event.target.value) {
-                                        form.setValue("fecha_fin", event.target.value);
-                                      }
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                        <FormField
+                          control={form.control}
+                          name="fecha_inicio"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Fecha de inicio *</FormLabel>
+                              <ReservationDatePicker
+                                label=""
+                                value={field.value}
+                                onChange={(value) => {
+                                  field.onChange(value);
+                                  const fechaFin = form.getValues("fecha_fin");
+                                  if (fechaFin < value) {
+                                    form.setValue("fecha_fin", value);
+                                  }
+                                }}
+                                minDate={todayDate}
+                                productId={productoActual?.id ?? null}
+                              />
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                           {tipoTarifa === "dia" && (
-                          <FormField
-                            control={form.control}
-                            name="fecha_fin"
-                            render={({ field }) => (
-                              <FormItem>
-                                <FormLabel>Fecha final *</FormLabel>
-                                <FormControl>
-                                  <Input type="date" min={form.watch("fecha_inicio") || todayDate} {...field} />
-                                </FormControl>
-                                <FormMessage />
-                              </FormItem>
-                            )}
-                          />
+                        <FormField
+                          control={form.control}
+                          name="fecha_fin"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Fecha final *</FormLabel>
+                              <ReservationDatePicker
+                                label=""
+                                value={field.value}
+                                onChange={field.onChange}
+                                minDate={form.watch("fecha_inicio") || todayDate}
+                                productId={productoActual?.id ?? null}
+                              />
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
                           )}
                         </div>
                         <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary">

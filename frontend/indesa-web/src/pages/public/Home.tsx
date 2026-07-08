@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ReservationDatePicker } from "@/components/reservation-date-picker";
 import {
   Dialog,
   DialogContent,
@@ -595,7 +596,7 @@ export function Home() {
                     <img
                       src={selectedProduct.imagen_url}
                       alt={selectedProduct.nombre}
-                      className="max-h-full max-w-full object-contain p-1"
+                      className="h-full w-full object-contain p-0.5 scale-[1.12] md:scale-[1.18]"
                     />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-gray-300">
@@ -703,36 +704,27 @@ export function Home() {
                     />
                   </div>
                 )}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium" htmlFor="home-reserva-fecha-inicio">Inicio</label>
-                  <Input
-                    id="home-reserva-fecha-inicio"
-                    type="date"
-                    min={todayDate}
-                    value={reservaForm.fecha_inicio}
-                    onChange={(event) => {
-                      const nextInicio = event.target.value;
-                      setReservaForm((current) => ({
-                        ...current,
-                        fecha_inicio: nextInicio,
-                        fecha_fin: current.fecha_fin < nextInicio ? nextInicio : current.fecha_fin,
-                      }));
-                    }}
-                    required
-                  />
-                </div>
+                <ReservationDatePicker
+                  label="Inicio"
+                  value={reservaForm.fecha_inicio}
+                  onChange={(nextInicio) => {
+                    setReservaForm((current) => ({
+                      ...current,
+                      fecha_inicio: nextInicio,
+                      fecha_fin: current.fecha_fin < nextInicio ? nextInicio : current.fecha_fin,
+                    }));
+                  }}
+                  minDate={todayDate}
+                  productId={selectedProduct?.id ?? null}
+                />
                 {tarifaSeleccionada?.tipo === "dia" && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium" htmlFor="home-reserva-fecha-fin">Fin</label>
-                  <Input
-                    id="home-reserva-fecha-fin"
-                    type="date"
-                    min={reservaForm.fecha_inicio || todayDate}
-                    value={reservaForm.fecha_fin}
-                    onChange={(event) => setReservaForm((current) => ({ ...current, fecha_fin: event.target.value }))}
-                    required
-                  />
-                </div>
+                <ReservationDatePicker
+                  label="Fin"
+                  value={reservaForm.fecha_fin}
+                  onChange={(fecha_fin) => setReservaForm((current) => ({ ...current, fecha_fin }))}
+                  minDate={reservaForm.fecha_inicio || todayDate}
+                  productId={selectedProduct?.id ?? null}
+                />
                 )}
                 <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary sm:col-span-2">
                   Reserva por {diasReserva} día{diasReserva === 1 ? "" : "s"}.

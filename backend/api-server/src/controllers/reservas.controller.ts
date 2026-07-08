@@ -49,6 +49,20 @@ export async function disponibilidad(req: Request, res: Response): Promise<void>
   }
 }
 
+export async function calendarioDisponibilidad(req: Request, res: Response): Promise<void> {
+  try {
+    const { productoId, desde, hasta } = req.query as Record<string, string>;
+    const data = await service.getCalendarioDisponibilidad({
+      productoId: Number(productoId),
+      desde,
+      hasta,
+    });
+    res.json(data);
+  } catch (err: any) {
+    res.status(err.status ?? 400).json({ error: err.message });
+  }
+}
+
 export async function updateEstado(req: Request, res: Response): Promise<void> {
   try {
     const { estado, notas } = req.body;

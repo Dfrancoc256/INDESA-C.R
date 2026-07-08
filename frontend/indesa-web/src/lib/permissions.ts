@@ -12,6 +12,7 @@ export function hasPermission(usuario: UsuarioMe | null | undefined, permiso: st
       "reservas.ver",
     ];
     if (permisosLecturaOperador.includes(permiso)) return true;
+    if (permiso === "reservas.cambiar_estado") return true;
   }
   return Boolean(usuario.rol?.permisos?.includes(permiso));
 }

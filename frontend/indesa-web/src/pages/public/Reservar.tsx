@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { ReservationDatePicker } from "@/components/reservation-date-picker";
 import { CheckCircle2, ClipboardList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useReservaDisponibilidad } from "@/hooks/use-reserva-disponibilidad";
@@ -320,7 +321,7 @@ export function Reservar() {
                               <img
                                 src={productImage}
                                 alt={productoSeleccionado.nombre}
-                                className="max-h-full max-w-full object-contain p-2"
+                                className="h-full w-full object-contain p-0.5 scale-[1.12] md:scale-[1.18]"
                               />
                             ) : (
                               <div className="flex h-full w-full items-center justify-center text-3xl font-bold text-gray-300">
@@ -477,20 +478,19 @@ export function Reservar() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Fecha de inicio *</FormLabel>
-                              <FormControl>
-                                <Input
-                                  type="date"
-                                  min={todayDate}
-                                  {...field}
-                                  onChange={(event) => {
-                                    field.onChange(event);
-                                    const fechaFin = form.getValues("fecha_fin");
-                                    if (fechaFin < event.target.value) {
-                                      form.setValue("fecha_fin", event.target.value);
-                                    }
-                                  }}
-                                />
-                              </FormControl>
+                              <ReservationDatePicker
+                                label=""
+                                value={field.value}
+                                onChange={(value) => {
+                                  field.onChange(value);
+                                  const fechaFin = form.getValues("fecha_fin");
+                                  if (fechaFin < value) {
+                                    form.setValue("fecha_fin", value);
+                                  }
+                                }}
+                                minDate={todayDate}
+                                productId={productoSeleccionado?.id ?? null}
+                              />
                               <FormMessage />
                             </FormItem>
                           )}
@@ -502,9 +502,13 @@ export function Reservar() {
                           render={({ field }) => (
                             <FormItem>
                               <FormLabel>Fecha final *</FormLabel>
-                              <FormControl>
-                                <Input type="date" min={form.watch("fecha_inicio") || todayDate} {...field} />
-                              </FormControl>
+                              <ReservationDatePicker
+                                label=""
+                                value={field.value}
+                                onChange={field.onChange}
+                                minDate={form.watch("fecha_inicio") || todayDate}
+                                productId={productoSeleccionado?.id ?? null}
+                              />
                               <FormMessage />
                             </FormItem>
                           )}

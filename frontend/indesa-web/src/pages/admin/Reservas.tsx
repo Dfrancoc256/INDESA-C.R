@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Search, Filter, Phone, Mail, FileText, CheckCircle, Truck, XCircle, Clock, Plus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useReservaDisponibilidad } from "@/hooks/use-reserva-disponibilidad";
+import { ReservationDatePicker } from "@/components/reservation-date-picker";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -40,6 +41,7 @@ export function Reservas() {
   const { usuario } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const reservasPorPagina = 10;
   const [page, setPage] = useState(1);
   const [estadoFilter, setEstadoFilter] = useState<string>("todas");
   const [busqueda, setBusqueda] = useState("");
@@ -65,7 +67,8 @@ export function Reservas() {
     notas: "",
   });
   const canEditReservas = hasPermission(usuario, "reservas.editar");
-  const reservasColSpan = canEditReservas ? 6 : 5;
+  const canChangeEstadoReservas = hasPermission(usuario, "reservas.cambiar_estado");
+  const reservasColSpan = canChangeEstadoReservas ? 6 : 5;
 
   const { data: productosResponse } = useListProductos({ page: 1, limit: 100, orden: "nombre_asc" } as any);
   const productosDisponibles = useMemo(() => productosResponse?.data ?? [], [productosResponse]);
@@ -150,7 +153,7 @@ export function Reservas() {
 
   const { data: reservasResponse, isLoading, refetch } = useListReservas({
     page,
-    limit: 15,
+    limit: reservasPorPagina,
     estado: estadoFilter !== "todas" ? estadoFilter as ListReservasEstado : undefined,
     busqueda: busquedaNormalizada || undefined,
   } as any);
@@ -381,7 +384,7 @@ export function Reservas() {
                 <TableHead>Cliente</TableHead>
                 <TableHead>Producto</TableHead>
                 <TableHead>Estado</TableHead>
-                {canEditReservas && <TableHead className="text-right">Acciones</TableHead>}
+                    {canChangeEstadoReservas && <TableHead className="text-right">Acciones</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -393,7 +396,7 @@ export function Reservas() {
                     <TableCell><Skeleton className="h-4 w-32" /><Skeleton className="h-3 w-24 mt-1" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-40" /><Skeleton className="h-3 w-16 mt-1" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                    {canEditReservas && <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>}
+                    {canChangeEstadoReservas && <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>}
                   </TableRow>
                 ))
               ) : reservasFiltradas?.length === 0 ? (
@@ -432,7 +435,7 @@ export function Reservas() {
                     <TableCell>
                       <EstadoBadge estado={reserva.estado} />
                     </TableCell>
-                    {canEditReservas && (
+                    {canChangeEstadoReservas && (
                       <TableCell className="text-right">
                         <div className="flex justify-end items-center gap-2">
                           <Button variant="ghost" size="sm" onClick={() => verDetalle(reserva)}>
@@ -480,7 +483,7 @@ export function Reservas() {
         {reservasResponse && reservasResponse.total > 0 && (
           <div className="flex items-center justify-between px-6 py-4 border-t">
             <div className="text-sm text-muted-foreground">
-              Mostrando {((page - 1) * 15) + 1} a {Math.min(page * 15, reservasResponse.total)} de {reservasResponse.total} reservas
+              Mostrando {((page - 1) * reservasPorPagina) + 1} a {Math.min(page * reservasPorPagina, reservasResponse.total)} de {reservasResponse.total} reservas
             </div>
             <div className="flex gap-2">
               <Button 
@@ -495,7 +498,7 @@ export function Reservas() {
                 variant="outline" 
                 size="sm" 
                 onClick={() => setPage(p => p + 1)}
-                disabled={page * 15 >= reservasResponse.total}
+                disabled={page * reservasPorPagina >= reservasResponse.total}
               >
                 Siguiente
               </Button>
@@ -639,19 +642,23 @@ export function Reservas() {
 
             <div className="space-y-2">
               <Label>Fecha inicio</Label>
-              <Input
-                type="date"
+              <ReservationDatePicker
+                label=""
                 value={agregarForm.fecha_inicio}
-                onChange={(e) => setAgregarForm((prev) => ({ ...prev, fecha_inicio: e.target.value }))}
+                onChange={(value) => setAgregarForm((prev) => ({ ...prev, fecha_inicio: value }))}
+                minDate={new Date().toISOString().slice(0, 10)}
+                productId={productoAgregar?.id ?? null}
               />
             </div>
 
             <div className="space-y-2">
               <Label>Fecha fin</Label>
-              <Input
-                type="date"
+              <ReservationDatePicker
+                label=""
                 value={agregarForm.fecha_fin}
-                onChange={(e) => setAgregarForm((prev) => ({ ...prev, fecha_fin: e.target.value }))}
+                onChange={(value) => setAgregarForm((prev) => ({ ...prev, fecha_fin: value }))}
+                minDate={agregarForm.fecha_inicio || new Date().toISOString().slice(0, 10)}
+                productId={productoAgregar?.id ?? null}
               />
             </div>
 

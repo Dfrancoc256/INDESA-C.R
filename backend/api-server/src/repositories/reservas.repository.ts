@@ -207,3 +207,26 @@ export async function getReservaStockComprometido(params: {
 
   return Number(row?.comprometido ?? 0);
 }
+
+export async function findReservasComprometidasPorProducto(params: {
+  productoId: number;
+  fechaInicio: string;
+  fechaFin: string;
+}) {
+  const { productoId, fechaInicio, fechaFin } = params;
+
+  return db
+    .select({
+      cantidad: reservasTable.cantidad,
+      fecha_inicio: reservasTable.fechaInicio,
+      fecha_fin: reservasTable.fechaFin,
+      estado: reservasTable.estado,
+    })
+    .from(reservasTable)
+    .where(and(
+      eq(reservasTable.productoId, productoId),
+      inArray(reservasTable.estado, ["pendiente", "confirmada"]),
+      lte(reservasTable.fechaInicio, fechaFin),
+      gte(reservasTable.fechaFin, fechaInicio),
+    ));
+}
