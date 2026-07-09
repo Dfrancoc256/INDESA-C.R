@@ -125,7 +125,7 @@ export function Reservas() {
     mutation: {
       onSuccess: async () => {
         setAgregarError("");
-        toast({ title: "Reserva agregada", description: "La reserva manual se registrÃ³ correctamente." });
+        toast({ title: "Reserva agregada", description: "La reserva manual se registró correctamente." });
         await invalidateCatalogData(queryClient);
         await refetch();
         setIsAgregarOpen(false);
@@ -204,7 +204,7 @@ export function Reservas() {
   const estadoMutation = useUpdateReservaEstado({
     mutation: {
       onSuccess: async () => {
-        toast({ title: "Estado actualizado", description: "La reserva se actualizÃ³ correctamente." });
+        toast({ title: "Estado actualizado", description: "La reserva se actualizó correctamente." });
         await invalidateCatalogData(queryClient);
         await refetch();
         setIsNotaOpen(false);
@@ -286,23 +286,23 @@ export function Reservas() {
     const unidadesTarifa = Number(agregarForm.unidades_tarifa || 1);
 
     if (!productoId || !clienteNombre || !clienteEmail || !clienteTelefono || !fechaInicio || !fechaFin) {
-      const message = "Completa cliente, producto, telÃ©fono, fechas y correo antes de guardar.";
+      const message = "Completa cliente, producto, teléfono, fechas y correo antes de guardar.";
       setAgregarError(message);
       toast({ variant: "destructive", title: "Faltan datos", description: message });
       return;
     }
 
     if (Number.isNaN(productoId) || Number.isNaN(cantidadSolicitada) || cantidadSolicitada < 1 || Number.isNaN(unidadesTarifa) || unidadesTarifa < 1) {
-      const message = "La cantidad y las unidades de tarifa deben ser nÃºmeros vÃ¡lidos mayores a cero.";
+      const message = "La cantidad y las unidades de tarifa deben ser números válidos mayores a cero.";
       setAgregarError(message);
-      toast({ variant: "destructive", title: "Datos invÃ¡lidos", description: message });
+      toast({ variant: "destructive", title: "Datos inválidos", description: message });
       return;
     }
 
     if (new Date(`${fechaFin}T00:00:00`).getTime() < new Date(`${fechaInicio}T00:00:00`).getTime()) {
       const message = "La fecha final no puede ser anterior a la fecha de inicio.";
       setAgregarError(message);
-      toast({ variant: "destructive", title: "Fechas invÃ¡lidas", description: message });
+      toast({ variant: "destructive", title: "Fechas inválidas", description: message });
       return;
     }
 
@@ -543,10 +543,10 @@ export function Reservas() {
                     <TableCell>
                       <div className="font-medium text-sm truncate max-w-[250px]">{reserva.producto_nombre}</div>
                       <div className="text-xs text-muted-foreground">
-                        Cant: {reserva.cantidad} unid. Â· {reserva.dias_reserva ?? 1} dÃ­a{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
+                        Cant: {reserva.cantidad} unid. · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
                       </div>
                       <div className="text-xs font-medium text-primary">
-                        {reserva.tipo_tarifa ?? "dia"} x {reserva.unidades_tarifa ?? reserva.dias_reserva ?? 1} Â· {formatCurrency(reserva.total_estimado ?? 0)}
+                        {reserva.tipo_tarifa ?? "dia"} x {reserva.unidades_tarifa ?? reserva.dias_reserva ?? 1} · {formatCurrency(reserva.total_estimado ?? 0)}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {formatDateOnly(reserva.fecha_inicio)} - {formatDateOnly(reserva.fecha_fin)}
@@ -651,7 +651,7 @@ export function Reservas() {
           <DialogHeader>
             <DialogTitle>Agregar reserva manual</DialogTitle>
             <DialogDescription>
-              Registra un apartado directamente desde administraciÃ³n.
+              Registra un apartado directamente desde administración.
             </DialogDescription>
           </DialogHeader>
 
@@ -682,7 +682,7 @@ export function Reservas() {
               Usar fecha de hoy
             </Button>
             <div className="ml-auto text-xs text-muted-foreground">
-              Los campos numÃ©ricos aceptan solo nÃºmeros.
+              Los campos numéricos aceptan solo números.
             </div>
           </div>
 
@@ -698,12 +698,12 @@ export function Reservas() {
               <Input
                 value={agregarForm.cliente_nombre}
                 onChange={(e) => setAgregarForm((prev) => ({ ...prev, cliente_nombre: e.target.value }))}
-                placeholder="Nombre o razÃ³n social"
+                placeholder="Nombre o razón social"
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Correo electrÃ³nico</Label>
+              <Label>Correo electrónico</Label>
               <Input
                 type="email"
                 value={agregarForm.cliente_email}
@@ -713,11 +713,11 @@ export function Reservas() {
             </div>
 
             <div className="space-y-2">
-              <Label>TelÃ©fono</Label>
+              <Label>Teléfono</Label>
               <Input
                 value={agregarForm.cliente_telefono}
                 onChange={(e) => setNumericField("cliente_telefono", e.target.value)}
-                placeholder="Solo nÃºmeros"
+                placeholder="Solo números"
                 inputMode="numeric"
                 pattern="[0-9]*"
               />
@@ -764,7 +764,7 @@ export function Reservas() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="dia">DÃ­a</SelectItem>
+                  <SelectItem value="dia">Día</SelectItem>
                   <SelectItem value="semana">Semana</SelectItem>
                   <SelectItem value="mes">Mes</SelectItem>
                   <SelectItem value="base">Base</SelectItem>
@@ -858,13 +858,13 @@ export function Reservas() {
           <div className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
             <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide">
               <span className="rounded-full bg-primary/10 px-2 py-1 text-primary">Vista previa</span>
-              <span>La reserva se guardarÃ¡ con los datos ingresados</span>
+              <span>La reserva se guardará con los datos ingresados</span>
             </div>
             {canEditReservas && (
               <div>Descuento: <span className="font-semibold text-foreground">{formatCurrency(descuentoAgregarVista || 0)}</span></div>
             )}
             <div>Total estimado: <span className="font-semibold text-foreground">{formatCurrency(totalAgregar)}</span></div>
-            <div>DÃ­as aproximados: <span className="font-semibold text-foreground">{diasAgregar}</span></div>
+            <div>Días aproximados: <span className="font-semibold text-foreground">{diasAgregar}</span></div>
           </div>
           {disponibilidadAgregarActual && !disponibilidadAgregarActual.permitido ? (
             <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm font-medium text-destructive">
@@ -918,12 +918,12 @@ export function Reservas() {
                     Cantidad solicitada: <span className="font-bold text-foreground">{reservaDetalle?.cantidad ?? reservaSeleccionada.cantidad} unidades</span>
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    PerÃ­odo: <span className="font-bold text-foreground">
+                    Período: <span className="font-bold text-foreground">
                       {formatDateOnly(reservaDetalle?.fecha_inicio ?? reservaSeleccionada.fecha_inicio)} - {formatDateOnly(reservaDetalle?.fecha_fin ?? reservaSeleccionada.fecha_fin)}
                     </span>
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    DÃ­as apartados: <span className="font-bold text-foreground">{reservaDetalle?.dias_reserva ?? reservaSeleccionada.dias_reserva ?? 1}</span>
+                    Días apartados: <span className="font-bold text-foreground">{reservaDetalle?.dias_reserva ?? reservaSeleccionada.dias_reserva ?? 1}</span>
                   </div>
                   <div className="mt-3 rounded-md border bg-white p-3 text-sm">
                     <div className="font-semibold text-foreground">Tarifa solicitada</div>
@@ -931,7 +931,7 @@ export function Reservas() {
                       Modalidad: <span className="font-bold text-foreground">{reservaDetalle?.tipo_tarifa ?? reservaSeleccionada.tipo_tarifa ?? "dia"}</span>
                     </div>
                     <div className="text-muted-foreground">
-                      PerÃ­odos: <span className="font-bold text-foreground">{reservaDetalle?.unidades_tarifa ?? reservaSeleccionada.unidades_tarifa ?? reservaDetalle?.dias_reserva ?? reservaSeleccionada.dias_reserva ?? 1}</span>
+                      Períodos: <span className="font-bold text-foreground">{reservaDetalle?.unidades_tarifa ?? reservaSeleccionada.unidades_tarifa ?? reservaDetalle?.dias_reserva ?? reservaSeleccionada.dias_reserva ?? 1}</span>
                     </div>
                     <div className="text-muted-foreground">
                       Precio unitario: <span className="font-bold text-foreground">{formatCurrency(reservaDetalle?.precio_unitario ?? reservaSeleccionada.precio_unitario ?? 0)}</span>
@@ -955,7 +955,7 @@ export function Reservas() {
 
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-semibold mb-3">InformaciÃ³n del Cliente</h3>
+                  <h3 className="font-semibold mb-3">Información del Cliente</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-start gap-2">
                       <div className="font-medium min-w-[80px]">Nombre:</div>
@@ -1101,14 +1101,14 @@ export function Reservas() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal para Nota de Estado (ej. CancelaciÃ³n) */}
+      {/* Modal para Nota de Estado (ej. Cancelación) */}
       <Dialog open={isNotaOpen} onOpenChange={setIsNotaOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirmar Cambio de Estado</DialogTitle>
             <DialogDescription>
-              Â¿EstÃ¡ seguro de cambiar el estado a <strong className="uppercase">{nuevoEstado?.estado}</strong>?
-              Puede aÃ±adir una nota explicando el motivo (opcional).
+              ¿Está seguro de cambiar el estado a <strong className="uppercase">{nuevoEstado?.estado}</strong>?
+              Puede añadir una nota explicando el motivo (opcional).
             </DialogDescription>
           </DialogHeader>
           <div className="mt-4">
@@ -1116,7 +1116,7 @@ export function Reservas() {
             <Textarea 
               value={notaEstado}
               onChange={(e) => setNotaEstado(e.target.value)}
-              placeholder="Ej. Cliente solicitÃ³ cancelaciÃ³n por telÃ©fono..."
+              placeholder="Ej. Cliente solicitó cancelación por teléfono..."
               className="resize-none"
             />
           </div>
