@@ -343,8 +343,8 @@ export function Catalogo() {
                             ))}
                         </div>
                       </CardContent>
-                      <CardFooter className="p-3 pt-0">
-                        <Button asChild className="h-9 w-full transition-all duration-200 group-hover:border-primary group-hover:text-primary hover:-translate-y-0.5 hover:shadow-md" variant="outline">
+                      <CardFooter className="relative z-30 p-3 pt-0">
+                        <Button asChild className="h-10 w-full touch-manipulation transition-all duration-200 group-hover:border-primary group-hover:text-primary hover:-translate-y-0.5 hover:shadow-md" variant="outline">
                           <Link href={`/producto/${producto.id}`}>Ver Detalles</Link>
                         </Button>
                       </CardFooter>

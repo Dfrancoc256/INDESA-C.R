@@ -497,7 +497,10 @@ export function Home() {
                             </span>
                           ))}
                       </div>
-                      <Link href={`/producto/${producto.id}`} className="text-sm font-semibold text-muted-foreground transition-all duration-200 hover:text-primary group-hover:translate-x-1">
+                      <Link
+                        href={`/producto/${producto.id}`}
+                        className="relative z-30 -mr-2 inline-flex min-h-10 items-center rounded-md px-2 text-sm font-semibold text-muted-foreground touch-manipulation transition-all duration-200 hover:text-primary active:text-primary group-hover:translate-x-1"
+                      >
                         Detalle
                       </Link>
                     </div>

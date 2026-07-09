@@ -376,9 +376,9 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
         </div>
       </main>
 
-      <div ref={socialMenuRef} className="fixed bottom-24 right-4 z-50 flex flex-col items-end gap-3 sm:bottom-5 sm:right-5">
+      <div ref={socialMenuRef} className="pointer-events-none fixed bottom-24 right-4 z-50 flex flex-col items-end gap-3 sm:bottom-5 sm:right-5">
         <div
-          className={`w-72 overflow-hidden rounded-md border bg-white shadow-2xl transition-all duration-300 ${
+          className={`pointer-events-auto w-72 overflow-hidden rounded-md border bg-white shadow-2xl transition-all duration-300 ${
             isSocialMenuOpen
               ? "translate-y-0 opacity-100"
               : "pointer-events-none translate-y-3 opacity-0"
@@ -422,7 +422,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           onClick={() => setIsSocialMenuOpen((current) => !current)}
           aria-label={isSocialMenuOpen ? "Cerrar contactos" : "Abrir contactos"}
           title={isSocialMenuOpen ? "Cerrar contacto" : "Abrir contacto"}
-          className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl shadow-primary/25 transition-all duration-200 hover:-translate-y-1 hover:bg-primary/90 hover:shadow-2xl"
+          className="pointer-events-auto inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl shadow-primary/25 transition-all duration-200 hover:-translate-y-1 hover:bg-primary/90 hover:shadow-2xl"
         >
           <Phone className="h-6 w-6" />
         </button>
