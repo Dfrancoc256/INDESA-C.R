@@ -4,15 +4,7 @@ export function hasPermission(usuario: UsuarioMe | null | undefined, permiso: st
   if (!usuario) return false;
   if (usuario.rol?.nombre === "admin") return true;
   if (usuario.rol?.nombre === "operador") {
-    const permisosLecturaOperador = [
-      "dashboard.ver",
-      "productos.ver",
-      "categorias.ver",
-      "inventario.ver",
-      "reservas.ver",
-    ];
-    if (permisosLecturaOperador.includes(permiso)) return true;
-    if (permiso === "reservas.cambiar_estado") return true;
+    return !permiso.startsWith("finanzas.") && !permiso.startsWith("usuarios.");
   }
   return Boolean(usuario.rol?.permisos?.includes(permiso));
 }

@@ -63,6 +63,7 @@ CREATE TABLE reservas (
   tipo_tarifa TEXT NOT NULL DEFAULT 'dia',
   unidades_tarifa INTEGER NOT NULL DEFAULT 1,
   precio_unitario NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  descuento NUMERIC(10, 2) NOT NULL DEFAULT 0,
   total_estimado NUMERIC(12, 2) NOT NULL DEFAULT 0,
   estado TEXT NOT NULL DEFAULT 'pendiente',
   notas TEXT,

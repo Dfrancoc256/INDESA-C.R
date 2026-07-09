@@ -16,6 +16,7 @@ export const reservasTable = pgTable("reservas", {
   tipoTarifa: text("tipo_tarifa").notNull().default("dia"),
   unidadesTarifa: integer("unidades_tarifa").notNull().default(1),
   precioUnitario: decimal("precio_unitario", { precision: 10, scale: 2 }).notNull().default("0"),
+  descuento: decimal("descuento", { precision: 10, scale: 2 }).notNull().default("0"),
   totalEstimado: decimal("total_estimado", { precision: 12, scale: 2 }).notNull().default("0"),
   estado: text("estado").notNull().default("pendiente"),
   notas: text("notas"),

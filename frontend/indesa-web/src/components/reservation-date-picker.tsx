@@ -1,10 +1,9 @@
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useReservaCalendarioDisponibilidad } from "@/hooks/use-reserva-calendario-disponibilidad";
 import { cn } from "@/lib/utils";
 import { CalendarIcon } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 
 function toDate(value?: string | null) {
   if (!value) return undefined;
@@ -16,10 +15,17 @@ function toISODate(date: Date) {
   return date.toISOString().slice(0, 10);
 }
 
-function addDays(value: string, days: number) {
-  const date = toDate(value) ?? new Date();
-  date.setDate(date.getDate() + days);
-  return toISODate(date);
+function buildDisabledDates(min?: Date, blockedDates: string[] = []) {
+  const blocked = blockedDates
+    .map((date) => toDate(date))
+    .filter((date): date is Date => Boolean(date));
+  const matchers: Array<Date | { before: Date }> = [];
+
+  if (min) matchers.push({ before: min });
+  matchers.push(...blocked);
+
+  if (matchers.length === 0) return undefined;
+  return matchers.length === 1 ? matchers[0] : matchers;
 }
 
 type ReservationDatePickerProps = {
@@ -27,7 +33,7 @@ type ReservationDatePickerProps = {
   value: string;
   onChange: (value: string) => void;
   minDate: string;
-  productId?: number | null;
+  blockedDates?: string[];
   disabled?: boolean;
   placeholder?: string;
   className?: string;
@@ -38,7 +44,7 @@ export function ReservationDatePicker({
   value,
   onChange,
   minDate,
-  productId,
+  blockedDates = [],
   disabled = false,
   placeholder = "dd/mm/aaaa",
   className,
@@ -46,25 +52,6 @@ export function ReservationDatePicker({
   const [open, setOpen] = useState(false);
   const selected = toDate(value);
   const min = toDate(minDate);
-  const hasta = useMemo(() => addDays(minDate, 370), [minDate]);
-
-  const calendario = useReservaCalendarioDisponibilidad({
-    productoId: productId ?? null,
-    desde: minDate || null,
-    hasta,
-  });
-
-  const disabledMatchers = useMemo(() => {
-    const fechasBloqueadas = calendario.data?.fechasBloqueadas ?? [];
-    const blocked = fechasBloqueadas
-      .map((item) => toDate(item))
-      .filter((item): item is Date => Boolean(item));
-
-    const matchers: Array<Date | { before: Date }> = [];
-    if (min) matchers.push({ before: min });
-    matchers.push(...blocked);
-    return matchers;
-  }, [calendario.data?.fechasBloqueadas, min]);
 
   return (
     <div className={cn("space-y-2", className)}>
@@ -90,7 +77,7 @@ export function ReservationDatePicker({
               onChange(toISODate(date));
               setOpen(false);
             }}
-            disabled={disabledMatchers}
+            disabled={buildDisabledDates(min, blockedDates)}
             initialFocus
           />
         </PopoverContent>

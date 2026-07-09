@@ -15,12 +15,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { ArrowLeft, CheckCircle2, AlertTriangle, BadgeCheck, Package, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle2, AlertTriangle, Package, ShieldCheck, BadgeCheck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useReservaDisponibilidad } from "@/hooks/use-reserva-disponibilidad";
+import { useReservaCalendarioDisponibilidad } from "@/hooks/use-reserva-calendario-disponibilidad";
 import { ReservationDatePicker } from "@/components/reservation-date-picker";
+import { getFriendlyApiErrorMessage } from "@/lib/apiErrorMessage";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,13 +30,13 @@ import { invalidateCatalogData } from "@/lib/queryInvalidation";
 
 const reservaSchema = z.object({
   cliente_nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
-  cliente_email: z.string().email("Correo electrónico inválido"),
-  cliente_telefono: z.string().min(8, "El teléfono debe tener al menos 8 dígitos"),
-  cantidad: z.coerce.number().min(1, "La cantidad mínima es 1"),
+  cliente_email: z.string().email("Correo electrÃ³nico invÃ¡lido"),
+  cliente_telefono: z.string().min(8, "El telÃ©fono debe tener al menos 8 dÃ­gitos"),
+  cantidad: z.coerce.number().min(1, "La cantidad mÃ­nima es 1"),
   fecha_inicio: z.string().min(1, "Seleccione fecha de inicio"),
   fecha_fin: z.string().min(1, "Seleccione fecha final"),
   tipo_tarifa: z.enum(["dia", "semana", "mes", "base"]),
-  unidades_tarifa: z.coerce.number().min(1, "La cantidad mínima es 1"),
+  unidades_tarifa: z.coerce.number().min(1, "La cantidad mÃ­nima es 1"),
   notas: z.string().optional()
 }).refine((data) => data.fecha_fin >= data.fecha_inicio, {
   path: ["fecha_fin"],
@@ -44,6 +45,11 @@ const reservaSchema = z.object({
 
 type ReservaValues = z.infer<typeof reservaSchema>;
 const todayDate = getTodayDate();
+const calendarLimitDate = (() => {
+  const date = new Date(`${todayDate}T00:00:00`);
+  date.setMonth(date.getMonth() + 6);
+  return date.toISOString().slice(0, 10);
+})();
 
 export function ProductoDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -66,8 +72,6 @@ export function ProductoDetalle() {
   });
   const imageSrc = productoActual?.imagen_url ?? "";
   const categoriaNombre = productoActual?.categoria_nombre ?? "Maquinaria";
-  const cantidadDisponible = productoActual?.cantidad ?? 0;
-
   useEffect(() => {
     setImageFailed(false);
   }, [imageSrc]);
@@ -103,7 +107,7 @@ export function ProductoDetalle() {
         toast({ 
           variant: "destructive", 
           title: "Error al reservar", 
-          description: err?.message || "Hubo un problema al procesar su solicitud. Intente más tarde." 
+          description: getFriendlyApiErrorMessage(err, "Hubo un problema al procesar su solicitud. Intente mÃ¡s tarde.")
         });
       }
     }
@@ -112,40 +116,20 @@ export function ProductoDetalle() {
   const onSubmit = (data: ReservaValues) => {
     if (!productoActual) return;
     
-    // Validar stock antes de enviar
-    if (productoActual.cantidad !== null && productoActual.cantidad !== undefined && data.cantidad > productoActual.cantidad) {
-      form.setError("cantidad", {
-        type: "manual",
-        message: `Solo hay ${productoActual.cantidad} unidades disponibles`
-      });
-      return;
-    }
-
-    if (disponibilidadReserva.isFetching) {
-      toast({
-        variant: "destructive",
-        title: "Validando disponibilidad",
-        description: "Estamos comprobando el stock para las fechas seleccionadas. Intenta nuevamente en unos segundos.",
-      });
-      return;
-    }
-
-    if (!reservaPermitida) {
-      toast({
-        variant: "destructive",
-        title: "Stock insuficiente",
-        description: disponibilidadReserva.data
-          ? `Solo quedan ${disponibilidadReserva.data.stockDisponible} unidades disponibles para esas fechas.`
-          : "No hay stock suficiente para las fechas seleccionadas.",
-      });
-      return;
-    }
-
     const tarifa = getTarifasProducto(productoActual).find((item) => item.tipo === data.tipo_tarifa) ?? getTarifaPrincipal(productoActual);
     const fechaFin = data.tipo_tarifa === "dia"
       ? data.fecha_fin
       : calcularFechaFinPorTarifa(data.fecha_inicio, data.tipo_tarifa, data.unidades_tarifa);
     const unidadesTarifa = calcularUnidadesTarifa(data.tipo_tarifa, data.fecha_inicio, fechaFin, data.unidades_tarifa);
+
+    if (disponibilidadActual && !disponibilidadActual.permitido) {
+      toast({
+        variant: "destructive",
+        title: "Fechas no disponibles",
+        description: `No hay stock suficiente para ese rango. Disponible: ${disponibilidadActual.stockDisponible}.`,
+      });
+      return;
+    }
 
     reservaMutation.mutate({
       data: {
@@ -165,6 +149,34 @@ export function ProductoDetalle() {
       } as any
     });
   };
+
+  const tarifaPrincipal = productoActual ? getTarifaPrincipal(productoActual) : null;
+  const tarifas = productoActual ? getTarifasProducto(productoActual) : [];
+  const tipoTarifa = form.watch("tipo_tarifa");
+  const tarifaSeleccionada = tarifas.find((tarifa) => tarifa.tipo === tipoTarifa) ?? tarifaPrincipal;
+  const fechaInicio = form.watch("fecha_inicio");
+  const fechaFin = tipoTarifa === "dia"
+    ? form.watch("fecha_fin")
+    : calcularFechaFinPorTarifa(fechaInicio, tipoTarifa, form.watch("unidades_tarifa"));
+  const unidadesTarifa = calcularUnidadesTarifa(tipoTarifa, fechaInicio, fechaFin, form.watch("unidades_tarifa"));
+  const diasReserva = getDiasEntreFechas(fechaInicio, fechaFin);
+  const cantidadSolicitada = Number(form.watch("cantidad")) || 1;
+  const totalEstimado = tarifaSeleccionada
+    ? tarifaSeleccionada.value * unidadesTarifa * cantidadSolicitada
+    : 0;
+  const calendarioDisponibilidad = useReservaCalendarioDisponibilidad({
+    productoId: productoActual?.id,
+    desde: todayDate,
+    hasta: calendarLimitDate,
+  });
+  const disponibilidadReserva = useReservaDisponibilidad({
+    productoId: productoActual?.id,
+    fechaInicio,
+    fechaFin,
+    cantidad: cantidadSolicitada,
+  });
+  const fechasBloqueadas = calendarioDisponibilidad.data?.fechasBloqueadas ?? [];
+  const disponibilidadActual = disponibilidadReserva.data;
 
   if (isLoading && !productoActual) {
     return (
@@ -186,56 +198,38 @@ export function ProductoDetalle() {
     return (
       <div className="container mx-auto px-4 py-20 text-center">
         <h2 className="text-3xl font-bold mb-4">Producto no encontrado</h2>
-        <p className="text-muted-foreground mb-8">El producto que busca no existe o ya no está disponible.</p>
+        <p className="text-muted-foreground mb-8">El producto que busca no existe o ya no estÃ¡ disponible.</p>
         <Button asChild>
-          <Link href="/catalogo">Volver al catálogo</Link>
+          <Link href="/catalogo">Volver al catÃ¡logo</Link>
         </Button>
       </div>
     );
   }
 
-  const stockAgotado = productoActual.cantidad === 0;
-  const tarifaPrincipal = getTarifaPrincipal(productoActual);
-  const tarifas = getTarifasProducto(productoActual);
-  const tipoTarifa = form.watch("tipo_tarifa");
-  const tarifaSeleccionada = tarifas.find((tarifa) => tarifa.tipo === tipoTarifa) ?? tarifaPrincipal;
-  const fechaInicio = form.watch("fecha_inicio");
-  const fechaFin = tipoTarifa === "dia"
-    ? form.watch("fecha_fin")
-    : calcularFechaFinPorTarifa(fechaInicio, tipoTarifa, form.watch("unidades_tarifa"));
-  const unidadesTarifa = calcularUnidadesTarifa(tipoTarifa, fechaInicio, fechaFin, form.watch("unidades_tarifa"));
-  const diasReserva = getDiasEntreFechas(fechaInicio, fechaFin);
-  const cantidadSolicitada = Number(form.watch("cantidad")) || 1;
-  const totalEstimado = tarifaSeleccionada.value * unidadesTarifa * cantidadSolicitada;
-  const disponibilidadReserva = useReservaDisponibilidad({
-    productoId: productoActual.id,
-    fechaInicio,
-    fechaFin,
-    cantidad: cantidadSolicitada,
-  });
-  const stockDisponiblePorFecha = disponibilidadReserva.data?.stockDisponible ?? cantidadDisponible;
-  const reservaPermitida = disponibilidadReserva.data?.permitido ?? (cantidadDisponible >= cantidadSolicitada);
+  if (!tarifaPrincipal || !tarifaSeleccionada) {
+    return null;
+  }
 
-  return (
-    <div className="bg-gray-50 min-h-screen pb-20">
-      <div className="bg-white border-b py-4">
-        <div className="container mx-auto px-4 md:px-8">
-          <Link href="/catalogo" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Volver al catálogo
-          </Link>
+  if (reservaExitoso) {
+    return (
+      <div className="bg-gray-50 min-h-screen pb-20">
+        <div className="bg-white border-b py-4">
+          <div className="container mx-auto px-4 md:px-8">
+            <Link href="/catalogo" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Volver al catÃ¡logo
+            </Link>
+          </div>
         </div>
-      </div>
 
-      <div className="container mx-auto px-4 md:px-8 py-8 md:py-12">
-        {reservaExitoso ? (
+        <div className="container mx-auto px-4 md:px-8 py-8 md:py-12">
           <div className="max-w-2xl mx-auto bg-white p-8 md:p-12 rounded-lg border shadow-sm text-center">
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 text-green-600 mb-6">
               <CheckCircle2 className="h-10 w-10" />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">¡Reserva Confirmada!</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Â¡Reserva Confirmada!</h2>
             <p className="text-lg text-gray-600 mb-8">
               Su solicitud para <strong>{productoActual.nombre}</strong> ha sido recibida correctamente.
-              Un asesor se comunicará con usted para coordinar disponibilidad, operador y condiciones de uso y le enviará la confirmación por correo.
+              Un asesor se comunicarÃ¡ con usted para coordinar disponibilidad, operador y condiciones de uso y le enviarÃ¡ la confirmaciÃ³n por correo.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Button asChild size="lg">
@@ -246,8 +240,23 @@ export function ProductoDetalle() {
               </Button>
             </div>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(390px,1fr)]">
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-gray-50 min-h-screen pb-20">
+      <div className="bg-white border-b py-4">
+        <div className="container mx-auto px-4 md:px-8">
+          <Link href="/catalogo" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
+            <ArrowLeft className="mr-2 h-4 w-4" /> Volver al catÃ¡logo
+          </Link>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-4 md:px-8 py-8 md:py-12">
+        <div className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,0.9fr)_minmax(390px,1fr)]">
             {/* Imagen y Detalles Visuales */}
             <div className="space-y-4 lg:sticky lg:top-28">
               <div className="relative overflow-hidden rounded-xl border bg-white shadow-md">
@@ -268,16 +277,6 @@ export function ProductoDetalle() {
                     </div>
                   )}
                 </div>
-                {productoActual.disponibilidad === "pocas_unidades" && (
-                  <div className="absolute top-4 right-4">
-                    <Badge variant="warning" className="text-sm shadow-sm py-1 px-3">Pocas Unidades</Badge>
-                  </div>
-                )}
-                {productoActual.disponibilidad === "agotado" && (
-                  <div className="absolute top-4 right-4">
-                    <Badge variant="destructive" className="text-sm shadow-sm py-1 px-3">Agotado</Badge>
-                  </div>
-                )}
               </div>
 
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -296,7 +295,7 @@ export function ProductoDetalle() {
                     Reserva guiada
                   </div>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Te acompañamos en el proceso para confirmar la reserva y condiciones.
+                    Te acompaÃ±amos en el proceso para confirmar la reserva y condiciones.
                   </p>
                 </div>
               </div>
@@ -316,7 +315,7 @@ export function ProductoDetalle() {
                   <span className="ml-2 text-base font-semibold text-muted-foreground md:text-lg">por {tarifaPrincipal.suffix}</span>
                 </div>
                 <p className="text-sm font-medium text-muted-foreground mb-6">
-                  La coordinación final depende del lugar, horario y tipo de trabajo.
+                  La coordinaciÃ³n final depende del lugar, horario y tipo de trabajo.
                 </p>
                 <div className="mb-6 grid gap-3 sm:grid-cols-3">
                   {tarifas.map((tarifa) => (
@@ -334,22 +333,11 @@ export function ProductoDetalle() {
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-lg border bg-gray-50 p-4">
                     <div className="flex items-center gap-2 text-sm font-semibold">
-                      <BadgeCheck className="h-4 w-4 text-primary" />
-                      Disponibilidad
-                    </div>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {cantidadDisponible > 0
-                        ? `${cantidadDisponible} unidad${cantidadDisponible === 1 ? "" : "es"} disponible${cantidadDisponible === 1 ? "" : "s"}`
-                        : "Sin unidades disponibles por el momento"}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border bg-gray-50 p-4">
-                    <div className="flex items-center gap-2 text-sm font-semibold">
                       <AlertTriangle className="h-4 w-4 text-primary" />
-                      Confirmación rápida
+                      ConfirmaciÃ³n rÃ¡pida
                     </div>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Revisamos tu solicitud y te enviamos la confirmación por correo lo antes posible.
+                      Revisamos tu solicitud y te enviamos la confirmaciÃ³n por correo lo antes posible.
                     </p>
                   </div>
                 </div>
@@ -361,23 +349,10 @@ export function ProductoDetalle() {
                     <Package className="h-5 w-5 text-primary" /> Solicitar reserva
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Completa tus datos y un asesor confirmará operador, horario y condiciones.
+                    Completa tus datos y un asesor confirmarÃ¡ operador, horario y condiciones.
                   </p>
                 </div>
                 <CardContent className="p-6 md:p-7">
-
-                  {stockAgotado ? (
-                    <div className="border border-primary/20 bg-primary/5 rounded-lg p-6 text-center">
-                      <AlertTriangle className="h-10 w-10 text-primary mx-auto mb-3" />
-                      <h4 className="text-lg font-bold text-primary mb-2">Producto Agotado</h4>
-                      <p className="text-primary/80 mb-4">
-                        Lo sentimos, actualmente no contamos con existencias de este producto.
-                      </p>
-                      <Button asChild variant="outline" className="border-primary/30 text-primary hover:bg-primary/10">
-                        <Link href="/contacto">Consultar próxima disponibilidad</Link>
-                      </Button>
-                    </div>
-                  ) : (
                     <Form {...form}>
                       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -388,7 +363,7 @@ export function ProductoDetalle() {
                               <FormItem>
                                 <FormLabel>Nombre Completo *</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="Ej. Juan Pérez" {...field} />
+                                  <Input placeholder="Ej. Juan PÃ©rez" {...field} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -399,7 +374,7 @@ export function ProductoDetalle() {
                             name="cliente_telefono"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>Teléfono *</FormLabel>
+                                <FormLabel>TelÃ©fono *</FormLabel>
                                 <FormControl>
                                   <Input placeholder="Ej. 55554444" {...field} />
                                 </FormControl>
@@ -416,7 +391,7 @@ export function ProductoDetalle() {
                               name="cliente_email"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Correo Electrónico *</FormLabel>
+                                  <FormLabel>Correo ElectrÃ³nico *</FormLabel>
                                   <FormControl>
                                     <Input type="email" placeholder="juan@ejemplo.com" {...field} />
                                   </FormControl>
@@ -495,65 +470,63 @@ export function ProductoDetalle() {
                         </div>
 
                         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                        <FormField
-                          control={form.control}
-                          name="fecha_inicio"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Fecha de inicio *</FormLabel>
-                              <ReservationDatePicker
-                                label=""
-                                value={field.value}
-                                onChange={(value) => {
-                                  field.onChange(value);
-                                  const fechaFin = form.getValues("fecha_fin");
-                                  if (fechaFin < value) {
-                                    form.setValue("fecha_fin", value);
-                                  }
-                                }}
-                                minDate={todayDate}
-                                productId={productoActual?.id ?? null}
-                              />
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                          {tipoTarifa === "dia" && (
-                        <FormField
-                          control={form.control}
-                          name="fecha_fin"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Fecha final *</FormLabel>
-                              <ReservationDatePicker
-                                label=""
-                                value={field.value}
-                                onChange={field.onChange}
-                                minDate={form.watch("fecha_inicio") || todayDate}
-                                productId={productoActual?.id ?? null}
-                              />
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                          )}
+                          <FormField
+                            control={form.control}
+                            name="fecha_inicio"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Fecha de inicio *</FormLabel>
+                                <ReservationDatePicker
+                                  label=""
+                                  value={field.value}
+                                  onChange={(value) => {
+                                    field.onChange(value);
+                                    const fechaFin = form.getValues("fecha_fin");
+                                    if (fechaFin < value) {
+                                      form.setValue("fecha_fin", value);
+                                    }
+                                  }}
+                                  minDate={todayDate}
+                                  blockedDates={fechasBloqueadas}
+                                />
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          {tipoTarifa === "dia" ? (
+                            <FormField
+                              control={form.control}
+                              name="fecha_fin"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Fecha final *</FormLabel>
+                                  <ReservationDatePicker
+                                    label=""
+                                    value={field.value}
+                                    onChange={field.onChange}
+                                    minDate={form.watch("fecha_inicio") || todayDate}
+                                    blockedDates={fechasBloqueadas}
+                                  />
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          ) : null}
                         </div>
+
                         <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
-                          Reserva por {diasReserva} día{diasReserva === 1 ? "" : "s"}.
+                          Reserva por {diasReserva} dÃ­a{diasReserva === 1 ? "" : "s"}.
                           <span className="block text-foreground">
-                            Estimado: {formatCurrency(totalEstimado)} ({unidadesTarifa} {unidadesTarifa === 1 ? tarifaSeleccionada.suffix : tarifaSeleccionada.plural})
+                            Estimado: {formatCurrency(totalEstimado)} ({unidadesTarifa}{" "}
+                            {unidadesTarifa === 1 ? tarifaSeleccionada.suffix : tarifaSeleccionada.plural})
                           </span>
                         </div>
-                        <div className={`rounded-md border px-4 py-3 text-sm ${
-                          reservaPermitida ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"
-                        }`}>
-                          <div className="font-semibold">
-                            {reservaPermitida ? "Stock disponible para estas fechas." : "Stock insuficiente para estas fechas."}
+                        {disponibilidadActual && !disponibilidadActual.permitido ? (
+                          <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
+                            No hay stock suficiente para esas fechas. Disponible: {disponibilidadActual.stockDisponible}.
                           </div>
-                          <div className="mt-1 text-xs">
-                            Disponibles: {stockDisponiblePorFecha} · Comprometidas: {disponibilidadReserva.data?.stockComprometido ?? 0} · Solicitadas: {cantidadSolicitada}
-                          </div>
-                        </div>
+                        ) : null}
 
                         <FormField
                           control={form.control}
@@ -562,10 +535,10 @@ export function ProductoDetalle() {
                             <FormItem>
                               <FormLabel>Comentarios adicionales (Opcional)</FormLabel>
                               <FormControl>
-                                <Textarea 
-                                  placeholder="Ubicación de trabajo, horario estimado, tipo de operación o datos de facturación." 
+                                <Textarea
+                                  placeholder="UbicaciÃ³n de trabajo, horario estimado, tipo de operaciÃ³n o datos de facturaciÃ³n."
                                   className="h-28 resize-none"
-                                  {...field} 
+                                  {...field}
                                 />
                               </FormControl>
                               <FormMessage />
@@ -574,27 +547,26 @@ export function ProductoDetalle() {
                         />
 
                         <div className="pt-2">
-                          <Button 
-                          type="submit" 
-                          size="lg" 
-                          className="h-12 w-full text-base font-bold md:h-14 md:text-lg"
-                          disabled={reservaMutation.isPending || !reservaPermitida || disponibilidadReserva.isFetching}
-                        >
+                          <Button
+                            type="submit"
+                            size="lg"
+                            className="h-12 w-full text-base font-bold md:h-14 md:text-lg"
+                            disabled={reservaMutation.isPending}
+                          >
                             {reservaMutation.isPending ? "Procesando..." : "Confirmar Reserva"}
                           </Button>
                           <p className="text-center text-xs text-muted-foreground mt-4">
-                            Al confirmar, un asesor se comunicará para coordinar operador, horario y condiciones del servicio.
+                            Al confirmar, un asesor se comunicarÃ¡ para coordinar operador, horario y condiciones del servicio.
                           </p>
                         </div>
                       </form>
                     </Form>
-                  )}
                 </CardContent>
               </Card>
             </div>
           </div>
-        )}
       </div>
     </div>
   );
 }
+

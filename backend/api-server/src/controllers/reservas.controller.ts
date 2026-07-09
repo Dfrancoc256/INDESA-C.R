@@ -1,5 +1,18 @@
 import { Request, Response } from "express";
 import * as service from "../services/reservas.service";
+import { verifyAccessToken } from "../lib/jwt";
+
+function puedeSobrescribirPrecio(req: Request): boolean {
+  const header = req.headers["authorization"];
+  if (!header || !header.startsWith("Bearer ")) return false;
+
+  try {
+    const payload = verifyAccessToken(header.slice(7));
+    return payload.rolNombre === "admin";
+  } catch {
+    return false;
+  }
+}
 
 export async function list(req: Request, res: Response): Promise<void> {
   try {
@@ -27,7 +40,9 @@ export async function getOne(req: Request, res: Response): Promise<void> {
 
 export async function create(req: Request, res: Response): Promise<void> {
   try {
-    const data = await service.createReserva(req.body);
+    const data = await service.createReserva(req.body, {
+      allowPrecioOverride: puedeSobrescribirPrecio(req),
+    });
     res.status(201).json(data);
   } catch (err: any) {
     res.status(err.status ?? 400).json({ error: err.message });
@@ -70,5 +85,38 @@ export async function updateEstado(req: Request, res: Response): Promise<void> {
     res.json(data);
   } catch (err: any) {
     res.status(err.status ?? 500).json({ error: err.message });
+  }
+}
+
+export async function update(req: Request, res: Response): Promise<void> {
+  try {
+    const usuario = req.usuario;
+    if (!usuario || usuario.rolNombre !== "admin") {
+      res.status(403).json({ error: "Solo el administrador puede editar el precio de una reserva" });
+      return;
+    }
+
+    const data = await service.updateReserva(Number(req.params["id"]), req.body);
+    res.json(data);
+  } catch (err: any) {
+    res.status(err.status ?? 500).json({ error: err.message });
+  }
+}
+
+export async function reporte(req: Request, res: Response): Promise<void> {
+  try {
+    const usuario = req.usuario;
+    if (!usuario || usuario.rolNombre !== "admin") {
+      res.status(403).json({ error: "Solo el administrador puede descargar reportes financieros" });
+      return;
+    }
+
+    const { desde, hasta } = req.query as Record<string, string>;
+    const reporte = await service.getReservasReporte({ desde, hasta });
+    res.setHeader("Content-Type", "text/csv; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="${reporte.filename}"`);
+    res.status(200).send(`\ufeff${reporte.content}`);
+  } catch (err: any) {
+    res.status(err.status ?? 400).json({ error: err.message });
   }
 }

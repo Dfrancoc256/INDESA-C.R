@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { errorMessages } from "@/lib/errorMessages";
+import { getFriendlyApiErrorMessage } from "@/lib/apiErrorMessage";
 import {
   Form,
   FormControl,
@@ -41,14 +42,8 @@ export function Login() {
       form.clearErrors();
       await login(data);
     } catch (error: any) {
-      const apiStatus = Number(error?.status) || 0;
-      let friendlyMessage = error?.message || errorMessages.generic;
-
-      if (apiStatus === 401) {
-        friendlyMessage = errorMessages.login401;
-      } else if (apiStatus >= 500) {
-        friendlyMessage = errorMessages.login500;
-      }
+      const apiStatus = Number(error?.status || error?.response?.status) || 0;
+      const friendlyMessage = getFriendlyApiErrorMessage(error, errorMessages.generic);
 
       if (apiStatus === 401) {
         form.setError("email", {
@@ -73,7 +68,7 @@ export function Login() {
 
   return (
     <div className="grid min-h-[100dvh] bg-[radial-gradient(circle_at_top_left,rgba(255,40,0,0.30),transparent_28%),radial-gradient(circle_at_center,rgba(255,40,0,0.14),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,40,0,0.18),transparent_26%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--muted)))] lg:grid-cols-[1.05fr_0.95fr]">
-      <section className="flex min-h-[100dvh] items-center justify-center px-4 py-6 sm:px-6 lg:px-10">
+      <section className="flex min-h-[100dvh] items-center justify-center px-4 py-6 sm:px-6 lg:px-10 animate-route-enter">
         <div className="w-full max-w-[440px]">
           <Link
             href="/"
@@ -91,7 +86,7 @@ export function Login() {
             />
           </div>
 
-          <Card className="overflow-hidden border shadow-xl">
+          <Card className="overflow-hidden border shadow-xl animate-route-enter">
             <CardHeader className="space-y-2 border-b bg-card px-6 pb-6 pt-7 text-center sm:px-8">
               <CardTitle className="text-2xl font-bold tracking-tight">Acceso administrativo</CardTitle>
               <CardDescription>Ingresa tus credenciales para continuar.</CardDescription>
@@ -156,7 +151,7 @@ export function Login() {
                     )}
                   />
 
-                  <Button type="submit" className="h-12 w-full gap-2 text-base font-semibold" disabled={isLoading}>
+                  <Button type="submit" className="h-12 w-full gap-2 text-base font-semibold transition-transform duration-200 active:scale-[0.98]" disabled={isLoading}>
                     {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
                     {isLoading ? "Validando..." : "Ingresar"}
                   </Button>
@@ -168,7 +163,7 @@ export function Login() {
         </div>
       </section>
 
-      <aside className="relative hidden min-h-[100dvh] overflow-hidden border-l bg-foreground lg:block">
+      <aside className="relative hidden min-h-[100dvh] overflow-hidden border-l bg-foreground lg:block animate-route-enter">
         <img
           src={maquinariaLogin}
           alt=""

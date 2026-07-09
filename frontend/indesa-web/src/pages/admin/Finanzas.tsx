@@ -1,13 +1,25 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useListReservas, useGetDashboardResumen } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { CreditCard, DollarSign, TrendingUp, Wallet } from "lucide-react";
+import { CalendarRange, CreditCard, DollarSign, FileDown, TrendingUp, Wallet } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { apiFetch } from "@/lib/apiFetch";
+
+function getMonthStart() {
+  const date = new Date();
+  return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().slice(0, 10);
+}
 
 export function Finanzas() {
+  const { toast } = useToast();
+  const [desde, setDesde] = useState(getMonthStart());
+  const [hasta, setHasta] = useState(new Date().toISOString().slice(0, 10));
   const { data: resumen, isLoading: isLoadingResumen } = useGetDashboardResumen();
   const { data: reservasResponse, isLoading: isLoadingReservas } = useListReservas({ page: 1, limit: 100 });
 
@@ -28,12 +40,89 @@ export function Finanzas() {
 
   const reservasPagadas = reservas.filter((reserva) => reserva.estado === "confirmada" || reserva.estado === "entregada");
 
+  const descargarReporte = async () => {
+    if (!desde || !hasta) {
+      toast({
+        variant: "destructive",
+        title: "Faltan fechas",
+        description: "Selecciona una fecha inicial y una fecha final para generar el reporte.",
+      });
+      return;
+    }
+
+    if (new Date(`${hasta}T00:00:00`).getTime() < new Date(`${desde}T00:00:00`).getTime()) {
+      toast({
+        variant: "destructive",
+        title: "Rango inválido",
+        description: "La fecha final no puede ser anterior a la fecha inicial.",
+      });
+      return;
+    }
+
+    try {
+      const response = await apiFetch(`/api/reservas/reporte?desde=${encodeURIComponent(desde)}&hasta=${encodeURIComponent(hasta)}`);
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? "No fue posible descargar el reporte.");
+      }
+
+      const blob = await response.blob();
+      const disposition = response.headers.get("Content-Disposition") ?? "";
+      const filenameMatch = disposition.match(/filename="([^"]+)"/i);
+      const filename = filenameMatch?.[1] ?? `reporte-reservas-${desde}-a-${hasta}.csv`;
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: "Reporte descargado",
+        description: "El archivo se generó correctamente.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "No fue posible descargar el reporte",
+        description: error?.message ?? "Intenta nuevamente en unos momentos.",
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Finanzas</h1>
         <p className="text-muted-foreground">Control de ingresos estimados y reservas confirmadas desde la base de datos.</p>
       </div>
+
+      <Card>
+        <CardContent className="flex flex-col gap-4 p-4 md:flex-row md:items-end">
+          <div className="grid flex-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <CalendarRange className="h-4 w-4 text-primary" />
+                Fecha inicial
+              </label>
+              <Input type="date" value={desde} onChange={(e) => setDesde(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium">
+                <CalendarRange className="h-4 w-4 text-primary" />
+                Fecha final
+              </label>
+              <Input type="date" value={hasta} onChange={(e) => setHasta(e.target.value)} />
+            </div>
+          </div>
+          <Button className="gap-2 md:w-auto" onClick={descargarReporte}>
+            <FileDown className="h-4 w-4" />
+            Descargar Excel
+          </Button>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard title="Ingresos estimados" value={totales.total} icon={DollarSign} />

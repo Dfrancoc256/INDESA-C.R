@@ -45,12 +45,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     { href: "/admin/reservas", label: "Reservas", icon: Calendar, permiso: "reservas.ver" },
     { href: "/admin/finanzas", label: "Finanzas", icon: Landmark, permiso: "finanzas.ver" },
     { href: "/admin/usuarios", label: "Usuarios", icon: Users, permiso: "usuarios.ver" },
-  ].filter((link) => {
-    if (usuario?.rol?.nombre === "operador") {
-      return ["/admin/dashboard", "/admin/productos", "/admin/categorias", "/admin/inventario", "/admin/reservas"].includes(link.href);
-    }
-    return hasPermission(usuario, link.permiso);
-  });
+  ].filter((link) => hasPermission(usuario, link.permiso));
 
   const homeHref = navLinks[0]?.href ?? "/admin/login";
 

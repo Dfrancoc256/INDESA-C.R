@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { getFriendlyApiErrorMessage } from "@/lib/apiErrorMessage";
 import { CheckCircle2, Pencil, Plus, Save, Tags, XCircle } from "lucide-react";
 import { invalidateCatalogData } from "@/lib/queryInvalidation";
 
@@ -44,7 +45,7 @@ export function Categorias() {
         await invalidateCatalogData(queryClient);
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "No se pudo crear", description: err?.message || "Revise los datos e intente nuevamente." });
+        toast({ variant: "destructive", title: "No se pudo crear", description: getFriendlyApiErrorMessage(err, "Revise los datos e intente nuevamente.") });
       },
     },
   });
@@ -58,7 +59,7 @@ export function Categorias() {
         await invalidateCatalogData(queryClient);
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "No se pudo actualizar", description: err?.message || "Revise los datos e intente nuevamente." });
+        toast({ variant: "destructive", title: "No se pudo actualizar", description: getFriendlyApiErrorMessage(err, "Revise los datos e intente nuevamente.") });
       },
     },
   });

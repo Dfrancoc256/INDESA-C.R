@@ -1,6 +1,7 @@
 /**
- * Middleware RBAC — los permisos se leen SIEMPRE desde la base de datos.
- * El backend no tiene permisos quemados en código.
+ * Middleware RBAC.
+ * Admin accede a todo; operador accede a todo excepto Finanzas y Usuarios.
+ * Para otros roles, los permisos se leen desde base de datos.
  */
 import { Request, Response, NextFunction } from "express";
 import { db } from "@workspace/db";
@@ -17,6 +18,21 @@ export function requirePermiso(permiso: string) {
     }
 
     try {
+      if (usuario.rolNombre === "admin") {
+        next();
+        return;
+      }
+
+      if (usuario.rolNombre === "operador") {
+        if (permiso.startsWith("finanzas.") || permiso.startsWith("usuarios.")) {
+          res.status(403).json({ error: `Permiso requerido: ${permiso}` });
+          return;
+        }
+
+        next();
+        return;
+      }
+
       // Consultar permisos del rol DESDE LA BASE DE DATOS en cada petición
       const roles = await db
         .select({ permisos: rolesTable.permisos })

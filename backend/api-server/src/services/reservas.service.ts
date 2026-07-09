@@ -27,6 +27,11 @@ type ReservaInput = {
   tipo_tarifa?: TipoTarifa;
   unidadesTarifa?: number;
   unidades_tarifa?: number;
+  precioUnitario?: number | string;
+  precio_unitario?: number | string;
+  descuento?: number | string;
+  totalEstimado?: number | string;
+  total_estimado?: number | string;
   notas?: string;
 };
 
@@ -41,6 +46,9 @@ type NormalizedReservaInput = {
   diasReserva: number;
   tipoTarifa: TipoTarifa;
   unidadesTarifaSolicitada?: number;
+  precioUnitarioManual?: number;
+  descuento?: number;
+  totalEstimadoManual?: number;
   notas?: string;
 };
 
@@ -84,6 +92,16 @@ function toPositiveInteger(value: unknown, fieldName: string): number {
   return parsed;
 }
 
+function toNonNegativeNumber(value: unknown, fieldName: string): number {
+  const parsed = Number(value);
+
+  if (!Number.isFinite(parsed) || parsed < 0) {
+    throw Object.assign(new Error(`${fieldName} debe ser un número válido`), { status: 400 });
+  }
+
+  return parsed;
+}
+
 function normalizeReservaInput(data: ReservaInput): NormalizedReservaInput {
   const fechaInicio = toDateOnly(data.fechaInicio ?? data.fecha_inicio, "fecha_inicio");
   const fechaFin = toDateOnly(data.fechaFin ?? data.fecha_fin, "fecha_fin");
@@ -111,6 +129,15 @@ function normalizeReservaInput(data: ReservaInput): NormalizedReservaInput {
     unidadesTarifaSolicitada: unidadesTarifaSolicitada === undefined
       ? undefined
       : toPositiveInteger(unidadesTarifaSolicitada, "unidades_tarifa"),
+    precioUnitarioManual: data.precioUnitario === undefined && data.precio_unitario === undefined
+      ? undefined
+      : toNonNegativeNumber(data.precioUnitario ?? data.precio_unitario, "precio_unitario"),
+    descuento: data.descuento === undefined
+      ? 0
+      : toNonNegativeNumber(data.descuento, "descuento"),
+    totalEstimadoManual: data.totalEstimado === undefined && data.total_estimado === undefined
+      ? undefined
+      : toNonNegativeNumber(data.totalEstimado ?? data.total_estimado, "total_estimado"),
     notas: data.notas,
   };
 }
@@ -258,7 +285,128 @@ export async function getReservaDetalle(id: number) {
   return reserva;
 }
 
-export async function createReserva(input: ReservaInput) {
+function toEndOfDayISO(value: string | undefined, fieldName: string): string {
+  const date = toDateOnly(value, fieldName);
+  return `${date}T23:59:59.999`;
+}
+
+export async function updateReserva(id: number, input: Partial<{
+  notas: string;
+  precioUnitario: number | string;
+  descuento: number | string;
+  totalEstimado: number | string;
+}>) {
+  const reserva = await repo.findReservaById(id);
+  if (!reserva) {
+    throw Object.assign(new Error("Reserva no encontrada"), { status: 404 });
+  }
+
+  const updateData: Record<string, unknown> = {};
+
+  if (input.notas !== undefined) {
+    updateData.notas = input.notas?.trim() || null;
+  }
+
+  if (input.precioUnitario !== undefined || input.descuento !== undefined || input.totalEstimado !== undefined) {
+    const precioUnitario = input.precioUnitario !== undefined
+      ? Number(input.precioUnitario)
+      : Number(reserva.precio_unitario ?? 0);
+    if (!Number.isFinite(precioUnitario) || precioUnitario < 0) {
+      throw Object.assign(new Error("El precio unitario debe ser un número válido"), { status: 400 });
+    }
+
+    const descuento = input.descuento !== undefined
+      ? Number(input.descuento)
+      : Number(reserva.descuento ?? 0);
+    if (!Number.isFinite(descuento) || descuento < 0) {
+      throw Object.assign(new Error("El descuento debe ser un número válido"), { status: 400 });
+    }
+
+    const subtotal = precioUnitario * Number(reserva.unidades_tarifa ?? 1) * Number(reserva.cantidad ?? 1);
+    const totalEstimado = input.totalEstimado !== undefined
+      ? Number(input.totalEstimado)
+      : Math.max(0, subtotal - descuento);
+    if (!Number.isFinite(totalEstimado) || totalEstimado < 0) {
+      throw Object.assign(new Error("El total estimado debe ser un número válido"), { status: 400 });
+    }
+
+    updateData.precioUnitario = precioUnitario;
+    updateData.descuento = descuento;
+    updateData.totalEstimado = totalEstimado;
+  }
+
+  if (Object.keys(updateData).length === 0) {
+    throw Object.assign(new Error("No hay datos para actualizar"), { status: 400 });
+  }
+
+  const actualizado = await repo.updateReserva(id, updateData);
+  if (!actualizado) throw Object.assign(new Error("Reserva no encontrada"), { status: 404 });
+  return actualizado;
+}
+
+export async function getReservasReporte(input: { desde?: string; hasta?: string }) {
+  const desde = toDateOnly(input.desde, "desde");
+  const hasta = toDateOnly(input.hasta, "hasta");
+
+  if (new Date(`${hasta}T00:00:00`).getTime() < new Date(`${desde}T00:00:00`).getTime()) {
+    throw Object.assign(new Error("La fecha final no puede ser anterior a la fecha inicial"), { status: 400 });
+  }
+
+  const reservas = await repo.findReservasParaReporte({ desde, hasta });
+
+  const escapeCsv = (value: unknown) => {
+    const normalized = value === null || value === undefined ? "" : String(value);
+    if (/[",\n]/.test(normalized)) {
+      return `"${normalized.replace(/"/g, '""')}"`;
+    }
+    return normalized;
+  };
+
+  const headers = [
+    "ID",
+    "Fecha Registro",
+    "Cliente",
+    "Correo",
+    "Teléfono",
+    "Producto",
+    "Cantidad",
+    "Fecha Inicio",
+    "Fecha Fin",
+    "Tarifa",
+    "Unidades Tarifa",
+    "Precio Unitario",
+    "Descuento",
+    "Total Estimado",
+    "Estado",
+    "Notas",
+  ];
+
+  const rows = reservas.map((reserva) => [
+    reserva.id,
+    reserva.created_at,
+    reserva.cliente_nombre,
+    reserva.cliente_email,
+    reserva.cliente_telefono,
+    reserva.producto_nombre,
+    reserva.cantidad,
+    reserva.fecha_inicio,
+    reserva.fecha_fin,
+    reserva.tipo_tarifa,
+    reserva.unidades_tarifa,
+    reserva.precio_unitario,
+    reserva.descuento,
+    reserva.total_estimado,
+    reserva.estado,
+    reserva.notas,
+  ].map(escapeCsv).join(","));
+
+  return {
+    filename: `reporte-reservas-${desde}-a-${hasta}.csv`,
+    content: [headers.map(escapeCsv).join(","), ...rows].join("\n"),
+  };
+}
+
+export async function createReserva(input: ReservaInput, options?: { allowPrecioOverride?: boolean }) {
   const data = normalizeReservaInput(input);
 
   // Verificar que el producto existe y está activo
@@ -289,6 +437,13 @@ export async function createReserva(input: ReservaInput) {
   }
 
   const tarifa = calcularTarifaReserva(producto, data);
+  const precioUnitario = options?.allowPrecioOverride && data.precioUnitarioManual !== undefined
+    ? data.precioUnitarioManual
+    : tarifa.precioUnitario;
+  const descuento = options?.allowPrecioOverride ? Number(data.descuento ?? 0) : 0;
+  const totalEstimado = options?.allowPrecioOverride && data.totalEstimadoManual !== undefined
+    ? data.totalEstimadoManual
+    : Math.max(0, (precioUnitario * tarifa.unidadesTarifa * data.cantidad) - descuento);
   const payload = {
     clienteNombre: data.clienteNombre,
     clienteEmail: data.clienteEmail,
@@ -300,8 +455,9 @@ export async function createReserva(input: ReservaInput) {
     diasReserva: data.diasReserva,
     tipoTarifa: tarifa.tipoTarifa,
     unidadesTarifa: tarifa.unidadesTarifa,
-    precioUnitario: String(tarifa.precioUnitario),
-    totalEstimado: String(tarifa.totalEstimado),
+    precioUnitario: String(precioUnitario),
+    descuento: String(descuento),
+    totalEstimado: String(totalEstimado),
     notas: data.notas?.trim() ? data.notas.trim() : undefined,
   };
   const reserva = await repo.createReserva(payload);
@@ -318,8 +474,8 @@ export async function createReserva(input: ReservaInput) {
     diasReserva: data.diasReserva,
     tipoTarifa: tarifa.tipoTarifa,
     unidadesTarifa: tarifa.unidadesTarifa,
-    precioUnitario: tarifa.precioUnitario,
-    totalEstimado: tarifa.totalEstimado,
+    precioUnitario,
+    totalEstimado,
     reservaId: reserva.id,
   }).then(async (enviado) => {
     if (enviado) {
@@ -339,8 +495,8 @@ export async function createReserva(input: ReservaInput) {
     diasReserva: data.diasReserva,
     tipoTarifa: tarifa.tipoTarifa,
     unidadesTarifa: tarifa.unidadesTarifa,
-    precioUnitario: tarifa.precioUnitario,
-    totalEstimado: tarifa.totalEstimado,
+    precioUnitario,
+    totalEstimado,
     notas: data.notas,
   }).catch((err) => logger.error({ err }, "Error asíncrono en notificación de correo"));
 

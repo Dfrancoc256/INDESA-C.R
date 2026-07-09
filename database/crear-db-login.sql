@@ -72,6 +72,7 @@ CREATE TABLE IF NOT EXISTS reservas (
   tipo_tarifa TEXT NOT NULL DEFAULT 'dia',
   unidades_tarifa INTEGER NOT NULL DEFAULT 1,
   precio_unitario NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  descuento NUMERIC(10, 2) NOT NULL DEFAULT 0,
   total_estimado NUMERIC(12, 2) NOT NULL DEFAULT 0,
   estado TEXT NOT NULL DEFAULT 'pendiente',
   notas TEXT,
@@ -87,6 +88,7 @@ ALTER TABLE reservas
   ADD COLUMN IF NOT EXISTS tipo_tarifa TEXT NOT NULL DEFAULT 'dia',
   ADD COLUMN IF NOT EXISTS unidades_tarifa INTEGER NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS precio_unitario NUMERIC(10, 2) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS descuento NUMERIC(10, 2) NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS total_estimado NUMERIC(12, 2) NOT NULL DEFAULT 0;
 
 CREATE TABLE IF NOT EXISTS movimientos_inventario (
@@ -131,6 +133,25 @@ VALUES (
     'reservas.ver', 'reservas.editar',
     'finanzas.ver',
     'usuarios.ver', 'usuarios.crear', 'usuarios.editar', 'usuarios.eliminar'
+  ]
+)
+ON CONFLICT (nombre) DO UPDATE
+SET
+  descripcion = EXCLUDED.descripcion,
+  permisos = EXCLUDED.permisos;
+
+INSERT INTO roles (nombre, descripcion, permisos)
+VALUES (
+  'operador',
+  'Usuario operativo',
+  ARRAY[
+    'dashboard.ver',
+    'roles.ver',
+    'productos.ver',
+    'productos.crear', 'productos.editar', 'productos.eliminar',
+    'categorias.ver',
+    'inventario.ver', 'inventario.editar',
+    'reservas.ver', 'reservas.editar', 'reservas.cambiar_estado'
   ]
 )
 ON CONFLICT (nombre) DO UPDATE

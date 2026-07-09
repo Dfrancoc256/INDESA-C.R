@@ -5,7 +5,6 @@ import { cn, formatCurrency, getInitials, getTarifaPrincipal } from "@/lib/utils
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search, Filter, SlidersHorizontal, AlertCircle } from "lucide-react";
@@ -316,16 +315,6 @@ export function Catalogo() {
                       <div className="relative aspect-[4/3] overflow-hidden bg-gray-100">
                         <CatalogImage src={producto.imagen_url} name={producto.nombre} index={index} />
                         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                        {producto.disponibilidad === "pocas_unidades" && (
-                          <div className="absolute top-2 right-2 transition-transform duration-300 group-hover:-translate-y-0.5">
-                            <Badge variant="warning" className="shadow-sm">Pocas Unidades</Badge>
-                          </div>
-                        )}
-                        {producto.disponibilidad === "agotado" && (
-                          <div className="absolute top-2 right-2 transition-transform duration-300 group-hover:-translate-y-0.5">
-                            <Badge variant="destructive" className="shadow-sm">Agotado</Badge>
-                          </div>
-                        )}
                       </div>
                       <CardHeader className="p-3 pb-2 transition-transform duration-300 group-hover:-translate-y-0.5">
                         <div className="mb-1 text-xs text-muted-foreground">{producto.categoria_nombre}</div>

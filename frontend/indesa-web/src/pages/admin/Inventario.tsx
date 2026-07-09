@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Search, AlertTriangle, History, ArrowDownToLine, ArrowUpToLine, PenTool } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getFriendlyApiErrorMessage } from "@/lib/apiErrorMessage";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -65,7 +66,7 @@ export function Inventario() {
         setProductoSeleccionado(null);
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "No fue posible actualizar el inventario", description: err?.message || errorMessages.updateInventory });
+        toast({ variant: "destructive", title: "No fue posible actualizar el inventario", description: getFriendlyApiErrorMessage(err, errorMessages.updateInventory) });
       }
     }
   });

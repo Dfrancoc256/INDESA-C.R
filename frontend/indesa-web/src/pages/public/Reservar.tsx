@@ -11,6 +11,8 @@ import { ReservationDatePicker } from "@/components/reservation-date-picker";
 import { CheckCircle2, ClipboardList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useReservaDisponibilidad } from "@/hooks/use-reserva-disponibilidad";
+import { useReservaCalendarioDisponibilidad } from "@/hooks/use-reserva-calendario-disponibilidad";
+import { getFriendlyApiErrorMessage } from "@/lib/apiErrorMessage";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,14 +32,14 @@ import { FaWhatsapp } from "react-icons/fa";
 
 const reservaGlobalSchema = z.object({
   cliente_nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
-  cliente_email: z.string().email("Correo electrónico inválido"),
-  cliente_telefono: z.string().min(8, "El teléfono debe tener al menos 8 dígitos"),
+  cliente_email: z.string().email("Correo electrÃ³nico invÃ¡lido"),
+  cliente_telefono: z.string().min(8, "El telÃ©fono debe tener al menos 8 dÃ­gitos"),
   producto_id: z.coerce.number().min(1, "Debe seleccionar un producto"),
-  cantidad: z.coerce.number().min(1, "La cantidad mínima es 1"),
+  cantidad: z.coerce.number().min(1, "La cantidad mÃ­nima es 1"),
   fecha_inicio: z.string().min(1, "Seleccione fecha de inicio"),
   fecha_fin: z.string().min(1, "Seleccione fecha final"),
   tipo_tarifa: z.enum(["dia", "semana", "mes", "base"]),
-  unidades_tarifa: z.coerce.number().min(1, "La cantidad mínima es 1"),
+  unidades_tarifa: z.coerce.number().min(1, "La cantidad mÃ­nima es 1"),
   notas: z.string().optional()
 }).refine((data) => data.fecha_fin >= data.fecha_inicio, {
   path: ["fecha_fin"],
@@ -46,6 +48,11 @@ const reservaGlobalSchema = z.object({
 
 type ReservaGlobalValues = z.infer<typeof reservaGlobalSchema>;
 const todayDate = getTodayDate();
+const calendarLimitDate = (() => {
+  const date = new Date(`${todayDate}T00:00:00`);
+  date.setMonth(date.getMonth() + 6);
+  return date.toISOString().slice(0, 10);
+})();
 const whatsappPhone = "50252149029";
 
 function onlyDigits(value: string) {
@@ -126,52 +133,13 @@ export function Reservar() {
         toast({ 
           variant: "destructive", 
           title: "Error al reservar", 
-          description: err?.message || "Hubo un problema al procesar su solicitud. Intente más tarde." 
+          description: getFriendlyApiErrorMessage(err, "Hubo un problema al procesar su solicitud. Intente mÃ¡s tarde.")
         });
       }
     }
   });
 
   const onSubmit = (data: ReservaGlobalValues) => {
-    // Validar stock antes de enviar si tenemos la info
-    if (productoSeleccionado && productoSeleccionado.cantidad !== null) {
-      if (data.cantidad > productoSeleccionado.cantidad) {
-        form.setError("cantidad", {
-          type: "manual",
-          message: `Solo hay ${productoSeleccionado.cantidad} unidades disponibles`
-        });
-        return;
-      }
-      if (productoSeleccionado.cantidad === 0) {
-        toast({
-          variant: "destructive",
-          title: "Producto agotado",
-          description: "No se puede reservar este producto porque no hay existencias."
-        });
-        return;
-      }
-    }
-
-    if (disponibilidadReserva.isFetching) {
-      toast({
-        variant: "destructive",
-        title: "Validando disponibilidad",
-        description: "Estamos comprobando el stock para las fechas seleccionadas. Intenta nuevamente en unos segundos.",
-      });
-      return;
-    }
-
-    if (!reservaPermitida) {
-      toast({
-        variant: "destructive",
-        title: "Stock insuficiente",
-        description: disponibilidadReserva.data
-          ? `Solo quedan ${disponibilidadReserva.data.stockDisponible} unidades disponibles para esas fechas.`
-          : "No hay stock suficiente para las fechas seleccionadas.",
-      });
-      return;
-    }
-
     if (!productoSeleccionado) return;
 
     const tarifa = getTarifasProducto(productoSeleccionado).find((item) => item.tipo === data.tipo_tarifa) ?? getTarifaPrincipal(productoSeleccionado);
@@ -179,6 +147,15 @@ export function Reservar() {
       ? data.fecha_fin
       : calcularFechaFinPorTarifa(data.fecha_inicio, data.tipo_tarifa, data.unidades_tarifa);
     const unidadesTarifa = calcularUnidadesTarifa(data.tipo_tarifa, data.fecha_inicio, fechaFin, data.unidades_tarifa);
+
+    if (disponibilidadActual && !disponibilidadActual.permitido) {
+      toast({
+        variant: "destructive",
+        title: "Fechas no disponibles",
+        description: `No hay stock suficiente para ese rango. Disponible: ${disponibilidadActual.stockDisponible}.`,
+      });
+      return;
+    }
 
     reservaMutation.mutate({
       data: {
@@ -210,23 +187,27 @@ export function Reservar() {
   const totalEstimado = productoSeleccionado && tarifaSeleccionada
     ? tarifaSeleccionada.value * unidadesTarifa * cantidadSolicitada
     : 0;
+  const calendarioDisponibilidad = useReservaCalendarioDisponibilidad({
+    productoId: productoSeleccionado?.id,
+    desde: todayDate,
+    hasta: calendarLimitDate,
+  });
   const disponibilidadReserva = useReservaDisponibilidad({
-    productoId: productoSeleccionado?.id ?? null,
+    productoId: productoSeleccionado?.id,
     fechaInicio,
     fechaFin,
     cantidad: cantidadSolicitada,
   });
-  const stockDisponiblePorFecha = disponibilidadReserva.data?.stockDisponible ?? (productoSeleccionado?.cantidad ?? 0);
-  const reservaPermitida = disponibilidadReserva.data?.permitido ?? ((productoSeleccionado?.cantidad ?? 0) >= cantidadSolicitada);
+  const fechasBloqueadas = calendarioDisponibilidad.data?.fechasBloqueadas ?? [];
+  const disponibilidadActual = disponibilidadReserva.data;
   const productImage = productoSeleccionado?.imagen_url;
   const whatsappUrl = productoSeleccionado
     ? `https://wa.me/${whatsappPhone}?text=${encodeURIComponent([
-        "Hola, quiero información para reservar este equipo:",
+        "Hola, quiero informaciÃ³n para reservar este equipo:",
         `Producto: ${productoSeleccionado.nombre}`,
         `Tarifa: ${formatCurrency(getTarifaPrincipal(productoSeleccionado).value)} por ${getTarifaPrincipal(productoSeleccionado).suffix}`,
-        `Disponibles: ${productoSeleccionado.cantidad ?? "Consultar"}`,
         `Nombre: ${form.watch("cliente_nombre") || "Pendiente"}`,
-        `Teléfono: ${form.watch("cliente_telefono") || "Pendiente"}`,
+        `TelÃ©fono: ${form.watch("cliente_telefono") || "Pendiente"}`,
         `Correo: ${form.watch("cliente_email") || "Pendiente"}`,
       ].join("\n"))}`
     : `https://wa.me/${whatsappPhone}`;
@@ -237,7 +218,7 @@ export function Reservar() {
         <div className="container mx-auto px-4 md:px-8 text-center max-w-3xl">
           <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Solicitud de Reserva</h1>
           <p className="text-primary-foreground/90 text-lg md:text-xl">
-            Asegure los suministros que necesita completando el formulario. Nuestro equipo confirmará existencias y procesará su solicitud a la brevedad.
+            Asegure los suministros que necesita completando el formulario. Nuestro equipo confirmarÃ¡ existencias y procesarÃ¡ su solicitud a la brevedad.
           </p>
         </div>
       </div>
@@ -248,10 +229,10 @@ export function Reservar() {
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 text-green-600 mb-6">
               <CheckCircle2 className="h-10 w-10" />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">¡Solicitud Recibida!</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">Â¡Solicitud Recibida!</h2>
             <p className="text-lg text-gray-600 mb-8">
-              Su reserva ha sido registrada exitosamente. Hemos enviado una confirmación a su correo electrónico.
-              Un asesor de ventas se comunicará pronto para finalizar el proceso.
+              Su reserva ha sido registrada exitosamente. Hemos enviado una confirmaciÃ³n a su correo electrÃ³nico.
+              Un asesor de ventas se comunicarÃ¡ pronto para finalizar el proceso.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Button asChild size="lg" variant="outline">
@@ -262,7 +243,7 @@ export function Reservar() {
                 }}>Nueva Reserva</button>
               </Button>
               <Button asChild size="lg">
-                <Link href="/catalogo">Volver al Catálogo</Link>
+                <Link href="/catalogo">Volver al CatÃ¡logo</Link>
               </Button>
             </div>
           </div>
@@ -283,7 +264,7 @@ export function Reservar() {
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                     
                     <div className="space-y-4">
-                      <h3 className="font-semibold text-lg border-b pb-2">1. Selección de Producto</h3>
+                      <h3 className="font-semibold text-lg border-b pb-2">1. SelecciÃ³n de Producto</h3>
                       
                       <FormField
                         control={form.control}
@@ -298,7 +279,7 @@ export function Reservar() {
                             >
                               <FormControl>
                                 <SelectTrigger className="h-12">
-                                  <SelectValue placeholder={catalogoCargando ? "Cargando catálogo..." : "Seleccione un producto del catálogo"} />
+                                  <SelectValue placeholder={catalogoCargando ? "Cargando catÃ¡logo..." : "Seleccione un producto del catÃ¡logo"} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent className="max-h-[300px]">
@@ -350,13 +331,6 @@ export function Reservar() {
                                 </span>
                               ))}
                             </div>
-                            <div className="mt-3 text-sm text-muted-foreground">
-                              {productoSeleccionado.cantidad === 0 ? (
-                                <span className="font-bold text-destructive">Agotado</span>
-                              ) : (
-                                <span className="font-semibold text-green-600">Disponibles: {productoSeleccionado.cantidad}</span>
-                              )}
-                            </div>
                           </div>
                         </div>
                       )}
@@ -373,9 +347,9 @@ export function Reservar() {
                       {productoSeleccionado && (
                         <div className="grid gap-4 rounded-md border bg-gray-50 p-4 md:grid-cols-2">
                           <div>
-                            <div className="text-sm font-semibold">Acción rápida</div>
+                            <div className="text-sm font-semibold">AcciÃ³n rÃ¡pida</div>
                             <p className="mt-1 text-sm text-muted-foreground">
-                              Puedes revisar la información y confirmar la reserva desde aquí. La solicitud quedará guardada y recibirás la confirmación por correo.
+                              Puedes revisar la informaciÃ³n y confirmar la reserva desde aquÃ­. La solicitud quedarÃ¡ guardada y recibirÃ¡s la confirmaciÃ³n por correo.
                             </p>
                           </div>
                           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -489,7 +463,7 @@ export function Reservar() {
                                   }
                                 }}
                                 minDate={todayDate}
-                                productId={productoSeleccionado?.id ?? null}
+                                blockedDates={fechasBloqueadas}
                               />
                               <FormMessage />
                             </FormItem>
@@ -507,7 +481,7 @@ export function Reservar() {
                                 value={field.value}
                                 onChange={field.onChange}
                                 minDate={form.watch("fecha_inicio") || todayDate}
-                                productId={productoSeleccionado?.id ?? null}
+                                blockedDates={fechasBloqueadas}
                               />
                               <FormMessage />
                             </FormItem>
@@ -516,27 +490,22 @@ export function Reservar() {
                         )}
                       </div>
                       <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
-                        Reserva por {diasReserva} día{diasReserva === 1 ? "" : "s"}.
+                        Reserva por {diasReserva} dÃ­a{diasReserva === 1 ? "" : "s"}.
                         {tarifaSeleccionada && (
                           <span className="block text-foreground">
                             Estimado: {formatCurrency(totalEstimado)} ({unidadesTarifa} {unidadesTarifa === 1 ? tarifaSeleccionada.suffix : tarifaSeleccionada.plural})
                           </span>
                         )}
                       </div>
-                      <div className={`rounded-md border px-4 py-3 text-sm ${
-                        reservaPermitida ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"
-                      }`}>
-                        <div className="font-semibold">
-                          {reservaPermitida ? "Stock disponible para estas fechas." : "Stock insuficiente para estas fechas."}
+                      {disponibilidadActual && !disponibilidadActual.permitido ? (
+                        <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive">
+                          No hay stock suficiente para esas fechas. Disponible: {disponibilidadActual.stockDisponible}.
                         </div>
-                        <div className="mt-1 text-xs">
-                          Disponibles: {stockDisponiblePorFecha} · Comprometidas: {disponibilidadReserva.data?.stockComprometido ?? 0} · Solicitadas: {cantidadSolicitada}
-                        </div>
-                      </div>
+                      ) : null}
                     </div>
 
                     <div className="space-y-4 pt-6 mt-6 border-t">
-                      <h3 className="font-semibold text-lg border-b pb-2">2. Información de Contacto</h3>
+                      <h3 className="font-semibold text-lg border-b pb-2">2. InformaciÃ³n de Contacto</h3>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
@@ -546,7 +515,7 @@ export function Reservar() {
                             <FormItem>
                               <FormLabel>Nombre Completo / Empresa *</FormLabel>
                               <FormControl>
-                                <Input placeholder="Razón social o nombre" {...field} />
+                                <Input placeholder="RazÃ³n social o nombre" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -557,10 +526,10 @@ export function Reservar() {
                           name="cliente_telefono"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>Teléfono Celular *</FormLabel>
+                              <FormLabel>TelÃ©fono Celular *</FormLabel>
                               <FormControl>
                                 <Input
-                                  placeholder="Solo números"
+                                  placeholder="Solo nÃºmeros"
                                   inputMode="numeric"
                                   pattern="[0-9]*"
                                   {...field}
@@ -578,7 +547,7 @@ export function Reservar() {
                         name="cliente_email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Correo Electrónico *</FormLabel>
+                            <FormLabel>Correo ElectrÃ³nico *</FormLabel>
                             <FormControl>
                               <Input type="email" placeholder="usuario@empresa.com" {...field} />
                             </FormControl>
@@ -598,7 +567,7 @@ export function Reservar() {
                             <FormLabel>Comentarios (Opcional)</FormLabel>
                             <FormControl>
                               <Textarea 
-                                placeholder="Ubicación del trabajo, horario estimado, datos de facturación (NIT), u otras especificaciones..." 
+                                placeholder="UbicaciÃ³n del trabajo, horario estimado, datos de facturaciÃ³n (NIT), u otras especificaciones..." 
                                 className="min-h-[100px]"
                                 {...field} 
                               />
@@ -626,13 +595,13 @@ export function Reservar() {
                           type="submit" 
                           size="lg" 
                           className="h-14 w-full text-lg sm:w-1/2"
-                          disabled={reservaMutation.isPending || !reservaPermitida || disponibilidadReserva.isFetching}
+                          disabled={reservaMutation.isPending}
                         >
                           {reservaMutation.isPending ? "Confirmando Reserva..." : "Confirmar Reserva"}
                         </Button>
                       </div>
                       <p className="mt-4 text-center text-sm text-muted-foreground">
-                        Esta reserva no requiere pago inmediato. La solicitud quedará registrada y un asesor te enviará la confirmación por correo.
+                        Esta reserva no requiere pago inmediato. La solicitud quedarÃ¡ registrada y un asesor te enviarÃ¡ la confirmaciÃ³n por correo.
                       </p>
                     </div>
                   </form>
@@ -645,4 +614,5 @@ export function Reservar() {
     </div>
   );
 }
+
 

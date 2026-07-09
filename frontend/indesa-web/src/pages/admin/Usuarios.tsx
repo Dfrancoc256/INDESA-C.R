@@ -14,6 +14,7 @@ import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { UserPlus, Search, Edit, ShieldCheck, Key, MoreHorizontal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getFriendlyApiErrorMessage } from "@/lib/apiErrorMessage";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -81,7 +82,7 @@ export function Usuarios() {
         createForm.reset();
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "No fue posible crear el usuario", description: err?.message || errorMessages.createUser });
+        toast({ variant: "destructive", title: "No fue posible crear el usuario", description: getFriendlyApiErrorMessage(err, errorMessages.createUser) });
       }
     }
   });
@@ -94,7 +95,7 @@ export function Usuarios() {
         setIsEditarOpen(false);
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "No fue posible actualizar el usuario", description: err?.message || errorMessages.updateUser });
+        toast({ variant: "destructive", title: "No fue posible actualizar el usuario", description: getFriendlyApiErrorMessage(err, errorMessages.updateUser) });
       }
     }
   });
@@ -107,7 +108,7 @@ export function Usuarios() {
         resetForm.reset();
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "No fue posible restablecer la contraseña", description: err?.message || errorMessages.resetPassword });
+        toast({ variant: "destructive", title: "No fue posible restablecer la contraseña", description: getFriendlyApiErrorMessage(err, errorMessages.resetPassword) });
       }
     }
   });
@@ -119,7 +120,7 @@ export function Usuarios() {
         refetch();
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "No fue posible cambiar el estado del usuario", description: err?.message || errorMessages.toggleUser });
+        toast({ variant: "destructive", title: "No fue posible cambiar el estado del usuario", description: getFriendlyApiErrorMessage(err, errorMessages.toggleUser) });
       }
     }
   });

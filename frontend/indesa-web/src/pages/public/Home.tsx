@@ -11,7 +11,6 @@ import {
   getTodayDate,
 } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ReservationDatePicker } from "@/components/reservation-date-picker";
@@ -23,6 +22,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useReservaDisponibilidad } from "@/hooks/use-reserva-disponibilidad";
+import { useReservaCalendarioDisponibilidad } from "@/hooks/use-reserva-calendario-disponibilidad";
+import { getFriendlyApiErrorMessage } from "@/lib/apiErrorMessage";
 import {
   ArrowRight,
   Clock,
@@ -37,7 +39,6 @@ import { listProductos, useCreateReserva, useListProductos, type Producto, getLi
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateCatalogData } from "@/lib/queryInvalidation";
 import { errorMessages } from "@/lib/errorMessages";
-import { useReservaDisponibilidad } from "@/hooks/use-reserva-disponibilidad";
 import bannerPrincipal1 from "@/assets/images/banner-principal-1.png";
 import bannerPrincipal2 from "@/assets/images/banner-principal-2.png";
 import bannerPrincipal3 from "@/assets/images/banner-principal-3.png";
@@ -59,6 +60,11 @@ type ReservaFormState = {
 
 const whatsappPhone = "50252149029";
 const todayDate = getTodayDate();
+const calendarLimitDate = (() => {
+  const date = new Date(`${todayDate}T00:00:00`);
+  date.setMonth(date.getMonth() + 6);
+  return date.toISOString().slice(0, 10);
+})();
 
 const emptyReservaForm: ReservaFormState = {
   cliente_nombre: "",
@@ -76,16 +82,16 @@ const heroSlides = [
   {
     image: bannerPrincipal1,
     label: "Maquinaria industrial",
-    title: "¿Necesitas rentar maquinaria o un servicio?",
+    title: "Â¿Necesitas rentar maquinaria o un servicio?",
     description:
       "Conectamos a empresas y profesionales con maquinaria lista para trabajo pesado.",
   },
   {
     image: bannerPrincipal2,
     label: "Inventario de maquinaria",
-    title: "Equipos organizados para reservas más rápidas",
+    title: "Equipos organizados para reservas mÃ¡s rÃ¡pidas",
     description:
-      "Consulte disponibilidad y reserve equipos desde una experiencia clara y dinámica.",
+      "Consulte disponibilidad y reserve equipos desde una experiencia clara y dinÃ¡mica.",
   },
   {
     image: bannerPrincipal3,
@@ -96,19 +102,11 @@ const heroSlides = [
   },
 ];
 
-function getDisponibilidadLabel(producto: HomeProduct) {
-  const cantidad = producto.cantidad ?? 0;
-  if (cantidad <= 0) return "Agotado";
-  if (cantidad === 1) return "1 unidad disponible";
-  return `${cantidad} unidades disponibles`;
-}
-
 function buildWhatsAppUrl(producto: HomeProduct, form?: ReservaFormState) {
   const lines = [
-    "Hola, quiero información para reservar este equipo:",
+    "Hola, quiero informaciÃ³n para reservar este equipo:",
     `Producto: ${producto.nombre}`,
     `Tarifa: ${formatCurrency(getTarifaPrincipal(producto).value)} por ${getTarifaPrincipal(producto).suffix}`,
-    `Disponibles: ${producto.cantidad ?? "Consultar"}`,
   ];
 
   if (form) {
@@ -117,7 +115,7 @@ function buildWhatsAppUrl(producto: HomeProduct, form?: ReservaFormState) {
       `Modalidad: ${form.tipo_tarifa} x ${form.unidades_tarifa || "1"}`,
       `Fechas: ${form.fecha_inicio} al ${form.fecha_fin}`,
       `Nombre: ${form.cliente_nombre || "Pendiente"}`,
-      `Teléfono: ${form.cliente_telefono || "Pendiente"}`,
+      `TelÃ©fono: ${form.cliente_telefono || "Pendiente"}`,
       `Correo: ${form.cliente_email || "Pendiente"}`
     );
 
@@ -158,19 +156,24 @@ export function Home() {
   const totalEstimado = selectedProduct && tarifaSeleccionada
     ? tarifaSeleccionada.value * unidadesTarifa * cantidadSolicitada
     : 0;
+  const calendarioDisponibilidad = useReservaCalendarioDisponibilidad({
+    productoId: selectedProduct?.id,
+    desde: todayDate,
+    hasta: calendarLimitDate,
+  });
   const disponibilidadReserva = useReservaDisponibilidad({
-    productoId: selectedProduct?.id ?? null,
-    fechaInicio: reservaForm.fecha_inicio || null,
-    fechaFin: fechaFinCalculada || null,
+    productoId: selectedProduct?.id,
+    fechaInicio: reservaForm.fecha_inicio,
+    fechaFin: fechaFinCalculada,
     cantidad: cantidadSolicitada,
   });
-  const stockDisponiblePorFecha = disponibilidadReserva.data?.stockDisponible ?? (selectedProduct?.cantidad ?? 0);
-  const reservaPermitida = disponibilidadReserva.data?.permitido ?? ((selectedProduct?.cantidad ?? 0) >= cantidadSolicitada);
+  const fechasBloqueadas = calendarioDisponibilidad.data?.fechasBloqueadas ?? [];
+  const disponibilidadActual = disponibilidadReserva.data;
 
   const reservaMutation = useCreateReserva({
     mutation: {
       onError: (err: any) => {
-        const message = err?.message || errorMessages.createReservation;
+        const message = getFriendlyApiErrorMessage(err, errorMessages.createReservation);
         const shouldRefreshCatalog = /producto no encontrado|desactivado|no disponible/i.test(message);
 
         if (shouldRefreshCatalog) {
@@ -182,7 +185,7 @@ export function Home() {
           variant: "destructive",
           title: "No fue posible registrar la reserva",
           description: shouldRefreshCatalog
-            ? `${message} Actualizamos el catálogo para mostrar la disponibilidad real.`
+            ? `${message} Actualizamos el catÃ¡logo para mostrar la disponibilidad real.`
             : message,
         });
       },
@@ -266,8 +269,8 @@ export function Home() {
     if (!Number.isInteger(productoId) || productoId < 1) {
       toast({
         variant: "destructive",
-        title: "Producto no válido",
-        description: "Actualice el catálogo y vuelva a seleccionar el producto.",
+        title: "Producto no vÃ¡lido",
+        description: "Actualice el catÃ¡logo y vuelva a seleccionar el producto.",
       });
       void refetchCatalogo();
       setReservaOpen(false);
@@ -278,29 +281,18 @@ export function Home() {
       toast({
         variant: "destructive",
         title: "Producto no disponible",
-        description: "Este producto está desactivado para reservas. Actualizamos el catálogo.",
+        description: "Este producto estÃ¡ desactivado para reservas. Actualizamos el catÃ¡logo.",
       });
       void refetchCatalogo();
       setReservaOpen(false);
       return;
     }
 
-    if (disponibilidadReserva.isFetching) {
+    if (disponibilidadActual && !disponibilidadActual.permitido) {
       toast({
         variant: "destructive",
-        title: "Validando disponibilidad",
-        description: "Estamos comprobando el stock para las fechas seleccionadas. Intenta nuevamente en unos segundos.",
-      });
-      return;
-    }
-
-    if (!reservaPermitida) {
-      toast({
-        variant: "destructive",
-        title: "Stock insuficiente",
-        description: disponibilidadReserva.data
-          ? `Solo quedan ${disponibilidadReserva.data.stockDisponible} unidades disponibles para esas fechas.`
-          : "No hay stock suficiente para las fechas seleccionadas.",
+        title: "Fechas no disponibles",
+        description: `No hay stock suficiente para ese rango. Disponible: ${disponibilidadActual.stockDisponible}.`,
       });
       return;
     }
@@ -333,7 +325,7 @@ export function Home() {
         setReservaOpen(false);
         toast({
           title: "Reserva confirmada",
-          description: "Tu solicitud fue registrada correctamente. Te enviaremos la confirmación por correo.",
+          description: "Tu solicitud fue registrada correctamente. Te enviaremos la confirmaciÃ³n por correo.",
         });
       },
     });
@@ -372,7 +364,7 @@ export function Home() {
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" className="h-12 px-6 text-base shadow-lg transition-all duration-200 hover:-translate-y-0.5">
                 <Link href="/catalogo">
-                  Ver Catálogo <ArrowRight className="ml-2 h-5 w-5" />
+                  Ver CatÃ¡logo <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="h-12 bg-white/10 px-6 text-base text-white border-white/30 backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/20 hover:text-white">
@@ -401,11 +393,11 @@ export function Home() {
         <div className="container mx-auto px-4 md:px-8">
           <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <h2 className="text-3xl font-bold tracking-tight">Catálogo de Productos</h2>
+              <h2 className="text-3xl font-bold tracking-tight">CatÃ¡logo de Productos</h2>
             </div>
             <Button asChild variant="ghost" className="w-fit">
               <Link href="/catalogo">
-                Ver catálogo completo <ArrowRight className="ml-2 h-4 w-4" />
+                Ver catÃ¡logo completo <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </div>
@@ -425,16 +417,15 @@ export function Home() {
             </div>
           ) : isCatalogoError ? (
             <div className="rounded-lg border bg-white p-8 text-center text-muted-foreground">
-              No pudimos cargar el catálogo en este momento. Intenta nuevamente en unos segundos.
+              No pudimos cargar el catÃ¡logo en este momento. Intenta nuevamente en unos segundos.
             </div>
           ) : productosCatalogo.length === 0 ? (
             <div className="rounded-lg border bg-white p-8 text-center text-muted-foreground">
-              Aún no hay productos publicados en el catálogo.
+              AÃºn no hay productos publicados en el catÃ¡logo.
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
               {productosCatalogo.map((producto, index) => {
-              const agotado = (producto.cantidad ?? 0) <= 0;
               const tarifasDisponibles = getTarifasProducto(producto);
               const tarifa = getTarifaPrincipal(producto);
 
@@ -460,12 +451,6 @@ export function Home() {
 
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent opacity-90 transition-opacity duration-300 group-hover:opacity-75" />
 
-                    <div className="absolute left-3 top-3 transition-transform duration-300 group-hover:-translate-y-0.5">
-                      <Badge className={agotado ? "bg-destructive text-white shadow-sm" : "bg-white text-foreground shadow-sm hover:bg-white"}>
-                        {getDisponibilidadLabel(producto)}
-                      </Badge>
-                    </div>
-
                     <div className="absolute inset-x-3 bottom-3 grid grid-cols-2 gap-2 transition-transform duration-300 group-hover:-translate-y-1">
                       <Button asChild size="sm" variant="outline" className="gap-1.5 border-[#128C7E]/70 bg-white text-[#128C7E] shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#075E54] hover:bg-[#128C7E]/10 hover:text-[#075E54] hover:shadow-md">
                         <a href={buildWhatsAppUrl(producto)} target="_blank" rel="noreferrer">
@@ -478,7 +463,6 @@ export function Home() {
                         size="sm"
                         className="gap-1.5 bg-primary text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-md"
                         onClick={() => openReservaModal(producto)}
-                        disabled={agotado}
                       >
                         <ClipboardList className="h-4 w-4" />
                         Reservar
@@ -536,7 +520,7 @@ export function Home() {
               </div>
               <div>
                 <h3 className="mb-2 text-lg font-bold">Calidad Industrial</h3>
-                <p className="text-muted-foreground">Productos diseñados para resistir el uso intensivo y continuo.</p>
+                <p className="text-muted-foreground">Productos diseÃ±ados para resistir el uso intensivo y continuo.</p>
               </div>
             </div>
             <div className="flex gap-4">
@@ -544,8 +528,8 @@ export function Home() {
                 <Package className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h3 className="mb-2 text-lg font-bold">Inventario Visible</h3>
-                <p className="text-muted-foreground">Consulta unidades disponibles antes de solicitar o reservar.</p>
+                <h3 className="mb-2 text-lg font-bold">Reservas Flexibles</h3>
+                <p className="text-muted-foreground">Solicita equipos sin fricciones y recibe confirmaciÃ³n por correo.</p>
               </div>
             </div>
             <div className="flex gap-4">
@@ -553,8 +537,8 @@ export function Home() {
                 <Clock className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h3 className="mb-2 text-lg font-bold">Atención Rápida</h3>
-                <p className="text-muted-foreground">Contacta por WhatsApp o envía la reserva con los datos completos.</p>
+                <h3 className="mb-2 text-lg font-bold">AtenciÃ³n RÃ¡pida</h3>
+                <p className="text-muted-foreground">Contacta por WhatsApp o envÃ­a la reserva con los datos completos.</p>
               </div>
             </div>
           </div>
@@ -564,16 +548,16 @@ export function Home() {
       {/* CTA Section */}
       <section className="bg-primary py-16 text-white">
         <div className="container mx-auto max-w-4xl px-4 text-center md:px-8">
-          <h2 className="mb-4 text-3xl font-bold md:text-4xl">¿Necesita un pedido especial o a granel?</h2>
+          <h2 className="mb-4 text-3xl font-bold md:text-4xl">Â¿Necesita un pedido especial o a granel?</h2>
           <p className="mx-auto mb-10 max-w-3xl text-lg leading-relaxed text-primary-foreground/90 md:text-xl">
-            Nuestro equipo está preparado para atender las necesidades específicas de su operación.
+            Nuestro equipo estÃ¡ preparado para atender las necesidades especÃ­ficas de su operaciÃ³n.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button asChild size="lg" variant="secondary" className="h-14 min-w-[240px] px-8 text-base text-primary">
               <Link href="/contacto">Contactar a Ventas</Link>
             </Button>
             <Button asChild size="lg" className="h-14 min-w-[220px] border-0 bg-black px-8 text-base text-white hover:bg-zinc-800">
-              <Link href="/catalogo">Ver más equipos</Link>
+              <Link href="/catalogo">Ver mÃ¡s equipos</Link>
             </Button>
           </div>
         </div>
@@ -584,7 +568,7 @@ export function Home() {
           <DialogHeader>
             <DialogTitle>Datos de reserva</DialogTitle>
             <DialogDescription>
-              Completa los datos y confirma tu reserva. La solicitud quedará registrada y recibirás la confirmación por correo.
+              Completa los datos y confirma tu reserva. La solicitud quedarÃ¡ registrada y recibirÃ¡s la confirmaciÃ³n por correo.
             </DialogDescription>
           </DialogHeader>
 
@@ -618,7 +602,6 @@ export function Home() {
                       </span>
                     ))}
                   </div>
-                  <div className="mt-2 text-sm text-muted-foreground">{getDisponibilidadLabel(selectedProduct)}</div>
                 </div>
               </div>
 
@@ -634,7 +617,7 @@ export function Home() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium" htmlFor="home-reserva-telefono">Teléfono</label>
+                  <label className="text-sm font-medium" htmlFor="home-reserva-telefono">TelÃ©fono</label>
                   <Input
                     id="home-reserva-telefono"
                     value={reservaForm.cliente_telefono}
@@ -644,7 +627,7 @@ export function Home() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium" htmlFor="home-reserva-email">Correo electrónico</label>
+                  <label className="text-sm font-medium" htmlFor="home-reserva-email">Correo electrÃ³nico</label>
                   <Input
                     id="home-reserva-email"
                     type="email"
@@ -660,8 +643,7 @@ export function Home() {
                     id="home-reserva-cantidad"
                     type="number"
                     min="1"
-                    max={selectedProduct.cantidad || undefined}
-                    value={reservaForm.cantidad}
+                                        value={reservaForm.cantidad}
                     onChange={(event) => setReservaForm((current) => ({ ...current, cantidad: event.target.value }))}
                     required
                   />
@@ -692,7 +674,7 @@ export function Home() {
                 {tarifaSeleccionada?.tipo !== "dia" && (
                   <div className="space-y-2">
                     <label className="text-sm font-medium" htmlFor="home-reserva-unidades">
-                      {tarifaSeleccionada?.plural ?? "Períodos"}
+                      {tarifaSeleccionada?.plural ?? "PerÃ­odos"}
                     </label>
                     <Input
                       id="home-reserva-unidades"
@@ -715,7 +697,7 @@ export function Home() {
                     }));
                   }}
                   minDate={todayDate}
-                  productId={selectedProduct?.id ?? null}
+                  blockedDates={fechasBloqueadas}
                 />
                 {tarifaSeleccionada?.tipo === "dia" && (
                 <ReservationDatePicker
@@ -723,29 +705,22 @@ export function Home() {
                   value={reservaForm.fecha_fin}
                   onChange={(fecha_fin) => setReservaForm((current) => ({ ...current, fecha_fin }))}
                   minDate={reservaForm.fecha_inicio || todayDate}
-                  productId={selectedProduct?.id ?? null}
+                  blockedDates={fechasBloqueadas}
                 />
                 )}
+                {disponibilidadActual && !disponibilidadActual.permitido ? (
+                  <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive sm:col-span-2">
+                    No hay stock suficiente para esas fechas. Disponible: {disponibilidadActual.stockDisponible}.
+                  </div>
+                ) : null}
                 <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary sm:col-span-2">
-                  Reserva por {diasReserva} día{diasReserva === 1 ? "" : "s"}.
+                  Reserva por {diasReserva} dÃ­a{diasReserva === 1 ? "" : "s"}.
                   {tarifaSeleccionada && (
                     <span className="block text-foreground">
                       Estimado: {formatCurrency(totalEstimado)} ({unidadesTarifa} {unidadesTarifa === 1 ? tarifaSeleccionada.suffix : tarifaSeleccionada.plural})
                     </span>
                   )}
                 </div>
-                {selectedProduct && (
-                  <div className={`rounded-md border px-4 py-3 text-sm sm:col-span-2 ${
-                    reservaPermitida ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"
-                  }`}>
-                    <div className="font-semibold">
-                      {reservaPermitida ? "Stock disponible para estas fechas." : "Stock insuficiente para estas fechas."}
-                    </div>
-                    <div className="mt-1 text-xs">
-                      Disponibles: {stockDisponiblePorFecha} · Comprometidas: {disponibilidadReserva.data?.stockComprometido ?? 0} · Solicitadas: {cantidadSolicitada}
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div className="space-y-2">
@@ -754,7 +729,7 @@ export function Home() {
                   id="home-reserva-notas"
                   value={reservaForm.notas}
                   onChange={(event) => setReservaForm((current) => ({ ...current, notas: event.target.value }))}
-                  placeholder="Ubicación del trabajo, horario o cualquier detalle adicional."
+                  placeholder="UbicaciÃ³n del trabajo, horario o cualquier detalle adicional."
                   className="min-h-24"
                 />
               </div>
@@ -766,9 +741,9 @@ export function Home() {
                     Consultar por WhatsApp
                   </a>
                 </Button>
-                <Button type="submit" className="gap-2" disabled={reservaMutation.isPending || !reservaPermitida || disponibilidadReserva.isFetching}>
+                <Button type="submit" className="gap-2" disabled={reservaMutation.isPending || disponibilidadReserva.isFetching}>
                   <ClipboardList className="h-4 w-4" />
-                  {reservaMutation.isPending ? "Confirmando..." : "Confirmar reserva"}
+                  {reservaMutation.isPending || disponibilidadReserva.isFetching ? "Validando..." : "Confirmar reserva"}
                 </Button>
               </div>
             </form>
@@ -778,5 +753,7 @@ export function Home() {
     </div>
   );
 }
+
+
 
 

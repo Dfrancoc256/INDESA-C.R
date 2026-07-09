@@ -8,10 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Filter, Phone, Mail, FileText, CheckCircle, Truck, XCircle, Clock, Plus } from "lucide-react";
+import { Search, Filter, Phone, Mail, CheckCircle, Truck, XCircle, Clock, Plus, Eye, PencilLine, MoreHorizontal } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useReservaDisponibilidad } from "@/hooks/use-reserva-disponibilidad";
+import { useReservaCalendarioDisponibilidad } from "@/hooks/use-reserva-calendario-disponibilidad";
 import { ReservationDatePicker } from "@/components/reservation-date-picker";
+import { getFriendlyApiErrorMessage } from "@/lib/apiErrorMessage";
 import { useQueryClient } from "@tanstack/react-query";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -22,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { hasPermission } from "@/lib/permissions";
 import { errorMessages } from "@/lib/errorMessages";
 import { calcularUnidadesTarifa, getTarifaPrincipal, getTarifasProducto } from "@/lib/utils";
+import { apiFetch } from "@/lib/apiFetch";
 
 function formatDateOnly(value?: string | Date | null) {
   if (!value) return "Sin fecha";
@@ -36,6 +39,13 @@ function formatDateOnly(value?: string | Date | null) {
 function onlyDigits(value: string) {
   return value.replace(/\D/g, "");
 }
+
+const todayDate = new Date().toISOString().slice(0, 10);
+const calendarLimitDate = (() => {
+  const date = new Date(`${todayDate}T00:00:00`);
+  date.setMonth(date.getMonth() + 6);
+  return date.toISOString().slice(0, 10);
+})();
 
 export function Reservas() {
   const { usuario } = useAuth();
@@ -54,6 +64,14 @@ export function Reservas() {
   const [nuevoEstado, setNuevoEstado] = useState<any>(null);
   const [isAgregarOpen, setIsAgregarOpen] = useState(false);
   const [agregarError, setAgregarError] = useState("");
+  const [isEditarOpen, setIsEditarOpen] = useState(false);
+  const [reservaEditando, setReservaEditando] = useState<any>(null);
+  const [editarError, setEditarError] = useState("");
+  const [editarForm, setEditarForm] = useState({
+    precio_unitario: "",
+    descuento: "",
+    notas: "",
+  });
   const [agregarForm, setAgregarForm] = useState({
     cliente_nombre: "",
     cliente_email: "",
@@ -64,11 +82,14 @@ export function Reservas() {
     fecha_fin: "",
     tipo_tarifa: "dia",
     unidades_tarifa: "1",
+    precio_unitario: "",
+    descuento: "",
     notas: "",
   });
   const canEditReservas = hasPermission(usuario, "reservas.editar");
   const canChangeEstadoReservas = hasPermission(usuario, "reservas.cambiar_estado");
-  const reservasColSpan = canChangeEstadoReservas ? 6 : 5;
+  const esAdmin = usuario?.rol?.nombre === "admin";
+  const reservasColSpan = 6;
 
   const { data: productosResponse } = useListProductos({ page: 1, limit: 100, orden: "nombre_asc" } as any);
   const productosDisponibles = useMemo(() => productosResponse?.data ?? [], [productosResponse]);
@@ -87,20 +108,25 @@ export function Reservas() {
   const fechaInicioAgregar = agregarForm.fecha_inicio;
   const fechaFinAgregar = agregarForm.fecha_fin;
   const cantidadAgregarSolicitada = Number(agregarForm.cantidad || 1);
+  const calendarioAgregar = useReservaCalendarioDisponibilidad({
+    productoId: productoAgregar?.id,
+    desde: todayDate,
+    hasta: calendarLimitDate,
+  });
   const disponibilidadAgregar = useReservaDisponibilidad({
-    productoId: productoAgregar?.id ?? null,
-    fechaInicio: fechaInicioAgregar || null,
-    fechaFin: fechaFinAgregar || null,
+    productoId: productoAgregar?.id,
+    fechaInicio: fechaInicioAgregar,
+    fechaFin: fechaFinAgregar,
     cantidad: cantidadAgregarSolicitada,
   });
-  const stockDisponibleAgregar = disponibilidadAgregar.data?.stockDisponible ?? (productoAgregar?.cantidad ?? 0);
-  const reservaAgregarPermitida = disponibilidadAgregar.data?.permitido ?? ((productoAgregar?.cantidad ?? 0) >= cantidadAgregarSolicitada);
+  const fechasBloqueadasAgregar = calendarioAgregar.data?.fechasBloqueadas ?? [];
+  const disponibilidadAgregarActual = disponibilidadAgregar.data;
 
   const createReservaMutation = useCreateReserva({
     mutation: {
       onSuccess: async () => {
         setAgregarError("");
-        toast({ title: "Reserva agregada", description: "La reserva manual se registró correctamente." });
+        toast({ title: "Reserva agregada", description: "La reserva manual se registrÃ³ correctamente." });
         await invalidateCatalogData(queryClient);
         await refetch();
         setIsAgregarOpen(false);
@@ -114,14 +140,15 @@ export function Reservas() {
           fecha_fin: "",
           tipo_tarifa: "dia",
           unidades_tarifa: "1",
+          precio_unitario: "",
+          descuento: "",
           notas: "",
         });
       },
       onError: (err: any) => {
         const friendlyMessage =
           err?.response?.data?.message ||
-          err?.message ||
-          errorMessages.createReservation;
+          getFriendlyApiErrorMessage(err, errorMessages.createReservation);
         setAgregarError(friendlyMessage);
         toast({
           variant: "destructive",
@@ -178,14 +205,14 @@ export function Reservas() {
   const estadoMutation = useUpdateReservaEstado({
     mutation: {
       onSuccess: async () => {
-        toast({ title: "Estado actualizado", description: "La reserva se actualizó correctamente." });
+        toast({ title: "Estado actualizado", description: "La reserva se actualizÃ³ correctamente." });
         await invalidateCatalogData(queryClient);
         await refetch();
         setIsNotaOpen(false);
         setNotaEstado("");
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "No fue posible actualizar la reserva", description: err?.message || errorMessages.updateReservation });
+        toast({ variant: "destructive", title: "No fue posible actualizar la reserva", description: getFriendlyApiErrorMessage(err, errorMessages.updateReservation) });
       }
     }
   });
@@ -218,6 +245,16 @@ export function Reservas() {
   };
 
   const resetAgregarForm = () => {
+    if (esAdmin && agregarForm.precio_unitario.trim() !== "") {
+      const precioIngresado = Number(agregarForm.precio_unitario);
+      if (!Number.isFinite(precioIngresado) || precioIngresado < 0) {
+        const message = "Ingresa un precio especial válido para esta reserva.";
+        setAgregarError(message);
+        toast({ variant: "destructive", title: "Precio inválido", description: message });
+        return;
+      }
+    }
+
     setAgregarError("");
     setAgregarForm({
       cliente_nombre: "",
@@ -229,11 +266,13 @@ export function Reservas() {
       fecha_fin: "",
       tipo_tarifa: "dia",
       unidades_tarifa: "1",
+      precio_unitario: "",
+      descuento: "",
       notas: "",
     });
   };
 
-  const setNumericField = (field: "cliente_telefono" | "cantidad" | "unidades_tarifa", value: string) => {
+  const setNumericField = (field: "cliente_telefono" | "cantidad" | "unidades_tarifa" | "precio_unitario" | "descuento", value: string) => {
     setAgregarForm((prev) => ({ ...prev, [field]: onlyDigits(value) }));
   };
 
@@ -248,46 +287,47 @@ export function Reservas() {
     const unidadesTarifa = Number(agregarForm.unidades_tarifa || 1);
 
     if (!productoId || !clienteNombre || !clienteEmail || !clienteTelefono || !fechaInicio || !fechaFin) {
-      const message = "Completa cliente, producto, teléfono, fechas y correo antes de guardar.";
+      const message = "Completa cliente, producto, telÃ©fono, fechas y correo antes de guardar.";
       setAgregarError(message);
       toast({ variant: "destructive", title: "Faltan datos", description: message });
       return;
     }
 
     if (Number.isNaN(productoId) || Number.isNaN(cantidadSolicitada) || cantidadSolicitada < 1 || Number.isNaN(unidadesTarifa) || unidadesTarifa < 1) {
-      const message = "La cantidad y las unidades de tarifa deben ser números válidos mayores a cero.";
+      const message = "La cantidad y las unidades de tarifa deben ser nÃºmeros vÃ¡lidos mayores a cero.";
       setAgregarError(message);
-      toast({ variant: "destructive", title: "Datos inválidos", description: message });
+      toast({ variant: "destructive", title: "Datos invÃ¡lidos", description: message });
       return;
     }
 
     if (new Date(`${fechaFin}T00:00:00`).getTime() < new Date(`${fechaInicio}T00:00:00`).getTime()) {
       const message = "La fecha final no puede ser anterior a la fecha de inicio.";
       setAgregarError(message);
-      toast({ variant: "destructive", title: "Fechas inválidas", description: message });
+      toast({ variant: "destructive", title: "Fechas invÃ¡lidas", description: message });
       return;
     }
 
-    if (disponibilidadAgregar.isFetching) {
-      const message = "Estamos comprobando el stock para las fechas seleccionadas. Intenta nuevamente en unos segundos.";
+    if (disponibilidadAgregarActual && !disponibilidadAgregarActual.permitido) {
+      const message = `No hay stock suficiente para ese rango. Disponible: ${disponibilidadAgregarActual.stockDisponible}.`;
       setAgregarError(message);
-      toast({ variant: "destructive", title: "Validando disponibilidad", description: message });
-      return;
-    }
-
-    if (!reservaAgregarPermitida) {
-      const message = disponibilidadAgregar.data
-        ? `Solo quedan ${disponibilidadAgregar.data.stockDisponible} unidades disponibles para esas fechas.`
-        : "No hay stock suficiente para las fechas seleccionadas.";
-      setAgregarError(message);
-      toast({ variant: "destructive", title: "Stock insuficiente", description: message });
+      toast({ variant: "destructive", title: "Fechas no disponibles", description: message });
       return;
     }
 
     setAgregarError("");
     const unidadesCalculadas = calcularUnidadesTarifa(agregarForm.tipo_tarifa, fechaInicio, fechaFin, unidadesTarifa);
-    const precioUnitario = tarifaAgregarSeleccionada?.value ?? 0;
-    const totalCalculado = Number(cantidadSolicitada || 1) * unidadesCalculadas * precioUnitario;
+    const precioManual = agregarForm.precio_unitario.trim();
+    const tienePrecioEspecial = esAdmin && precioManual !== "";
+    const precioUnitarioBase = Number(tienePrecioEspecial ? precioManual : (tarifaAgregarSeleccionada?.value ?? 0));
+    const descuento = esAdmin ? Number(agregarForm.descuento || 0) : 0;
+    if (!Number.isFinite(descuento) || descuento < 0) {
+      const message = "Ingresa un descuento válido para esta reserva.";
+      setAgregarError(message);
+      toast({ variant: "destructive", title: "Descuento inválido", description: message });
+      return;
+    }
+
+    const totalCalculado = Math.max(0, (Number(cantidadSolicitada || 1) * unidadesCalculadas * precioUnitarioBase) - descuento);
 
     createReservaMutation.mutate({
       data: {
@@ -309,8 +349,13 @@ export function Reservas() {
         unidadesTarifa: unidadesCalculadas,
         unidades_tarifa: unidadesCalculadas,
         notas: agregarForm.notas?.trim() || undefined,
-        precio_unitario: precioUnitario,
-        total_estimado: totalCalculado,
+        ...(esAdmin ? {
+          precioUnitario: precioUnitarioBase,
+          precio_unitario: precioUnitarioBase,
+          descuento,
+          totalEstimado: totalCalculado,
+          total_estimado: totalCalculado,
+        } : {}),
         estado: "pendiente",
       } as any,
     });
@@ -319,7 +364,77 @@ export function Reservas() {
   const diasAgregar = agregarForm.fecha_inicio && agregarForm.fecha_fin
     ? Math.max(1, Math.ceil((new Date(`${agregarForm.fecha_fin}T00:00:00`).getTime() - new Date(`${agregarForm.fecha_inicio}T00:00:00`).getTime()) / 86400000) + 1)
     : 1;
-  const totalAgregar = Number(agregarForm.cantidad || 1) * Number(agregarForm.unidades_tarifa || 1) * (tarifaAgregarSeleccionada?.value ?? 0);
+  const precioAgregarVista = esAdmin && agregarForm.precio_unitario.trim() !== ""
+    ? Number(agregarForm.precio_unitario)
+    : (tarifaAgregarSeleccionada?.value ?? 0);
+  const unidadesAgregarVista = calcularUnidadesTarifa(
+    agregarForm.tipo_tarifa,
+    agregarForm.fecha_inicio,
+    agregarForm.fecha_fin,
+    Number(agregarForm.unidades_tarifa || 1)
+  );
+  const descuentoAgregarVista = esAdmin ? Number(agregarForm.descuento || 0) : 0;
+  const totalAgregar = Math.max(0, (Number(agregarForm.cantidad || 1) * unidadesAgregarVista * precioAgregarVista) - descuentoAgregarVista);
+
+  const abrirEdicionReserva = (reserva: any) => {
+    setReservaEditando(reserva);
+    setEditarError("");
+    setEditarForm({
+      precio_unitario: String(reserva.precio_unitario ?? ""),
+      descuento: String(reserva.descuento ?? 0),
+      notas: reserva.notas ?? "",
+    });
+    setIsEditarOpen(true);
+  };
+
+  const guardarEdicionReserva = async () => {
+    if (!reservaEditando) return;
+
+    const precioUnitario = editarForm.precio_unitario.trim();
+    if (precioUnitario === "" || Number.isNaN(Number(precioUnitario)) || Number(precioUnitario) < 0) {
+      const message = "Ingresa un precio válido para la reserva.";
+      setEditarError(message);
+      toast({ variant: "destructive", title: "Precio inválido", description: message });
+      return;
+    }
+    const descuento = Number(editarForm.descuento || 0);
+    if (!Number.isFinite(descuento) || descuento < 0) {
+      const message = "Ingresa un descuento válido para la reserva.";
+      setEditarError(message);
+      toast({ variant: "destructive", title: "Descuento inválido", description: message });
+      return;
+    }
+
+    try {
+      const response = await apiFetch(`/api/reservas/${reservaEditando.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          precioUnitario: Number(precioUnitario),
+          descuento,
+          notas: editarForm.notas?.trim() || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? "No fue posible actualizar la reserva");
+      }
+
+      toast({ title: "Reserva actualizada", description: "El precio, descuento y notas se guardaron correctamente." });
+      await invalidateCatalogData(queryClient);
+      await refetch();
+      setIsEditarOpen(false);
+      setReservaEditando(null);
+    } catch (error: any) {
+      const friendlyMessage = getFriendlyApiErrorMessage(error, errorMessages.updateReservation);
+      setEditarError(friendlyMessage);
+      toast({
+        variant: "destructive",
+        title: "No fue posible actualizar la reserva",
+        description: friendlyMessage,
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -384,7 +499,7 @@ export function Reservas() {
                 <TableHead>Cliente</TableHead>
                 <TableHead>Producto</TableHead>
                 <TableHead>Estado</TableHead>
-                    {canChangeEstadoReservas && <TableHead className="text-right">Acciones</TableHead>}
+                <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -396,7 +511,13 @@ export function Reservas() {
                     <TableCell><Skeleton className="h-4 w-32" /><Skeleton className="h-3 w-24 mt-1" /></TableCell>
                     <TableCell><Skeleton className="h-4 w-40" /><Skeleton className="h-3 w-16 mt-1" /></TableCell>
                     <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
-                    {canChangeEstadoReservas && <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>}
+                    <TableCell className="text-right">
+                      <div className="ml-auto flex justify-end gap-1.5">
+                        <Skeleton className="h-9 w-9 rounded-md" />
+                        {esAdmin && <Skeleton className="h-9 w-9 rounded-md" />}
+                        {canChangeEstadoReservas && <Skeleton className="h-9 w-9 rounded-md" />}
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))
               ) : reservasFiltradas?.length === 0 ? (
@@ -423,10 +544,10 @@ export function Reservas() {
                     <TableCell>
                       <div className="font-medium text-sm truncate max-w-[250px]">{reserva.producto_nombre}</div>
                       <div className="text-xs text-muted-foreground">
-                        Cant: {reserva.cantidad} unid. · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
+                        Cant: {reserva.cantidad} unid. Â· {reserva.dias_reserva ?? 1} dÃ­a{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
                       </div>
                       <div className="text-xs font-medium text-primary">
-                        {reserva.tipo_tarifa ?? "dia"} x {reserva.unidades_tarifa ?? reserva.dias_reserva ?? 1} · {formatCurrency(reserva.total_estimado ?? 0)}
+                        {reserva.tipo_tarifa ?? "dia"} x {reserva.unidades_tarifa ?? reserva.dias_reserva ?? 1} Â· {formatCurrency(reserva.total_estimado ?? 0)}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {formatDateOnly(reserva.fecha_inicio)} - {formatDateOnly(reserva.fecha_fin)}
@@ -435,19 +556,31 @@ export function Reservas() {
                     <TableCell>
                       <EstadoBadge estado={reserva.estado} />
                     </TableCell>
-                    {canChangeEstadoReservas && (
-                      <TableCell className="text-right">
-                        <div className="flex justify-end items-center gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => verDetalle(reserva)}>
-                            Ver Detalle
+                    <TableCell className="text-right">
+                      <div className="flex justify-end items-center gap-1.5">
+                        <Button variant="ghost" size="icon" onClick={() => verDetalle(reserva)} aria-label="Ver detalle">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {esAdmin && (
+                          <Button variant="ghost" size="icon" onClick={() => abrirEdicionReserva(reserva)} aria-label="Editar reserva">
+                            <PencilLine className="h-4 w-4" />
                           </Button>
+                        )}
+                        {canChangeEstadoReservas && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="outline" size="sm" disabled={reserva.estado === 'entregada' || reserva.estado === 'cancelada'}>
-                                Cambiar Estado
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                disabled={reserva.estado === 'entregada' || reserva.estado === 'cancelada'}
+                                aria-label="Cambiar estado"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuLabel>Cambiar estado</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
                               {reserva.estado === 'pendiente' && (
                                 <>
                                   <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, 'confirmada')}>
@@ -461,7 +594,7 @@ export function Reservas() {
                               {reserva.estado === 'confirmada' && (
                                 <>
                                   <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, 'entregada')}>
-                                    <Truck className="mr-2 h-4 w-4 text-success" /> Marcar Entregada
+                                    <Truck className="mr-2 h-4 w-4 text-success" /> Marcar entregada
                                   </DropdownMenuItem>
                                   <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, 'cancelada', true)}>
                                     <XCircle className="mr-2 h-4 w-4 text-destructive" /> Cancelar
@@ -470,9 +603,9 @@ export function Reservas() {
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
-                        </div>
-                      </TableCell>
-                    )}
+                        )}
+                      </div>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -519,7 +652,7 @@ export function Reservas() {
           <DialogHeader>
             <DialogTitle>Agregar reserva manual</DialogTitle>
             <DialogDescription>
-              Registra un apartado directamente desde administración.
+              Registra un apartado directamente desde administraciÃ³n.
             </DialogDescription>
           </DialogHeader>
 
@@ -550,7 +683,7 @@ export function Reservas() {
               Usar fecha de hoy
             </Button>
             <div className="ml-auto text-xs text-muted-foreground">
-              Los campos numéricos aceptan solo números.
+              Los campos numÃ©ricos aceptan solo nÃºmeros.
             </div>
           </div>
 
@@ -566,12 +699,12 @@ export function Reservas() {
               <Input
                 value={agregarForm.cliente_nombre}
                 onChange={(e) => setAgregarForm((prev) => ({ ...prev, cliente_nombre: e.target.value }))}
-                placeholder="Nombre o razón social"
+                placeholder="Nombre o razÃ³n social"
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Correo electrónico</Label>
+              <Label>Correo electrÃ³nico</Label>
               <Input
                 type="email"
                 value={agregarForm.cliente_email}
@@ -581,11 +714,11 @@ export function Reservas() {
             </div>
 
             <div className="space-y-2">
-              <Label>Teléfono</Label>
+              <Label>TelÃ©fono</Label>
               <Input
                 value={agregarForm.cliente_telefono}
                 onChange={(e) => setNumericField("cliente_telefono", e.target.value)}
-                placeholder="Solo números"
+                placeholder="Solo nÃºmeros"
                 inputMode="numeric"
                 pattern="[0-9]*"
               />
@@ -595,7 +728,7 @@ export function Reservas() {
               <Label>Producto</Label>
               <Select
                 value={agregarForm.producto_id}
-                onValueChange={(value) => setAgregarForm((prev) => ({ ...prev, producto_id: value }))}
+                onValueChange={(value) => setAgregarForm((prev) => ({ ...prev, producto_id: value, precio_unitario: "", descuento: "" }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Seleccione un producto" />
@@ -632,7 +765,7 @@ export function Reservas() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="dia">Día</SelectItem>
+                  <SelectItem value="dia">DÃ­a</SelectItem>
                   <SelectItem value="semana">Semana</SelectItem>
                   <SelectItem value="mes">Mes</SelectItem>
                   <SelectItem value="base">Base</SelectItem>
@@ -646,8 +779,8 @@ export function Reservas() {
                 label=""
                 value={agregarForm.fecha_inicio}
                 onChange={(value) => setAgregarForm((prev) => ({ ...prev, fecha_inicio: value }))}
-                minDate={new Date().toISOString().slice(0, 10)}
-                productId={productoAgregar?.id ?? null}
+                minDate={todayDate}
+                blockedDates={fechasBloqueadasAgregar}
               />
             </div>
 
@@ -657,8 +790,8 @@ export function Reservas() {
                 label=""
                 value={agregarForm.fecha_fin}
                 onChange={(value) => setAgregarForm((prev) => ({ ...prev, fecha_fin: value }))}
-                minDate={agregarForm.fecha_inicio || new Date().toISOString().slice(0, 10)}
-                productId={productoAgregar?.id ?? null}
+                minDate={agregarForm.fecha_inicio || todayDate}
+                blockedDates={fechasBloqueadasAgregar}
               />
             </div>
 
@@ -674,6 +807,45 @@ export function Reservas() {
               />
             </div>
 
+            {esAdmin && (
+              <>
+                <div className="space-y-2">
+                  <Label>Precio unitario especial</Label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*"
+                    value={agregarForm.precio_unitario}
+                    onChange={(e) => {
+                      const numeric = e.target.value.replace(/[^\d.]/g, "");
+                      setAgregarForm((prev) => ({ ...prev, precio_unitario: numeric }));
+                    }}
+                    placeholder="Opcional para precio interno"
+                  />
+                  <div className="text-xs text-muted-foreground">
+                    Solo el administrador puede ajustar este valor.
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Descuento</Label>
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    pattern="[0-9]*"
+                    value={agregarForm.descuento}
+                    onChange={(e) => {
+                      const numeric = e.target.value.replace(/[^\d.]/g, "");
+                      setAgregarForm((prev) => ({ ...prev, descuento: numeric }));
+                    }}
+                    placeholder="0.00"
+                  />
+                  <div className="text-xs text-muted-foreground">
+                    Se resta del total estimado y queda registrado en el reporte.
+                  </div>
+                </div>
+              </>
+            )}
+
             <div className="space-y-2 md:col-span-2">
               <Label>Notas</Label>
               <Textarea
@@ -687,22 +859,19 @@ export function Reservas() {
           <div className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
             <div className="mb-2 flex items-center gap-2 text-xs font-medium uppercase tracking-wide">
               <span className="rounded-full bg-primary/10 px-2 py-1 text-primary">Vista previa</span>
-              <span>La reserva se guardará con los datos ingresados</span>
+              <span>La reserva se guardarÃ¡ con los datos ingresados</span>
             </div>
+            {esAdmin && (
+              <div>Descuento: <span className="font-semibold text-foreground">{formatCurrency(descuentoAgregarVista || 0)}</span></div>
+            )}
             <div>Total estimado: <span className="font-semibold text-foreground">{formatCurrency(totalAgregar)}</span></div>
-            <div>Días aproximados: <span className="font-semibold text-foreground">{diasAgregar}</span></div>
+            <div>DÃ­as aproximados: <span className="font-semibold text-foreground">{diasAgregar}</span></div>
           </div>
-
-          <div className={`rounded-md border px-4 py-3 text-sm ${
-            reservaAgregarPermitida ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-amber-200 bg-amber-50 text-amber-800"
-          }`}>
-            <div className="font-semibold">
-              {reservaAgregarPermitida ? "Stock disponible para estas fechas." : "Stock insuficiente para estas fechas."}
+          {disponibilidadAgregarActual && !disponibilidadAgregarActual.permitido ? (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm font-medium text-destructive">
+              No hay stock suficiente para esas fechas. Disponible: {disponibilidadAgregarActual.stockDisponible}.
             </div>
-            <div className="mt-1 text-xs">
-              Disponibles: {stockDisponibleAgregar} · Comprometidas: {disponibilidadAgregar.data?.stockComprometido ?? 0} · Solicitadas: {cantidadAgregarSolicitada}
-            </div>
-          </div>
+          ) : null}
 
           <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Button
@@ -719,10 +888,10 @@ export function Reservas() {
             <Button
               type="button"
               onClick={handleGuardarReservaManual}
-              disabled={createReservaMutation.isPending || !reservaAgregarPermitida || disponibilidadAgregar.isFetching}
+              disabled={createReservaMutation.isPending || disponibilidadAgregar.isFetching}
               className="gap-2 w-full sm:w-auto"
             >
-              {createReservaMutation.isPending ? "Guardando..." : "Guardar reserva"}
+              {createReservaMutation.isPending || disponibilidadAgregar.isFetching ? "Validando..." : "Guardar reserva"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -750,12 +919,12 @@ export function Reservas() {
                     Cantidad solicitada: <span className="font-bold text-foreground">{reservaDetalle?.cantidad ?? reservaSeleccionada.cantidad} unidades</span>
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    Período: <span className="font-bold text-foreground">
+                    PerÃ­odo: <span className="font-bold text-foreground">
                       {formatDateOnly(reservaDetalle?.fecha_inicio ?? reservaSeleccionada.fecha_inicio)} - {formatDateOnly(reservaDetalle?.fecha_fin ?? reservaSeleccionada.fecha_fin)}
                     </span>
                   </div>
                   <div className="text-sm text-muted-foreground mt-1">
-                    Días apartados: <span className="font-bold text-foreground">{reservaDetalle?.dias_reserva ?? reservaSeleccionada.dias_reserva ?? 1}</span>
+                    DÃ­as apartados: <span className="font-bold text-foreground">{reservaDetalle?.dias_reserva ?? reservaSeleccionada.dias_reserva ?? 1}</span>
                   </div>
                   <div className="mt-3 rounded-md border bg-white p-3 text-sm">
                     <div className="font-semibold text-foreground">Tarifa solicitada</div>
@@ -763,10 +932,13 @@ export function Reservas() {
                       Modalidad: <span className="font-bold text-foreground">{reservaDetalle?.tipo_tarifa ?? reservaSeleccionada.tipo_tarifa ?? "dia"}</span>
                     </div>
                     <div className="text-muted-foreground">
-                      Períodos: <span className="font-bold text-foreground">{reservaDetalle?.unidades_tarifa ?? reservaSeleccionada.unidades_tarifa ?? reservaDetalle?.dias_reserva ?? reservaSeleccionada.dias_reserva ?? 1}</span>
+                      PerÃ­odos: <span className="font-bold text-foreground">{reservaDetalle?.unidades_tarifa ?? reservaSeleccionada.unidades_tarifa ?? reservaDetalle?.dias_reserva ?? reservaSeleccionada.dias_reserva ?? 1}</span>
                     </div>
                     <div className="text-muted-foreground">
                       Precio unitario: <span className="font-bold text-foreground">{formatCurrency(reservaDetalle?.precio_unitario ?? reservaSeleccionada.precio_unitario ?? 0)}</span>
+                    </div>
+                    <div className="text-muted-foreground">
+                      Descuento: <span className="font-bold text-foreground">{formatCurrency((reservaDetalle as any)?.descuento ?? reservaSeleccionada.descuento ?? 0)}</span>
                     </div>
                     <div className="text-muted-foreground">
                       Total estimado: <span className="font-bold text-primary">{formatCurrency(reservaDetalle?.total_estimado ?? reservaSeleccionada.total_estimado ?? 0)}</span>
@@ -784,7 +956,7 @@ export function Reservas() {
 
               <div className="space-y-4">
                 <div>
-                  <h3 className="font-semibold mb-3">Información del Cliente</h3>
+                  <h3 className="font-semibold mb-3">InformaciÃ³n del Cliente</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-start gap-2">
                       <div className="font-medium min-w-[80px]">Nombre:</div>
@@ -824,14 +996,120 @@ export function Reservas() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal para Nota de Estado (ej. Cancelación) */}
+      <Dialog
+        open={isEditarOpen}
+        onOpenChange={(open) => {
+          setIsEditarOpen(open);
+          if (!open) {
+            setReservaEditando(null);
+            setEditarError("");
+          }
+        }}
+      >
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Editar reserva</DialogTitle>
+            <DialogDescription>
+              Ajusta el precio interno y las notas de esta reserva.
+            </DialogDescription>
+          </DialogHeader>
+
+          {editarError && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {editarError}
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="rounded-md border bg-muted/30 p-3 text-sm">
+              <div className="font-medium">{reservaEditando?.producto_nombre}</div>
+              <div className="text-muted-foreground">
+                Cliente: {reservaEditando?.cliente_nombre} · ID #{String(reservaEditando?.id ?? "").padStart(5, "0")}
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Precio unitario</Label>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={editarForm.precio_unitario}
+                  onChange={(e) => {
+                    const numeric = e.target.value.replace(/[^\d.]/g, "");
+                    setEditarForm((prev) => ({ ...prev, precio_unitario: numeric }));
+                  }}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Descuento</Label>
+                <Input
+                  type="text"
+                  inputMode="decimal"
+                  value={editarForm.descuento}
+                  onChange={(e) => {
+                    const numeric = e.target.value.replace(/[^\d.]/g, "");
+                    setEditarForm((prev) => ({ ...prev, descuento: numeric }));
+                  }}
+                />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label>Total estimado</Label>
+                <Input
+                  value={formatCurrency(
+                    Math.max(0,
+                      (Number(editarForm.precio_unitario || reservaEditando?.precio_unitario || 0)
+                      * Number(reservaEditando?.cantidad ?? 1)
+                      * Number(reservaEditando?.unidades_tarifa ?? reservaEditando?.dias_reserva ?? 1))
+                      - Number(editarForm.descuento || 0)
+                    )
+                  )}
+                  disabled
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Notas</Label>
+              <Textarea
+                value={editarForm.notas}
+                onChange={(e) => setEditarForm((prev) => ({ ...prev, notas: e.target.value }))}
+                placeholder="Observaciones internas o acuerdos especiales"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsEditarOpen(false);
+                setReservaEditando(null);
+                setEditarError("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={guardarEdicionReserva}
+              disabled={!reservaEditando}
+            >
+              Guardar cambios
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para Nota de Estado (ej. CancelaciÃ³n) */}
       <Dialog open={isNotaOpen} onOpenChange={setIsNotaOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirmar Cambio de Estado</DialogTitle>
             <DialogDescription>
-              ¿Está seguro de cambiar el estado a <strong className="uppercase">{nuevoEstado?.estado}</strong>?
-              Puede añadir una nota explicando el motivo (opcional).
+              Â¿EstÃ¡ seguro de cambiar el estado a <strong className="uppercase">{nuevoEstado?.estado}</strong>?
+              Puede aÃ±adir una nota explicando el motivo (opcional).
             </DialogDescription>
           </DialogHeader>
           <div className="mt-4">
@@ -839,7 +1117,7 @@ export function Reservas() {
             <Textarea 
               value={notaEstado}
               onChange={(e) => setNotaEstado(e.target.value)}
-              placeholder="Ej. Cliente solicitó cancelación por teléfono..."
+              placeholder="Ej. Cliente solicitÃ³ cancelaciÃ³n por telÃ©fono..."
               className="resize-none"
             />
           </div>
@@ -892,3 +1170,4 @@ function EstadoBadge({ estado }: { estado: string }) {
     default: return <Badge variant="outline">{estado}</Badge>;
   }
 }
+

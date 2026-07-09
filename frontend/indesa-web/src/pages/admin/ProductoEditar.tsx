@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { ArrowLeft, Save, Image as ImageIcon, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { getFriendlyApiErrorMessage } from "@/lib/apiErrorMessage";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -65,7 +66,7 @@ export function ProductoEditar() {
       toast({
         variant: "destructive",
         title: "No fue posible cargar la imagen",
-        description: error instanceof Error ? error.message : errorMessages.generic,
+        description: getFriendlyApiErrorMessage(error, errorMessages.generic),
       });
     }
   };
@@ -111,7 +112,7 @@ export function ProductoEditar() {
         setLocation("/admin/productos");
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "No fue posible actualizar el producto", description: err?.message || errorMessages.updateProduct });
+        toast({ variant: "destructive", title: "No fue posible actualizar el producto", description: getFriendlyApiErrorMessage(err, errorMessages.updateProduct) });
       }
     }
   });
@@ -126,7 +127,7 @@ export function ProductoEditar() {
         setNuevaCategoria("");
       },
       onError: (err: any) => {
-        toast({ variant: "destructive", title: "No fue posible crear la categoría", description: err?.message || errorMessages.createCategory });
+        toast({ variant: "destructive", title: "No fue posible crear la categoría", description: getFriendlyApiErrorMessage(err, errorMessages.createCategory) });
       },
     },
   });

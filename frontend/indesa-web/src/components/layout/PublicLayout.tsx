@@ -276,7 +276,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <Button
                 asChild
                 size="icon"
-                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(255,40,0,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[rgba(255,40,0,0.10)] hover:text-[#FF2800] hover:shadow-[0_10px_22px_rgba(255,40,0,0.22)]"
+                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(255,40,0,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-[#FF2800] hover:shadow-[0_10px_22px_rgba(255,40,0,0.22)] focus-visible:ring-2 focus-visible:ring-white/70"
               >
                 <Link href="/admin/dashboard" aria-label="Abrir panel administrativo" title="Panel administrativo">
                   <LayoutDashboard className="h-5 w-5" />
@@ -287,7 +287,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <Button
                 asChild
                 size="icon"
-                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(255,40,0,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[rgba(255,40,0,0.10)] hover:text-[#FF2800] hover:shadow-[0_10px_22px_rgba(255,40,0,0.22)]"
+                className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(255,40,0,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-[#FF2800] hover:shadow-[0_10px_22px_rgba(255,40,0,0.22)] focus-visible:ring-2 focus-visible:ring-white/70"
               >
                 <Link href="/admin/login" aria-label="Acceder al administrador" title="Acceso administrador">
                   <LockKeyhole className="h-5 w-5" />
