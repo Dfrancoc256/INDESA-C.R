@@ -75,6 +75,10 @@ CREATE TABLE IF NOT EXISTS reservas (
   descuento NUMERIC(10, 2) NOT NULL DEFAULT 0,
   total_estimado NUMERIC(12, 2) NOT NULL DEFAULT 0,
   estado TEXT NOT NULL DEFAULT 'pendiente',
+  estado_pago TEXT NOT NULL DEFAULT 'pendiente',
+  fecha_pago TIMESTAMPTZ,
+  metodo_pago TEXT,
+  referencia_pago TEXT,
   notas TEXT,
   whatsapp_enviado BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -89,7 +93,11 @@ ALTER TABLE reservas
   ADD COLUMN IF NOT EXISTS unidades_tarifa INTEGER NOT NULL DEFAULT 1,
   ADD COLUMN IF NOT EXISTS precio_unitario NUMERIC(10, 2) NOT NULL DEFAULT 0,
   ADD COLUMN IF NOT EXISTS descuento NUMERIC(10, 2) NOT NULL DEFAULT 0,
-  ADD COLUMN IF NOT EXISTS total_estimado NUMERIC(12, 2) NOT NULL DEFAULT 0;
+  ADD COLUMN IF NOT EXISTS total_estimado NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS estado_pago TEXT NOT NULL DEFAULT 'pendiente',
+  ADD COLUMN IF NOT EXISTS fecha_pago TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS metodo_pago TEXT,
+  ADD COLUMN IF NOT EXISTS referencia_pago TEXT;
 
 CREATE TABLE IF NOT EXISTS movimientos_inventario (
   id SERIAL PRIMARY KEY,

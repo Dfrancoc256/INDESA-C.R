@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Filter, Phone, Mail, CheckCircle, Truck, XCircle, Clock, Plus, Eye, PencilLine, MoreHorizontal } from "lucide-react";
+import { Search, Filter, Phone, Mail, CheckCircle, Truck, XCircle, Clock, Plus, Eye, PencilLine, MoreHorizontal, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useReservaDisponibilidad } from "@/hooks/use-reserva-disponibilidad";
 import { useReservaCalendarioDisponibilidad } from "@/hooks/use-reserva-calendario-disponibilidad";
@@ -67,6 +67,13 @@ export function Reservas() {
   const [isEditarOpen, setIsEditarOpen] = useState(false);
   const [reservaEditando, setReservaEditando] = useState<any>(null);
   const [editarError, setEditarError] = useState("");
+  const [isPagoOpen, setIsPagoOpen] = useState(false);
+  const [reservaPago, setReservaPago] = useState<any>(null);
+  const [pagoError, setPagoError] = useState("");
+  const [pagoForm, setPagoForm] = useState({
+    metodo_pago: "",
+    referencia_pago: "",
+  });
   const [editarForm, setEditarForm] = useState({
     precio_unitario: "",
     descuento: "",
@@ -435,6 +442,50 @@ export function Reservas() {
     }
   };
 
+  const abrirConfirmacionPago = (reserva: any) => {
+    setReservaPago(reserva);
+    setPagoError("");
+    setPagoForm({
+      metodo_pago: reserva.metodo_pago ?? "",
+      referencia_pago: reserva.referencia_pago ?? "",
+    });
+    setIsPagoOpen(true);
+  };
+
+  const confirmarPagoReserva = async () => {
+    if (!reservaPago) return;
+
+    try {
+      const response = await apiFetch(`/api/reservas/${reservaPago.id}/pago`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          estado_pago: "pagada",
+          metodo_pago: pagoForm.metodo_pago.trim() || undefined,
+          referencia_pago: pagoForm.referencia_pago.trim() || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? "No fue posible confirmar el pago");
+      }
+
+      toast({ title: "Pago confirmado", description: "La reserva quedó marcada como pagada." });
+      await invalidateCatalogData(queryClient);
+      await refetch();
+      setIsPagoOpen(false);
+      setReservaPago(null);
+    } catch (error: any) {
+      const friendlyMessage = getFriendlyApiErrorMessage(error, "No fue posible confirmar el pago. Intenta nuevamente.");
+      setPagoError(friendlyMessage);
+      toast({
+        variant: "destructive",
+        title: "No fue posible confirmar el pago",
+        description: friendlyMessage,
+      });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col justify-between items-start gap-2 md:flex-row md:items-end">
@@ -553,7 +604,10 @@ export function Reservas() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <EstadoBadge estado={reserva.estado} />
+                      <div className="flex flex-col gap-2">
+                        <EstadoBadge estado={reserva.estado} />
+                        <PagoBadge estadoPago={(reserva as any).estado_pago ?? "pendiente"} />
+                      </div>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end items-center gap-1.5">
@@ -563,6 +617,11 @@ export function Reservas() {
                         {canEditReservas && (
                           <Button variant="ghost" size="icon" onClick={() => abrirEdicionReserva(reserva)} aria-label="Editar reserva">
                             <PencilLine className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {canChangeEstadoReservas && (reserva as any).estado_pago !== "pagada" && reserva.estado !== "cancelada" && (
+                          <Button variant="ghost" size="icon" onClick={() => abrirConfirmacionPago(reserva)} aria-label="Confirmar pago">
+                            <CreditCard className="h-4 w-4" />
                           </Button>
                         )}
                         {canChangeEstadoReservas && (
@@ -1101,6 +1160,69 @@ export function Reservas() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={isPagoOpen} onOpenChange={setIsPagoOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Confirmar pago</DialogTitle>
+            <DialogDescription>
+              Marca esta reserva como pagada para que aparezca en Finanzas y en el reporte de Excel.
+            </DialogDescription>
+          </DialogHeader>
+
+          {reservaPago && (
+            <div className="rounded-md border bg-muted/30 p-4 text-sm">
+              <div className="font-semibold">{reservaPago.cliente_nombre}</div>
+              <div className="text-muted-foreground">{reservaPago.producto_nombre}</div>
+              <div className="mt-2 text-lg font-bold text-primary">
+                {formatCurrency(reservaPago.total_estimado ?? 0)}
+              </div>
+            </div>
+          )}
+
+          {pagoError && (
+            <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {pagoError}
+            </div>
+          )}
+
+          <div className="grid gap-4">
+            <div className="space-y-2">
+              <Label>Método de pago</Label>
+              <Input
+                value={pagoForm.metodo_pago}
+                onChange={(e) => setPagoForm((prev) => ({ ...prev, metodo_pago: e.target.value }))}
+                placeholder="Ej. Transferencia, efectivo, cheque"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Referencia</Label>
+              <Input
+                value={pagoForm.referencia_pago}
+                onChange={(e) => setPagoForm((prev) => ({ ...prev, referencia_pago: e.target.value }))}
+                placeholder="Número de comprobante o comentario interno"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2 sm:justify-end">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setIsPagoOpen(false);
+                setReservaPago(null);
+                setPagoError("");
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button type="button" onClick={confirmarPagoReserva} disabled={!reservaPago}>
+              Confirmar pago
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Modal para Nota de Estado (ej. Cancelación) */}
       <Dialog open={isNotaOpen} onOpenChange={setIsNotaOpen}>
         <DialogContent>
@@ -1168,5 +1290,21 @@ function EstadoBadge({ estado }: { estado: string }) {
     case 'cancelada': return <Badge variant="destructive" className="flex items-center gap-1 w-fit"><XCircle className="h-3 w-3" /> Cancelada</Badge>;
     default: return <Badge variant="outline">{estado}</Badge>;
   }
+}
+
+function PagoBadge({ estadoPago }: { estadoPago: string }) {
+  if (estadoPago === "pagada") {
+    return (
+      <Badge variant="success" className="flex w-fit items-center gap-1">
+        <CreditCard className="h-3 w-3" /> Pagada
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge variant="outline" className="flex w-fit items-center gap-1">
+      <CreditCard className="h-3 w-3" /> Pago pendiente
+    </Badge>
+  );
 }
 

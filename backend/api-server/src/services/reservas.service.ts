@@ -488,6 +488,39 @@ export async function updateReserva(id: number, input: Partial<{
   return actualizado;
 }
 
+export async function updatePagoReserva(id: number, input: Partial<{
+  estadoPago: string;
+  estado_pago: string;
+  metodoPago: string;
+  metodo_pago: string;
+  referenciaPago: string;
+  referencia_pago: string;
+}>) {
+  const reserva = await repo.findReservaById(id);
+  if (!reserva) {
+    throw Object.assign(new Error("Reserva no encontrada"), { status: 404 });
+  }
+
+  const estadoPago = (input.estadoPago ?? input.estado_pago ?? "").trim().toLowerCase();
+  if (!["pendiente", "pagada"].includes(estadoPago)) {
+    throw Object.assign(new Error("Estado de pago inválido"), { status: 400 });
+  }
+
+  if (reserva.estado === "cancelada" && estadoPago === "pagada") {
+    throw Object.assign(new Error("No se puede marcar como pagada una reserva cancelada"), { status: 400 });
+  }
+
+  const actualizado = await repo.updateReservaPago(id, {
+    estadoPago,
+    fechaPago: estadoPago === "pagada" ? new Date() : null,
+    metodoPago: (input.metodoPago ?? input.metodo_pago ?? "").trim() || null,
+    referenciaPago: (input.referenciaPago ?? input.referencia_pago ?? "").trim() || null,
+  });
+
+  if (!actualizado) throw Object.assign(new Error("Reserva no encontrada"), { status: 404 });
+  return actualizado;
+}
+
 export async function getReservasReporte(input: { desde?: string; hasta?: string }) {
   const desde = toDateOnly(input.desde, "desde");
   const hasta = toDateOnly(input.hasta, "hasta");
@@ -541,6 +574,10 @@ export async function getReservasReporte(input: { desde?: string; hasta?: string
     "Descuento",
     "Total Estimado",
     "Estado",
+    "Estado Pago",
+    "Fecha Pago",
+    "Método Pago",
+    "Referencia Pago",
     "Notas",
   ];
 
@@ -560,6 +597,10 @@ export async function getReservasReporte(input: { desde?: string; hasta?: string
     { value: Number(reserva.descuento ?? 0).toFixed(2), type: "number" as const },
     { value: Number(reserva.total_estimado ?? 0).toFixed(2), type: "number" as const },
     { value: reserva.estado, type: "text" as const },
+    { value: reserva.estado_pago ?? "pendiente", type: "text" as const },
+    { value: formatDateTimeForReport(reserva.fecha_pago), type: "text" as const },
+    { value: reserva.metodo_pago ?? "", type: "text" as const },
+    { value: reserva.referencia_pago ?? "", type: "text" as const },
     { value: reserva.notas, type: "text" as const },
   ]);
 

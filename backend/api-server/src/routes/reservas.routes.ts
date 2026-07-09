@@ -17,5 +17,6 @@ router.get("/reporte",         authMiddleware, requirePermiso("reservas.ver"),  
 router.get("/:id",             authMiddleware, requirePermiso("reservas.ver"),    ctrl.getOne);
 router.patch("/:id",           authMiddleware, requirePermiso("reservas.editar"), ctrl.update);
 router.patch("/:id/estado",    authMiddleware, requirePermiso("reservas.cambiar_estado"), ctrl.updateEstado);
+router.patch("/:id/pago",      authMiddleware, requirePermiso("reservas.cambiar_estado"), ctrl.updatePago);
 
 export default router;

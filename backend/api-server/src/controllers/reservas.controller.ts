@@ -103,6 +103,15 @@ export async function update(req: Request, res: Response): Promise<void> {
   }
 }
 
+export async function updatePago(req: Request, res: Response): Promise<void> {
+  try {
+    const data = await service.updatePagoReserva(Number(req.params["id"]), req.body);
+    res.json(data);
+  } catch (err: any) {
+    res.status(err.status ?? 500).json({ error: err.message });
+  }
+}
+
 export async function reporte(req: Request, res: Response): Promise<void> {
   try {
     const usuario = req.usuario;

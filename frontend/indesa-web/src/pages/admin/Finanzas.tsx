@@ -29,16 +29,16 @@ export function Finanzas() {
       (acc, reserva) => {
         const monto = Number(reserva.total_estimado ?? 0);
         acc.total += monto;
-        if (reserva.estado === "confirmada") acc.confirmado += monto;
-        if (reserva.estado === "pendiente") acc.pendiente += monto;
+        if ((reserva as any).estado_pago === "pagada") acc.pagado += monto;
+        if ((reserva as any).estado_pago !== "pagada" && reserva.estado !== "cancelada") acc.pendientePago += monto;
         if (reserva.estado === "cancelada") acc.cancelado += monto;
         return acc;
       },
-      { total: 0, confirmado: 0, pendiente: 0, cancelado: 0 },
+      { total: 0, pagado: 0, pendientePago: 0, cancelado: 0 },
     );
   }, [reservas]);
 
-  const reservasPagadas = reservas.filter((reserva) => reserva.estado === "confirmada" || reserva.estado === "entregada");
+  const reservasPagadas = reservas.filter((reserva) => (reserva as any).estado_pago === "pagada");
 
   const descargarReporte = async () => {
     if (!desde || !hasta) {
@@ -126,17 +126,17 @@ export function Finanzas() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard title="Ingresos estimados" value={totales.total} icon={DollarSign} />
-        <MetricCard title="Confirmadas" value={totales.confirmado} icon={TrendingUp} />
-        <MetricCard title="Pendientes" value={totales.pendiente} icon={Wallet} />
+        <MetricCard title="Pagadas" value={totales.pagado} icon={TrendingUp} />
+        <MetricCard title="Pendientes de pago" value={totales.pendientePago} icon={Wallet} />
         <MetricCard title="Canceladas" value={totales.cancelado} icon={CreditCard} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
         <Card>
           <CardHeader>
-            <CardTitle>Reservas con valor monetario</CardTitle>
+            <CardTitle>Reservas pagadas</CardTitle>
             <CardDescription>
-              Solo usa registros guardados en el sistema para controlar el dinero.
+              Solo muestra registros confirmados como pagados en el sistema.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -148,7 +148,7 @@ export function Finanzas() {
               </div>
             ) : reservasPagadas.length === 0 ? (
               <div className="rounded-md border border-dashed p-8 text-center text-muted-foreground">
-                Aún no hay reservas confirmadas para registrar ingresos.
+                Aún no hay reservas marcadas como pagadas.
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -157,7 +157,7 @@ export function Finanzas() {
                     <TableRow>
                       <TableHead>Cliente</TableHead>
                       <TableHead>Producto</TableHead>
-                      <TableHead>Estado</TableHead>
+                      <TableHead>Pago</TableHead>
                       <TableHead className="text-right">Monto</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -175,9 +175,14 @@ export function Finanzas() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={reserva.estado === "entregada" ? "success" : "info"} className="capitalize">
-                            {reserva.estado}
+                          <Badge variant="success" className="capitalize">
+                            {(reserva as any).metodo_pago ? `Pagada · ${(reserva as any).metodo_pago}` : "Pagada"}
                           </Badge>
+                          {(reserva as any).fecha_pago && (
+                            <div className="mt-1 text-xs text-muted-foreground">
+                              {formatDate((reserva as any).fecha_pago)}
+                            </div>
+                          )}
                         </TableCell>
                         <TableCell className="text-right font-semibold text-primary">
                           {formatCurrency(Number(reserva.total_estimado ?? 0))}

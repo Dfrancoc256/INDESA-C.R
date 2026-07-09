@@ -60,6 +60,10 @@ export async function findAllReservas(params: {
       descuento: reservasTable.descuento,
       total_estimado: reservasTable.totalEstimado,
       estado: reservasTable.estado,
+      estado_pago: reservasTable.estadoPago,
+      fecha_pago: reservasTable.fechaPago,
+      metodo_pago: reservasTable.metodoPago,
+      referencia_pago: reservasTable.referenciaPago,
       notas: reservasTable.notas,
       whatsapp_enviado: reservasTable.whatsappEnviado,
       created_at: reservasTable.createdAt,
@@ -99,6 +103,10 @@ export async function findReservaById(id: number) {
       descuento: reservasTable.descuento,
       total_estimado: reservasTable.totalEstimado,
       estado: reservasTable.estado,
+      estado_pago: reservasTable.estadoPago,
+      fecha_pago: reservasTable.fechaPago,
+      metodo_pago: reservasTable.metodoPago,
+      referencia_pago: reservasTable.referenciaPago,
       notas: reservasTable.notas,
       whatsapp_enviado: reservasTable.whatsappEnviado,
       created_at: reservasTable.createdAt,
@@ -146,6 +154,7 @@ export async function createReserva(data: {
     descuento: String(data.descuento),
     totalEstimado: String(data.totalEstimado),
     estado: "pendiente",
+    estadoPago: "pendiente",
     notas: data.notas ?? null,
   }).returning();
   return rows[0];
@@ -184,6 +193,31 @@ export async function updateReserva(
   return findReservaById(id);
 }
 
+export async function updateReservaPago(
+  id: number,
+  data: {
+    estadoPago: string;
+    fechaPago?: Date | null;
+    metodoPago?: string | null;
+    referenciaPago?: string | null;
+  },
+) {
+  const rows = await db
+    .update(reservasTable)
+    .set({
+      estadoPago: data.estadoPago,
+      fechaPago: data.fechaPago ?? null,
+      metodoPago: data.metodoPago ?? null,
+      referenciaPago: data.referenciaPago ?? null,
+      updatedAt: new Date(),
+    })
+    .where(eq(reservasTable.id, id))
+    .returning({ id: reservasTable.id });
+
+  if (!rows[0]) return null;
+  return findReservaById(id);
+}
+
 export async function marcarWhatsappEnviado(id: number) {
   await db.update(reservasTable).set({ whatsappEnviado: true }).where(eq(reservasTable.id, id));
 }
@@ -207,6 +241,10 @@ export async function findReservasRecientes(limit = 10) {
       descuento: reservasTable.descuento,
       total_estimado: reservasTable.totalEstimado,
       estado: reservasTable.estado,
+      estado_pago: reservasTable.estadoPago,
+      fecha_pago: reservasTable.fechaPago,
+      metodo_pago: reservasTable.metodoPago,
+      referencia_pago: reservasTable.referenciaPago,
       notas: reservasTable.notas,
       whatsapp_enviado: reservasTable.whatsappEnviado,
       created_at: reservasTable.createdAt,
@@ -286,6 +324,10 @@ export async function findReservasParaReporte(params: {
       descuento: reservasTable.descuento,
       total_estimado: reservasTable.totalEstimado,
       estado: reservasTable.estado,
+      estado_pago: reservasTable.estadoPago,
+      fecha_pago: reservasTable.fechaPago,
+      metodo_pago: reservasTable.metodoPago,
+      referencia_pago: reservasTable.referenciaPago,
       notas: reservasTable.notas,
       whatsapp_enviado: reservasTable.whatsappEnviado,
       created_at: reservasTable.createdAt,
