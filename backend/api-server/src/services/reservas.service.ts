@@ -354,12 +354,48 @@ export async function getReservasReporte(input: { desde?: string; hasta?: string
 
   const reservas = await repo.findReservasParaReporte({ desde, hasta });
 
-  const escapeCsv = (value: unknown) => {
+  const escapeHtml = (value: unknown) => {
     const normalized = value === null || value === undefined ? "" : String(value);
-    if (/[",\n]/.test(normalized)) {
-      return `"${normalized.replace(/"/g, '""')}"`;
-    }
-    return normalized;
+    return normalized
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  };
+
+  const formatDateOnlyForReport = (value: unknown) => {
+    if (!value) return "";
+    const normalized = String(value).slice(0, 10);
+    const date = new Date(`${normalized}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat("es-GT", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      timeZone: "America/Guatemala",
+    }).format(date);
+  };
+
+  const formatDateTimeForReport = (value: unknown) => {
+    if (!value) return "";
+    const date = new Date(String(value));
+    if (Number.isNaN(date.getTime())) return String(value);
+    return new Intl.DateTimeFormat("es-GT", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "America/Guatemala",
+    }).format(date);
+  };
+
+  const cell = (value: unknown, kind: "text" | "number" = "text") => {
+    const style = kind === "number"
+      ? ' style="mso-number-format:\'0.00\';"'
+      : ' style="mso-number-format:\'@\';"';
+    return `<td${style}>${escapeHtml(value)}</td>`;
   };
 
   const headers = [
@@ -381,28 +417,49 @@ export async function getReservasReporte(input: { desde?: string; hasta?: string
     "Notas",
   ];
 
+  const headerRow = headers
+    .map((header) => `<th style="background:#FF2800;color:#ffffff;font-weight:bold;">${escapeHtml(header)}</th>`)
+    .join("");
+
   const rows = reservas.map((reserva) => [
-    reserva.id,
-    reserva.created_at,
-    reserva.cliente_nombre,
-    reserva.cliente_email,
-    reserva.cliente_telefono,
-    reserva.producto_nombre,
-    reserva.cantidad,
-    reserva.fecha_inicio,
-    reserva.fecha_fin,
-    reserva.tipo_tarifa,
-    reserva.unidades_tarifa,
-    reserva.precio_unitario,
-    reserva.descuento,
-    reserva.total_estimado,
-    reserva.estado,
-    reserva.notas,
-  ].map(escapeCsv).join(","));
+    cell(reserva.id),
+    cell(formatDateTimeForReport(reserva.created_at)),
+    cell(reserva.cliente_nombre),
+    cell(reserva.cliente_email),
+    cell(reserva.cliente_telefono),
+    cell(reserva.producto_nombre),
+    cell(reserva.cantidad, "number"),
+    cell(formatDateOnlyForReport(reserva.fecha_inicio)),
+    cell(formatDateOnlyForReport(reserva.fecha_fin)),
+    cell(reserva.tipo_tarifa),
+    cell(reserva.unidades_tarifa, "number"),
+    cell(Number(reserva.precio_unitario ?? 0).toFixed(2), "number"),
+    cell(Number(reserva.descuento ?? 0).toFixed(2), "number"),
+    cell(Number(reserva.total_estimado ?? 0).toFixed(2), "number"),
+    cell(reserva.estado),
+    cell(reserva.notas),
+  ].join("")).map((row) => `<tr>${row}</tr>`);
+
+  const content = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px; }
+      th, td { border: 1px solid #d9d9d9; padding: 6px 8px; vertical-align: top; }
+    </style>
+  </head>
+  <body>
+    <table>
+      <thead><tr>${headerRow}</tr></thead>
+      <tbody>${rows.join("")}</tbody>
+    </table>
+  </body>
+</html>`;
 
   return {
-    filename: `reporte-reservas-${desde}-a-${hasta}.csv`,
-    content: [headers.map(escapeCsv).join(","), ...rows].join("\n"),
+    filename: `reporte-reservas-${desde}-a-${hasta}.xls`,
+    content,
   };
 }
 
