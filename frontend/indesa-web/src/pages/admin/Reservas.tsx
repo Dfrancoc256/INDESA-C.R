@@ -553,21 +553,7 @@ export function Reservas() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="flex flex-col items-start gap-2">
-                        <EstadoBadge estado={reserva.estado} />
-                        {canChangeEstadoReservas && (reserva.estado === "pendiente" || reserva.estado === "confirmada") && (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="h-8 gap-1.5 border-destructive/40 px-2.5 text-xs text-destructive hover:border-destructive hover:bg-destructive/10 hover:text-destructive"
-                            onClick={() => handleCambiarEstado(reserva.id, "cancelada", true)}
-                          >
-                            <XCircle className="h-3.5 w-3.5" />
-                            Cancelar
-                          </Button>
-                        )}
-                      </div>
+                      <EstadoBadge estado={reserva.estado} />
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end items-center gap-1.5">
