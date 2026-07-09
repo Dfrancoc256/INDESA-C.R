@@ -82,16 +82,16 @@ const heroSlides = [
   {
     image: bannerPrincipal1,
     label: "Maquinaria industrial",
-    title: "Â¿Necesitas rentar maquinaria o un servicio?",
+    title: "¿Necesitas rentar maquinaria o un servicio?",
     description:
       "Conectamos a empresas y profesionales con maquinaria lista para trabajo pesado.",
   },
   {
     image: bannerPrincipal2,
     label: "Inventario de maquinaria",
-    title: "Equipos organizados para reservas mÃ¡s rÃ¡pidas",
+    title: "Equipos organizados para reservas más rápidas",
     description:
-      "Consulte disponibilidad y reserve equipos desde una experiencia clara y dinÃ¡mica.",
+      "Consulte disponibilidad y reserve equipos desde una experiencia clara y dinámica.",
   },
   {
     image: bannerPrincipal3,
@@ -104,7 +104,7 @@ const heroSlides = [
 
 function buildWhatsAppUrl(producto: HomeProduct, form?: ReservaFormState) {
   const lines = [
-    "Hola, quiero informaciÃ³n para reservar este equipo:",
+    "Hola, quiero información para reservar este equipo:",
     `Producto: ${producto.nombre}`,
     `Tarifa: ${formatCurrency(getTarifaPrincipal(producto).value)} por ${getTarifaPrincipal(producto).suffix}`,
   ];
@@ -115,7 +115,7 @@ function buildWhatsAppUrl(producto: HomeProduct, form?: ReservaFormState) {
       `Modalidad: ${form.tipo_tarifa} x ${form.unidades_tarifa || "1"}`,
       `Fechas: ${form.fecha_inicio} al ${form.fecha_fin}`,
       `Nombre: ${form.cliente_nombre || "Pendiente"}`,
-      `TelÃ©fono: ${form.cliente_telefono || "Pendiente"}`,
+      `Teléfono: ${form.cliente_telefono || "Pendiente"}`,
       `Correo: ${form.cliente_email || "Pendiente"}`
     );
 
@@ -185,7 +185,7 @@ export function Home() {
           variant: "destructive",
           title: "No fue posible registrar la reserva",
           description: shouldRefreshCatalog
-            ? `${message} Actualizamos el catÃ¡logo para mostrar la disponibilidad real.`
+            ? `${message} Actualizamos el catálogo para mostrar la disponibilidad real.`
             : message,
         });
       },
@@ -269,8 +269,8 @@ export function Home() {
     if (!Number.isInteger(productoId) || productoId < 1) {
       toast({
         variant: "destructive",
-        title: "Producto no vÃ¡lido",
-        description: "Actualice el catÃ¡logo y vuelva a seleccionar el producto.",
+        title: "Producto no válido",
+        description: "Actualice el catálogo y vuelva a seleccionar el producto.",
       });
       void refetchCatalogo();
       setReservaOpen(false);
@@ -281,7 +281,7 @@ export function Home() {
       toast({
         variant: "destructive",
         title: "Producto no disponible",
-        description: "Este producto estÃ¡ desactivado para reservas. Actualizamos el catÃ¡logo.",
+        description: "Este producto está desactivado para reservas. Actualizamos el catálogo.",
       });
       void refetchCatalogo();
       setReservaOpen(false);
@@ -325,7 +325,7 @@ export function Home() {
         setReservaOpen(false);
         toast({
           title: "Reserva confirmada",
-          description: "Tu solicitud fue registrada correctamente. Te enviaremos la confirmaciÃ³n por correo.",
+          description: "Tu solicitud fue registrada correctamente. Te enviaremos la confirmación por correo.",
         });
       },
     });
@@ -364,7 +364,7 @@ export function Home() {
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button asChild size="lg" className="h-12 px-6 text-base shadow-lg transition-all duration-200 hover:-translate-y-0.5">
                 <Link href="/catalogo">
-                  Ver CatÃ¡logo <ArrowRight className="ml-2 h-5 w-5" />
+                  Ver Catálogo <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="h-12 bg-white/10 px-6 text-base text-white border-white/30 backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/20 hover:text-white">
@@ -393,11 +393,11 @@ export function Home() {
         <div className="container mx-auto px-4 md:px-8">
           <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <div>
-              <h2 className="text-3xl font-bold tracking-tight">CatÃ¡logo de Productos</h2>
+              <h2 className="text-3xl font-bold tracking-tight">Catálogo de Productos</h2>
             </div>
             <Button asChild variant="ghost" className="w-fit">
               <Link href="/catalogo">
-                Ver catÃ¡logo completo <ArrowRight className="ml-2 h-4 w-4" />
+                Ver catálogo completo <ArrowRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
           </div>
@@ -417,11 +417,11 @@ export function Home() {
             </div>
           ) : isCatalogoError ? (
             <div className="rounded-lg border bg-white p-8 text-center text-muted-foreground">
-              No pudimos cargar el catÃ¡logo en este momento. Intenta nuevamente en unos segundos.
+              No pudimos cargar el catálogo en este momento. Intenta nuevamente en unos segundos.
             </div>
           ) : productosCatalogo.length === 0 ? (
             <div className="rounded-lg border bg-white p-8 text-center text-muted-foreground">
-              AÃºn no hay productos publicados en el catÃ¡logo.
+              Aún no hay productos publicados en el catálogo.
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
@@ -523,7 +523,7 @@ export function Home() {
               </div>
               <div>
                 <h3 className="mb-2 text-lg font-bold">Calidad Industrial</h3>
-                <p className="text-muted-foreground">Productos diseÃ±ados para resistir el uso intensivo y continuo.</p>
+                <p className="text-muted-foreground">Productos diseñados para resistir el uso intensivo y continuo.</p>
               </div>
             </div>
             <div className="flex gap-4">
@@ -532,7 +532,7 @@ export function Home() {
               </div>
               <div>
                 <h3 className="mb-2 text-lg font-bold">Reservas Flexibles</h3>
-                <p className="text-muted-foreground">Solicita equipos sin fricciones y recibe confirmaciÃ³n por correo.</p>
+                <p className="text-muted-foreground">Solicita equipos sin fricciones y recibe confirmación por correo.</p>
               </div>
             </div>
             <div className="flex gap-4">
@@ -540,8 +540,8 @@ export function Home() {
                 <Clock className="h-6 w-6 text-primary" />
               </div>
               <div>
-                <h3 className="mb-2 text-lg font-bold">AtenciÃ³n RÃ¡pida</h3>
-                <p className="text-muted-foreground">Contacta por WhatsApp o envÃ­a la reserva con los datos completos.</p>
+                <h3 className="mb-2 text-lg font-bold">Atención Rápida</h3>
+                <p className="text-muted-foreground">Contacta por WhatsApp o envía la reserva con los datos completos.</p>
               </div>
             </div>
           </div>
@@ -551,16 +551,16 @@ export function Home() {
       {/* CTA Section */}
       <section className="bg-primary py-16 text-white">
         <div className="container mx-auto max-w-4xl px-4 text-center md:px-8">
-          <h2 className="mb-4 text-3xl font-bold md:text-4xl">Â¿Necesita un pedido especial o a granel?</h2>
+          <h2 className="mb-4 text-3xl font-bold md:text-4xl">¿Necesita un pedido especial o a granel?</h2>
           <p className="mx-auto mb-10 max-w-3xl text-lg leading-relaxed text-primary-foreground/90 md:text-xl">
-            Nuestro equipo estÃ¡ preparado para atender las necesidades especÃ­ficas de su operaciÃ³n.
+            Nuestro equipo está preparado para atender las necesidades específicas de su operación.
           </p>
           <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
             <Button asChild size="lg" variant="secondary" className="h-14 min-w-[240px] px-8 text-base text-primary">
               <Link href="/contacto">Contactar a Ventas</Link>
             </Button>
             <Button asChild size="lg" className="h-14 min-w-[220px] border-0 bg-black px-8 text-base text-white hover:bg-zinc-800">
-              <Link href="/catalogo">Ver mÃ¡s equipos</Link>
+              <Link href="/catalogo">Ver más equipos</Link>
             </Button>
           </div>
         </div>
@@ -571,7 +571,7 @@ export function Home() {
           <DialogHeader>
             <DialogTitle>Datos de reserva</DialogTitle>
             <DialogDescription>
-              Completa los datos y confirma tu reserva. La solicitud quedarÃ¡ registrada y recibirÃ¡s la confirmaciÃ³n por correo.
+              Completa los datos y confirma tu reserva. La solicitud quedará registrada y recibirás la confirmación por correo.
             </DialogDescription>
           </DialogHeader>
 
@@ -620,7 +620,7 @@ export function Home() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium" htmlFor="home-reserva-telefono">TelÃ©fono</label>
+                  <label className="text-sm font-medium" htmlFor="home-reserva-telefono">Teléfono</label>
                   <Input
                     id="home-reserva-telefono"
                     value={reservaForm.cliente_telefono}
@@ -630,7 +630,7 @@ export function Home() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium" htmlFor="home-reserva-email">Correo electrÃ³nico</label>
+                  <label className="text-sm font-medium" htmlFor="home-reserva-email">Correo electrónico</label>
                   <Input
                     id="home-reserva-email"
                     type="email"
@@ -677,7 +677,7 @@ export function Home() {
                 {tarifaSeleccionada?.tipo !== "dia" && (
                   <div className="space-y-2">
                     <label className="text-sm font-medium" htmlFor="home-reserva-unidades">
-                      {tarifaSeleccionada?.plural ?? "PerÃ­odos"}
+                      {tarifaSeleccionada?.plural ?? "Períodos"}
                     </label>
                     <Input
                       id="home-reserva-unidades"
@@ -717,7 +717,7 @@ export function Home() {
                   </div>
                 ) : null}
                 <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary sm:col-span-2">
-                  Reserva por {diasReserva} dÃ­a{diasReserva === 1 ? "" : "s"}.
+                  Reserva por {diasReserva} día{diasReserva === 1 ? "" : "s"}.
                   {tarifaSeleccionada && (
                     <span className="block text-foreground">
                       Estimado: {formatCurrency(totalEstimado)} ({unidadesTarifa} {unidadesTarifa === 1 ? tarifaSeleccionada.suffix : tarifaSeleccionada.plural})
@@ -732,7 +732,7 @@ export function Home() {
                   id="home-reserva-notas"
                   value={reservaForm.notas}
                   onChange={(event) => setReservaForm((current) => ({ ...current, notas: event.target.value }))}
-                  placeholder="UbicaciÃ³n del trabajo, horario o cualquier detalle adicional."
+                  placeholder="Ubicación del trabajo, horario o cualquier detalle adicional."
                   className="min-h-24"
                 />
               </div>

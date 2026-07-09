@@ -32,14 +32,14 @@ import { FaWhatsapp } from "react-icons/fa";
 
 const reservaGlobalSchema = z.object({
   cliente_nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
-  cliente_email: z.string().email("Correo electrÃ³nico invÃ¡lido"),
-  cliente_telefono: z.string().min(8, "El telÃ©fono debe tener al menos 8 dÃ­gitos"),
+  cliente_email: z.string().email("Correo electrónico inválido"),
+  cliente_telefono: z.string().min(8, "El teléfono debe tener al menos 8 dígitos"),
   producto_id: z.coerce.number().min(1, "Debe seleccionar un producto"),
-  cantidad: z.coerce.number().min(1, "La cantidad mÃ­nima es 1"),
+  cantidad: z.coerce.number().min(1, "La cantidad mínima es 1"),
   fecha_inicio: z.string().min(1, "Seleccione fecha de inicio"),
   fecha_fin: z.string().min(1, "Seleccione fecha final"),
   tipo_tarifa: z.enum(["dia", "semana", "mes", "base"]),
-  unidades_tarifa: z.coerce.number().min(1, "La cantidad mÃ­nima es 1"),
+  unidades_tarifa: z.coerce.number().min(1, "La cantidad mínima es 1"),
   notas: z.string().optional()
 }).refine((data) => data.fecha_fin >= data.fecha_inicio, {
   path: ["fecha_fin"],
@@ -133,7 +133,7 @@ export function Reservar() {
         toast({ 
           variant: "destructive", 
           title: "Error al reservar", 
-          description: getFriendlyApiErrorMessage(err, "Hubo un problema al procesar su solicitud. Intente mÃ¡s tarde.")
+          description: getFriendlyApiErrorMessage(err, "Hubo un problema al procesar su solicitud. Intente más tarde.")
         });
       }
     }
@@ -203,11 +203,11 @@ export function Reservar() {
   const productImage = productoSeleccionado?.imagen_url;
   const whatsappUrl = productoSeleccionado
     ? `https://wa.me/${whatsappPhone}?text=${encodeURIComponent([
-        "Hola, quiero informaciÃ³n para reservar este equipo:",
+        "Hola, quiero información para reservar este equipo:",
         `Producto: ${productoSeleccionado.nombre}`,
         `Tarifa: ${formatCurrency(getTarifaPrincipal(productoSeleccionado).value)} por ${getTarifaPrincipal(productoSeleccionado).suffix}`,
         `Nombre: ${form.watch("cliente_nombre") || "Pendiente"}`,
-        `TelÃ©fono: ${form.watch("cliente_telefono") || "Pendiente"}`,
+        `Teléfono: ${form.watch("cliente_telefono") || "Pendiente"}`,
         `Correo: ${form.watch("cliente_email") || "Pendiente"}`,
       ].join("\n"))}`
     : `https://wa.me/${whatsappPhone}`;
@@ -218,7 +218,7 @@ export function Reservar() {
         <div className="container mx-auto px-4 md:px-8 text-center max-w-3xl">
           <h1 className="text-3xl md:text-5xl font-bold tracking-tight mb-4">Solicitud de Reserva</h1>
           <p className="text-primary-foreground/90 text-lg md:text-xl">
-            Asegure los suministros que necesita completando el formulario. Nuestro equipo confirmarÃ¡ existencias y procesarÃ¡ su solicitud a la brevedad.
+            Asegure los suministros que necesita completando el formulario. Nuestro equipo confirmará existencias y procesará su solicitud a la brevedad.
           </p>
         </div>
       </div>
@@ -229,10 +229,10 @@ export function Reservar() {
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 text-green-600 mb-6">
               <CheckCircle2 className="h-10 w-10" />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Â¡Solicitud Recibida!</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">¡Solicitud Recibida!</h2>
             <p className="text-lg text-gray-600 mb-8">
-              Su reserva ha sido registrada exitosamente. Hemos enviado una confirmaciÃ³n a su correo electrÃ³nico.
-              Un asesor de ventas se comunicarÃ¡ pronto para finalizar el proceso.
+              Su reserva ha sido registrada exitosamente. Hemos enviado una confirmación a su correo electrónico.
+              Un asesor de ventas se comunicará pronto para finalizar el proceso.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Button asChild size="lg" variant="outline">
@@ -243,7 +243,7 @@ export function Reservar() {
                 }}>Nueva Reserva</button>
               </Button>
               <Button asChild size="lg">
-                <Link href="/catalogo">Volver al CatÃ¡logo</Link>
+                <Link href="/catalogo">Volver al Catálogo</Link>
               </Button>
             </div>
           </div>
@@ -264,7 +264,7 @@ export function Reservar() {
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                     
                     <div className="space-y-4">
-                      <h3 className="font-semibold text-lg border-b pb-2">1. SelecciÃ³n de Producto</h3>
+                      <h3 className="font-semibold text-lg border-b pb-2">1. Selección de Producto</h3>
                       
                       <FormField
                         control={form.control}
@@ -279,7 +279,7 @@ export function Reservar() {
                             >
                               <FormControl>
                                 <SelectTrigger className="h-12">
-                                  <SelectValue placeholder={catalogoCargando ? "Cargando catÃ¡logo..." : "Seleccione un producto del catÃ¡logo"} />
+                                  <SelectValue placeholder={catalogoCargando ? "Cargando catálogo..." : "Seleccione un producto del catálogo"} />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent className="max-h-[300px]">
@@ -347,9 +347,9 @@ export function Reservar() {
                       {productoSeleccionado && (
                         <div className="grid gap-4 rounded-md border bg-gray-50 p-4 md:grid-cols-2">
                           <div>
-                            <div className="text-sm font-semibold">AcciÃ³n rÃ¡pida</div>
+                            <div className="text-sm font-semibold">Acción rápida</div>
                             <p className="mt-1 text-sm text-muted-foreground">
-                              Puedes revisar la informaciÃ³n y confirmar la reserva desde aquÃ­. La solicitud quedarÃ¡ guardada y recibirÃ¡s la confirmaciÃ³n por correo.
+                              Puedes revisar la información y confirmar la reserva desde aquí. La solicitud quedará guardada y recibirás la confirmación por correo.
                             </p>
                           </div>
                           <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -490,7 +490,7 @@ export function Reservar() {
                         )}
                       </div>
                       <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
-                        Reserva por {diasReserva} dÃ­a{diasReserva === 1 ? "" : "s"}.
+                        Reserva por {diasReserva} día{diasReserva === 1 ? "" : "s"}.
                         {tarifaSeleccionada && (
                           <span className="block text-foreground">
                             Estimado: {formatCurrency(totalEstimado)} ({unidadesTarifa} {unidadesTarifa === 1 ? tarifaSeleccionada.suffix : tarifaSeleccionada.plural})
@@ -505,7 +505,7 @@ export function Reservar() {
                     </div>
 
                     <div className="space-y-4 pt-6 mt-6 border-t">
-                      <h3 className="font-semibold text-lg border-b pb-2">2. InformaciÃ³n de Contacto</h3>
+                      <h3 className="font-semibold text-lg border-b pb-2">2. Información de Contacto</h3>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField
@@ -515,7 +515,7 @@ export function Reservar() {
                             <FormItem>
                               <FormLabel>Nombre Completo / Empresa *</FormLabel>
                               <FormControl>
-                                <Input placeholder="RazÃ³n social o nombre" {...field} />
+                                <Input placeholder="Razón social o nombre" {...field} />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -526,10 +526,10 @@ export function Reservar() {
                           name="cliente_telefono"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>TelÃ©fono Celular *</FormLabel>
+                              <FormLabel>Teléfono Celular *</FormLabel>
                               <FormControl>
                                 <Input
-                                  placeholder="Solo nÃºmeros"
+                                  placeholder="Solo números"
                                   inputMode="numeric"
                                   pattern="[0-9]*"
                                   {...field}
@@ -547,7 +547,7 @@ export function Reservar() {
                         name="cliente_email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Correo ElectrÃ³nico *</FormLabel>
+                            <FormLabel>Correo Electrónico *</FormLabel>
                             <FormControl>
                               <Input type="email" placeholder="usuario@empresa.com" {...field} />
                             </FormControl>
@@ -567,7 +567,7 @@ export function Reservar() {
                             <FormLabel>Comentarios (Opcional)</FormLabel>
                             <FormControl>
                               <Textarea 
-                                placeholder="UbicaciÃ³n del trabajo, horario estimado, datos de facturaciÃ³n (NIT), u otras especificaciones..." 
+                                placeholder="Ubicación del trabajo, horario estimado, datos de facturación (NIT), u otras especificaciones..." 
                                 className="min-h-[100px]"
                                 {...field} 
                               />
@@ -601,7 +601,7 @@ export function Reservar() {
                         </Button>
                       </div>
                       <p className="mt-4 text-center text-sm text-muted-foreground">
-                        Esta reserva no requiere pago inmediato. La solicitud quedarÃ¡ registrada y un asesor te enviarÃ¡ la confirmaciÃ³n por correo.
+                        Esta reserva no requiere pago inmediato. La solicitud quedará registrada y un asesor te enviará la confirmación por correo.
                       </p>
                     </div>
                   </form>

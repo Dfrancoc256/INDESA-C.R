@@ -39,7 +39,6 @@ export function Finanzas() {
   }, [reservas]);
 
   const reservasPagadas = reservas.filter((reserva) => reserva.estado === "confirmada" || reserva.estado === "entregada");
-  const reservasCanceladas = reservas.filter((reserva) => reserva.estado === "cancelada");
 
   const descargarReporte = async () => {
     if (!desde || !hasta) {
@@ -220,68 +219,6 @@ export function Finanzas() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Validación de reservas canceladas</CardTitle>
-          <CardDescription>
-            Estas reservas son las que alimentan el monto de “Canceladas”. Se toman únicamente de registros con estado cancelada.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoadingReservas ? (
-            <div className="space-y-2">
-              {Array.from({ length: 3 }).map((_, index) => (
-                <Skeleton key={index} className="h-12 w-full" />
-              ))}
-            </div>
-          ) : reservasCanceladas.length === 0 ? (
-            <div className="rounded-md border border-dashed p-8 text-center text-muted-foreground">
-              No hay reservas canceladas en los registros cargados.
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ID</TableHead>
-                    <TableHead>Fecha</TableHead>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Producto</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Monto</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reservasCanceladas.map((reserva) => (
-                    <TableRow key={reserva.id}>
-                      <TableCell className="font-mono text-xs">#{reserva.id.toString().padStart(5, "0")}</TableCell>
-                      <TableCell className="text-sm">{formatDate(reserva.created_at)}</TableCell>
-                      <TableCell>
-                        <div className="font-medium">{reserva.cliente_nombre}</div>
-                        <div className="text-xs text-muted-foreground">{reserva.cliente_email}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{reserva.producto_nombre}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {reserva.tipo_tarifa ?? "dia"} · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="destructive" className="capitalize">
-                          {reserva.estado}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {formatCurrency(Number(reserva.total_estimado ?? 0))}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   );
 }

@@ -30,13 +30,13 @@ import { invalidateCatalogData } from "@/lib/queryInvalidation";
 
 const reservaSchema = z.object({
   cliente_nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
-  cliente_email: z.string().email("Correo electrÃ³nico invÃ¡lido"),
-  cliente_telefono: z.string().min(8, "El telÃ©fono debe tener al menos 8 dÃ­gitos"),
-  cantidad: z.coerce.number().min(1, "La cantidad mÃ­nima es 1"),
+  cliente_email: z.string().email("Correo electrónico inválido"),
+  cliente_telefono: z.string().min(8, "El teléfono debe tener al menos 8 dígitos"),
+  cantidad: z.coerce.number().min(1, "La cantidad mínima es 1"),
   fecha_inicio: z.string().min(1, "Seleccione fecha de inicio"),
   fecha_fin: z.string().min(1, "Seleccione fecha final"),
   tipo_tarifa: z.enum(["dia", "semana", "mes", "base"]),
-  unidades_tarifa: z.coerce.number().min(1, "La cantidad mÃ­nima es 1"),
+  unidades_tarifa: z.coerce.number().min(1, "La cantidad mínima es 1"),
   notas: z.string().optional()
 }).refine((data) => data.fecha_fin >= data.fecha_inicio, {
   path: ["fecha_fin"],
@@ -107,7 +107,7 @@ export function ProductoDetalle() {
         toast({ 
           variant: "destructive", 
           title: "Error al reservar", 
-          description: getFriendlyApiErrorMessage(err, "Hubo un problema al procesar su solicitud. Intente mÃ¡s tarde.")
+          description: getFriendlyApiErrorMessage(err, "Hubo un problema al procesar su solicitud. Intente más tarde.")
         });
       }
     }
@@ -198,9 +198,9 @@ export function ProductoDetalle() {
     return (
       <div className="container mx-auto px-4 py-20 text-center">
         <h2 className="text-3xl font-bold mb-4">Producto no encontrado</h2>
-        <p className="text-muted-foreground mb-8">El producto que busca no existe o ya no estÃ¡ disponible.</p>
+        <p className="text-muted-foreground mb-8">El producto que busca no existe o ya no está disponible.</p>
         <Button asChild>
-          <Link href="/catalogo">Volver al catÃ¡logo</Link>
+          <Link href="/catalogo">Volver al catálogo</Link>
         </Button>
       </div>
     );
@@ -216,7 +216,7 @@ export function ProductoDetalle() {
         <div className="bg-white border-b py-4">
           <div className="container mx-auto px-4 md:px-8">
             <Link href="/catalogo" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Volver al catÃ¡logo
+              <ArrowLeft className="mr-2 h-4 w-4" /> Volver al catálogo
             </Link>
           </div>
         </div>
@@ -226,10 +226,10 @@ export function ProductoDetalle() {
             <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-green-100 text-green-600 mb-6">
               <CheckCircle2 className="h-10 w-10" />
             </div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Â¡Reserva Confirmada!</h2>
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">¡Reserva Confirmada!</h2>
             <p className="text-lg text-gray-600 mb-8">
               Su solicitud para <strong>{productoActual.nombre}</strong> ha sido recibida correctamente.
-              Un asesor se comunicarÃ¡ con usted para coordinar disponibilidad, operador y condiciones de uso y le enviarÃ¡ la confirmaciÃ³n por correo.
+              Un asesor se comunicará con usted para coordinar disponibilidad, operador y condiciones de uso y le enviará la confirmación por correo.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <Button asChild size="lg">
@@ -250,7 +250,7 @@ export function ProductoDetalle() {
       <div className="bg-white border-b py-4">
         <div className="container mx-auto px-4 md:px-8">
           <Link href="/catalogo" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-            <ArrowLeft className="mr-2 h-4 w-4" /> Volver al catÃ¡logo
+            <ArrowLeft className="mr-2 h-4 w-4" /> Volver al catálogo
           </Link>
         </div>
       </div>
@@ -295,7 +295,7 @@ export function ProductoDetalle() {
                     Reserva guiada
                   </div>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Te acompaÃ±amos en el proceso para confirmar la reserva y condiciones.
+                    Te acompañamos en el proceso para confirmar la reserva y condiciones.
                   </p>
                 </div>
               </div>
@@ -315,7 +315,7 @@ export function ProductoDetalle() {
                   <span className="ml-2 text-base font-semibold text-muted-foreground md:text-lg">por {tarifaPrincipal.suffix}</span>
                 </div>
                 <p className="text-sm font-medium text-muted-foreground mb-6">
-                  La coordinaciÃ³n final depende del lugar, horario y tipo de trabajo.
+                  La coordinación final depende del lugar, horario y tipo de trabajo.
                 </p>
                 <div className="mb-6 grid gap-3 sm:grid-cols-3">
                   {tarifas.map((tarifa) => (
@@ -334,10 +334,10 @@ export function ProductoDetalle() {
                   <div className="rounded-lg border bg-gray-50 p-4">
                     <div className="flex items-center gap-2 text-sm font-semibold">
                       <AlertTriangle className="h-4 w-4 text-primary" />
-                      ConfirmaciÃ³n rÃ¡pida
+                      Confirmación rápida
                     </div>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Revisamos tu solicitud y te enviamos la confirmaciÃ³n por correo lo antes posible.
+                      Revisamos tu solicitud y te enviamos la confirmación por correo lo antes posible.
                     </p>
                   </div>
                 </div>
@@ -349,7 +349,7 @@ export function ProductoDetalle() {
                     <Package className="h-5 w-5 text-primary" /> Solicitar reserva
                   </h3>
                   <p className="mt-1 text-sm text-muted-foreground">
-                    Completa tus datos y un asesor confirmarÃ¡ operador, horario y condiciones.
+                    Completa tus datos y un asesor confirmará operador, horario y condiciones.
                   </p>
                 </div>
                 <CardContent className="p-6 md:p-7">
@@ -363,7 +363,7 @@ export function ProductoDetalle() {
                               <FormItem>
                                 <FormLabel>Nombre Completo *</FormLabel>
                                 <FormControl>
-                                  <Input placeholder="Ej. Juan PÃ©rez" {...field} />
+                                  <Input placeholder="Ej. Juan Pérez" {...field} />
                                 </FormControl>
                                 <FormMessage />
                               </FormItem>
@@ -374,7 +374,7 @@ export function ProductoDetalle() {
                             name="cliente_telefono"
                             render={({ field }) => (
                               <FormItem>
-                                <FormLabel>TelÃ©fono *</FormLabel>
+                                <FormLabel>Teléfono *</FormLabel>
                                 <FormControl>
                                   <Input placeholder="Ej. 55554444" {...field} />
                                 </FormControl>
@@ -391,7 +391,7 @@ export function ProductoDetalle() {
                               name="cliente_email"
                               render={({ field }) => (
                                 <FormItem>
-                                  <FormLabel>Correo ElectrÃ³nico *</FormLabel>
+                                  <FormLabel>Correo Electrónico *</FormLabel>
                                   <FormControl>
                                     <Input type="email" placeholder="juan@ejemplo.com" {...field} />
                                   </FormControl>
@@ -516,7 +516,7 @@ export function ProductoDetalle() {
                         </div>
 
                         <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
-                          Reserva por {diasReserva} dÃ­a{diasReserva === 1 ? "" : "s"}.
+                          Reserva por {diasReserva} día{diasReserva === 1 ? "" : "s"}.
                           <span className="block text-foreground">
                             Estimado: {formatCurrency(totalEstimado)} ({unidadesTarifa}{" "}
                             {unidadesTarifa === 1 ? tarifaSeleccionada.suffix : tarifaSeleccionada.plural})
@@ -536,7 +536,7 @@ export function ProductoDetalle() {
                               <FormLabel>Comentarios adicionales (Opcional)</FormLabel>
                               <FormControl>
                                 <Textarea
-                                  placeholder="UbicaciÃ³n de trabajo, horario estimado, tipo de operaciÃ³n o datos de facturaciÃ³n."
+                                  placeholder="Ubicación de trabajo, horario estimado, tipo de operación o datos de facturación."
                                   className="h-28 resize-none"
                                   {...field}
                                 />
@@ -556,7 +556,7 @@ export function ProductoDetalle() {
                             {reservaMutation.isPending ? "Procesando..." : "Confirmar Reserva"}
                           </Button>
                           <p className="text-center text-xs text-muted-foreground mt-4">
-                            Al confirmar, un asesor se comunicarÃ¡ para coordinar operador, horario y condiciones del servicio.
+                            Al confirmar, un asesor se comunicará para coordinar operador, horario y condiciones del servicio.
                           </p>
                         </div>
                       </form>
