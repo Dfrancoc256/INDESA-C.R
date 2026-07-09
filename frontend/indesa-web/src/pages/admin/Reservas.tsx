@@ -88,8 +88,7 @@ export function Reservas() {
   });
   const canEditReservas = hasPermission(usuario, "reservas.editar");
   const canChangeEstadoReservas = hasPermission(usuario, "reservas.cambiar_estado");
-  const esAdmin = usuario?.rol?.nombre === "admin";
-  const reservasColSpan = 6;
+    const reservasColSpan = 6;
 
   const { data: productosResponse } = useListProductos({ page: 1, limit: 100, orden: "nombre_asc" } as any);
   const productosDisponibles = useMemo(() => productosResponse?.data ?? [], [productosResponse]);
@@ -245,7 +244,7 @@ export function Reservas() {
   };
 
   const resetAgregarForm = () => {
-    if (esAdmin && agregarForm.precio_unitario.trim() !== "") {
+    if (canEditReservas && agregarForm.precio_unitario.trim() !== "") {
       const precioIngresado = Number(agregarForm.precio_unitario);
       if (!Number.isFinite(precioIngresado) || precioIngresado < 0) {
         const message = "Ingresa un precio especial válido para esta reserva.";
@@ -317,9 +316,9 @@ export function Reservas() {
     setAgregarError("");
     const unidadesCalculadas = calcularUnidadesTarifa(agregarForm.tipo_tarifa, fechaInicio, fechaFin, unidadesTarifa);
     const precioManual = agregarForm.precio_unitario.trim();
-    const tienePrecioEspecial = esAdmin && precioManual !== "";
+    const tienePrecioEspecial = canEditReservas && precioManual !== "";
     const precioUnitarioBase = Number(tienePrecioEspecial ? precioManual : (tarifaAgregarSeleccionada?.value ?? 0));
-    const descuento = esAdmin ? Number(agregarForm.descuento || 0) : 0;
+    const descuento = canEditReservas ? Number(agregarForm.descuento || 0) : 0;
     if (!Number.isFinite(descuento) || descuento < 0) {
       const message = "Ingresa un descuento válido para esta reserva.";
       setAgregarError(message);
@@ -349,7 +348,7 @@ export function Reservas() {
         unidadesTarifa: unidadesCalculadas,
         unidades_tarifa: unidadesCalculadas,
         notas: agregarForm.notas?.trim() || undefined,
-        ...(esAdmin ? {
+        ...(canEditReservas ? {
           precioUnitario: precioUnitarioBase,
           precio_unitario: precioUnitarioBase,
           descuento,
@@ -364,7 +363,7 @@ export function Reservas() {
   const diasAgregar = agregarForm.fecha_inicio && agregarForm.fecha_fin
     ? Math.max(1, Math.ceil((new Date(`${agregarForm.fecha_fin}T00:00:00`).getTime() - new Date(`${agregarForm.fecha_inicio}T00:00:00`).getTime()) / 86400000) + 1)
     : 1;
-  const precioAgregarVista = esAdmin && agregarForm.precio_unitario.trim() !== ""
+  const precioAgregarVista = canEditReservas && agregarForm.precio_unitario.trim() !== ""
     ? Number(agregarForm.precio_unitario)
     : (tarifaAgregarSeleccionada?.value ?? 0);
   const unidadesAgregarVista = calcularUnidadesTarifa(
@@ -373,7 +372,7 @@ export function Reservas() {
     agregarForm.fecha_fin,
     Number(agregarForm.unidades_tarifa || 1)
   );
-  const descuentoAgregarVista = esAdmin ? Number(agregarForm.descuento || 0) : 0;
+  const descuentoAgregarVista = canEditReservas ? Number(agregarForm.descuento || 0) : 0;
   const totalAgregar = Math.max(0, (Number(agregarForm.cantidad || 1) * unidadesAgregarVista * precioAgregarVista) - descuentoAgregarVista);
 
   const abrirEdicionReserva = (reserva: any) => {
@@ -514,7 +513,7 @@ export function Reservas() {
                     <TableCell className="text-right">
                       <div className="ml-auto flex justify-end gap-1.5">
                         <Skeleton className="h-9 w-9 rounded-md" />
-                        {esAdmin && <Skeleton className="h-9 w-9 rounded-md" />}
+                        {canEditReservas && <Skeleton className="h-9 w-9 rounded-md" />}
                         {canChangeEstadoReservas && <Skeleton className="h-9 w-9 rounded-md" />}
                       </div>
                     </TableCell>
@@ -561,7 +560,7 @@ export function Reservas() {
                         <Button variant="ghost" size="icon" onClick={() => verDetalle(reserva)} aria-label="Ver detalle">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        {esAdmin && (
+                        {canEditReservas && (
                           <Button variant="ghost" size="icon" onClick={() => abrirEdicionReserva(reserva)} aria-label="Editar reserva">
                             <PencilLine className="h-4 w-4" />
                           </Button>
@@ -807,7 +806,7 @@ export function Reservas() {
               />
             </div>
 
-            {esAdmin && (
+            {canEditReservas && (
               <>
                 <div className="space-y-2">
                   <Label>Precio unitario especial</Label>
@@ -823,7 +822,7 @@ export function Reservas() {
                     placeholder="Opcional para precio interno"
                   />
                   <div className="text-xs text-muted-foreground">
-                    Solo el administrador puede ajustar este valor.
+                    Disponible para usuarios con permiso de gestión de reservas.
                   </div>
                 </div>
                 <div className="space-y-2">
@@ -861,7 +860,7 @@ export function Reservas() {
               <span className="rounded-full bg-primary/10 px-2 py-1 text-primary">Vista previa</span>
               <span>La reserva se guardarÃ¡ con los datos ingresados</span>
             </div>
-            {esAdmin && (
+            {canEditReservas && (
               <div>Descuento: <span className="font-semibold text-foreground">{formatCurrency(descuentoAgregarVista || 0)}</span></div>
             )}
             <div>Total estimado: <span className="font-semibold text-foreground">{formatCurrency(totalAgregar)}</span></div>
