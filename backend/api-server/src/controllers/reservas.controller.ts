@@ -113,7 +113,7 @@ export async function reporte(req: Request, res: Response): Promise<void> {
 
     const { desde, hasta } = req.query as Record<string, string>;
     const reporte = await service.getReservasReporte({ desde, hasta });
-    res.setHeader("Content-Type", "application/vnd.ms-excel; charset=utf-8");
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
     res.setHeader("Content-Disposition", `attachment; filename="${reporte.filename}"`);
     res.status(200).send(reporte.content);
   } catch (err: any) {

@@ -69,7 +69,7 @@ export function Finanzas() {
       const blob = await response.blob();
       const disposition = response.headers.get("Content-Disposition") ?? "";
       const filenameMatch = disposition.match(/filename="([^"]+)"/i);
-      const filename = filenameMatch?.[1] ?? `reporte-reservas-${desde}-a-${hasta}.xls`;
+      const filename = filenameMatch?.[1] ?? `reporte-reservas-${desde}-a-${hasta}.xlsx`;
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;

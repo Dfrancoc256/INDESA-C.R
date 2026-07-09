@@ -65,6 +65,150 @@ function toDateOnly(value: string | undefined, fieldName: string): string {
   return value.slice(0, 10);
 }
 
+function escapeXml(value: unknown) {
+  const normalized = value === null || value === undefined ? "" : String(value);
+  return normalized
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
+
+function columnName(index: number) {
+  let name = "";
+  let current = index + 1;
+  while (current > 0) {
+    const remainder = (current - 1) % 26;
+    name = String.fromCharCode(65 + remainder) + name;
+    current = Math.floor((current - 1) / 26);
+  }
+  return name;
+}
+
+function buildCrc32Table() {
+  const table = new Uint32Array(256);
+  for (let i = 0; i < 256; i += 1) {
+    let value = i;
+    for (let bit = 0; bit < 8; bit += 1) {
+      value = (value & 1) ? (0xedb88320 ^ (value >>> 1)) : (value >>> 1);
+    }
+    table[i] = value >>> 0;
+  }
+  return table;
+}
+
+const crc32Table = buildCrc32Table();
+
+function crc32(buffer: Buffer) {
+  let crc = 0xffffffff;
+  for (const byte of buffer) {
+    crc = crc32Table[(crc ^ byte) & 0xff]! ^ (crc >>> 8);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+function createZip(files: Array<{ name: string; content: string | Buffer }>) {
+  const localParts: Buffer[] = [];
+  const centralParts: Buffer[] = [];
+  let offset = 0;
+  const now = new Date();
+  const dosTime = (now.getHours() << 11) | (now.getMinutes() << 5) | Math.floor(now.getSeconds() / 2);
+  const dosDate = ((now.getFullYear() - 1980) << 9) | ((now.getMonth() + 1) << 5) | now.getDate();
+
+  for (const file of files) {
+    const nameBuffer = Buffer.from(file.name, "utf8");
+    const contentBuffer = Buffer.isBuffer(file.content) ? file.content : Buffer.from(file.content, "utf8");
+    const checksum = crc32(contentBuffer);
+
+    const localHeader = Buffer.alloc(30);
+    localHeader.writeUInt32LE(0x04034b50, 0);
+    localHeader.writeUInt16LE(20, 4);
+    localHeader.writeUInt16LE(0x0800, 6);
+    localHeader.writeUInt16LE(0, 8);
+    localHeader.writeUInt16LE(dosTime, 10);
+    localHeader.writeUInt16LE(dosDate, 12);
+    localHeader.writeUInt32LE(checksum, 14);
+    localHeader.writeUInt32LE(contentBuffer.length, 18);
+    localHeader.writeUInt32LE(contentBuffer.length, 22);
+    localHeader.writeUInt16LE(nameBuffer.length, 26);
+    localHeader.writeUInt16LE(0, 28);
+    localParts.push(localHeader, nameBuffer, contentBuffer);
+
+    const centralHeader = Buffer.alloc(46);
+    centralHeader.writeUInt32LE(0x02014b50, 0);
+    centralHeader.writeUInt16LE(20, 4);
+    centralHeader.writeUInt16LE(20, 6);
+    centralHeader.writeUInt16LE(0x0800, 8);
+    centralHeader.writeUInt16LE(0, 10);
+    centralHeader.writeUInt16LE(dosTime, 12);
+    centralHeader.writeUInt16LE(dosDate, 14);
+    centralHeader.writeUInt32LE(checksum, 16);
+    centralHeader.writeUInt32LE(contentBuffer.length, 20);
+    centralHeader.writeUInt32LE(contentBuffer.length, 24);
+    centralHeader.writeUInt16LE(nameBuffer.length, 28);
+    centralHeader.writeUInt16LE(0, 30);
+    centralHeader.writeUInt16LE(0, 32);
+    centralHeader.writeUInt16LE(0, 34);
+    centralHeader.writeUInt16LE(0, 36);
+    centralHeader.writeUInt32LE(0, 38);
+    centralHeader.writeUInt32LE(offset, 42);
+    centralParts.push(centralHeader, nameBuffer);
+
+    offset += localHeader.length + nameBuffer.length + contentBuffer.length;
+  }
+
+  const centralDirectory = Buffer.concat(centralParts);
+  const endHeader = Buffer.alloc(22);
+  endHeader.writeUInt32LE(0x06054b50, 0);
+  endHeader.writeUInt16LE(0, 4);
+  endHeader.writeUInt16LE(0, 6);
+  endHeader.writeUInt16LE(files.length, 8);
+  endHeader.writeUInt16LE(files.length, 10);
+  endHeader.writeUInt32LE(centralDirectory.length, 12);
+  endHeader.writeUInt32LE(offset, 16);
+  endHeader.writeUInt16LE(0, 20);
+
+  return Buffer.concat([...localParts, centralDirectory, endHeader]);
+}
+
+function buildXlsx(headers: string[], rows: Array<Array<{ value: unknown; type?: "text" | "number" }>>) {
+  const sheetRows = [
+    headers.map((header) => ({ value: header, type: "text" as const })),
+    ...rows,
+  ];
+  const sheetData = sheetRows
+    .map((row, rowIndex) => {
+      const cells = row
+        .map((cell, columnIndex) => {
+          const ref = `${columnName(columnIndex)}${rowIndex + 1}`;
+          if (cell.type === "number") {
+            const numeric = Number(cell.value ?? 0);
+            return `<c r="${ref}" s="${rowIndex === 0 ? 1 : 0}"><v>${Number.isFinite(numeric) ? numeric : 0}</v></c>`;
+          }
+          return `<c r="${ref}" t="inlineStr" s="${rowIndex === 0 ? 1 : 0}"><is><t>${escapeXml(cell.value)}</t></is></c>`;
+        })
+        .join("");
+      return `<row r="${rowIndex + 1}">${cells}</row>`;
+    })
+    .join("");
+  const columnWidths = headers
+    .map((_, index) => `<col min="${index + 1}" max="${index + 1}" width="${index === 15 ? 38 : 18}" customWidth="1"/>`)
+    .join("");
+  const worksheet = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><cols>${columnWidths}</cols><sheetData>${sheetData}</sheetData></worksheet>`;
+  const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="Reservas" sheetId="1" r:id="rId1"/></sheets></workbook>`;
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><color rgb="FFFFFFFF"/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FFFF2800"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="2"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyFont="1" applyFill="1"/></cellXfs></styleSheet>`;
+
+  return createZip([
+    { name: "[Content_Types].xml", content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>` },
+    { name: "_rels/.rels", content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>` },
+    { name: "xl/workbook.xml", content: workbook },
+    { name: "xl/_rels/workbook.xml.rels", content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>` },
+    { name: "xl/worksheets/sheet1.xml", content: worksheet },
+    { name: "xl/styles.xml", content: styles },
+  ]);
+}
+
 function calcularDiasReserva(fechaInicio: string, fechaFin: string): number {
   const inicio = new Date(`${fechaInicio}T00:00:00`);
   const fin = new Date(`${fechaFin}T00:00:00`);
@@ -354,16 +498,6 @@ export async function getReservasReporte(input: { desde?: string; hasta?: string
 
   const reservas = await repo.findReservasParaReporte({ desde, hasta });
 
-  const escapeHtml = (value: unknown) => {
-    const normalized = value === null || value === undefined ? "" : String(value);
-    return normalized
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
-  };
-
   const formatDateOnlyForReport = (value: unknown) => {
     if (!value) return "";
     const normalized = String(value).slice(0, 10);
@@ -391,13 +525,6 @@ export async function getReservasReporte(input: { desde?: string; hasta?: string
     }).format(date);
   };
 
-  const cell = (value: unknown, kind: "text" | "number" = "text") => {
-    const style = kind === "number"
-      ? ' style="mso-number-format:\'0.00\';"'
-      : ' style="mso-number-format:\'@\';"';
-    return `<td${style}>${escapeHtml(value)}</td>`;
-  };
-
   const headers = [
     "ID",
     "Fecha Registro",
@@ -417,48 +544,29 @@ export async function getReservasReporte(input: { desde?: string; hasta?: string
     "Notas",
   ];
 
-  const headerRow = headers
-    .map((header) => `<th style="background:#FF2800;color:#ffffff;font-weight:bold;">${escapeHtml(header)}</th>`)
-    .join("");
-
   const rows = reservas.map((reserva) => [
-    cell(reserva.id),
-    cell(formatDateTimeForReport(reserva.created_at)),
-    cell(reserva.cliente_nombre),
-    cell(reserva.cliente_email),
-    cell(reserva.cliente_telefono),
-    cell(reserva.producto_nombre),
-    cell(reserva.cantidad, "number"),
-    cell(formatDateOnlyForReport(reserva.fecha_inicio)),
-    cell(formatDateOnlyForReport(reserva.fecha_fin)),
-    cell(reserva.tipo_tarifa),
-    cell(reserva.unidades_tarifa, "number"),
-    cell(Number(reserva.precio_unitario ?? 0).toFixed(2), "number"),
-    cell(Number(reserva.descuento ?? 0).toFixed(2), "number"),
-    cell(Number(reserva.total_estimado ?? 0).toFixed(2), "number"),
-    cell(reserva.estado),
-    cell(reserva.notas),
-  ].join("")).map((row) => `<tr>${row}</tr>`);
+    { value: reserva.id, type: "text" as const },
+    { value: formatDateTimeForReport(reserva.created_at), type: "text" as const },
+    { value: reserva.cliente_nombre, type: "text" as const },
+    { value: reserva.cliente_email, type: "text" as const },
+    { value: reserva.cliente_telefono, type: "text" as const },
+    { value: reserva.producto_nombre, type: "text" as const },
+    { value: reserva.cantidad, type: "number" as const },
+    { value: formatDateOnlyForReport(reserva.fecha_inicio), type: "text" as const },
+    { value: formatDateOnlyForReport(reserva.fecha_fin), type: "text" as const },
+    { value: reserva.tipo_tarifa, type: "text" as const },
+    { value: reserva.unidades_tarifa, type: "number" as const },
+    { value: Number(reserva.precio_unitario ?? 0).toFixed(2), type: "number" as const },
+    { value: Number(reserva.descuento ?? 0).toFixed(2), type: "number" as const },
+    { value: Number(reserva.total_estimado ?? 0).toFixed(2), type: "number" as const },
+    { value: reserva.estado, type: "text" as const },
+    { value: reserva.notas, type: "text" as const },
+  ]);
 
-  const content = `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <style>
-      table { border-collapse: collapse; font-family: Arial, sans-serif; font-size: 12px; }
-      th, td { border: 1px solid #d9d9d9; padding: 6px 8px; vertical-align: top; }
-    </style>
-  </head>
-  <body>
-    <table>
-      <thead><tr>${headerRow}</tr></thead>
-      <tbody>${rows.join("")}</tbody>
-    </table>
-  </body>
-</html>`;
+  const content = buildXlsx(headers, rows);
 
   return {
-    filename: `reporte-reservas-${desde}-a-${hasta}.xls`,
+    filename: `reporte-reservas-${desde}-a-${hasta}.xlsx`,
     content,
   };
 }
