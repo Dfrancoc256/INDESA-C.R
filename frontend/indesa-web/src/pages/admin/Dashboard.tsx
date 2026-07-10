@@ -6,11 +6,30 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Link } from "wouter";
+import { useEffect, useMemo, useState } from "react";
+
+const dashboardPageSize = 10;
 
 export function Dashboard() {
   const { data: resumen, isLoading: isLoadingResumen } = useGetDashboardResumen();
   const { data: reservasRecientes, isLoading: isLoadingReservas } = useGetReservasRecientes();
   const { data: stockBajo, isLoading: isLoadingStock } = useGetProductosStockBajo();
+  const [stockPage, setStockPage] = useState(1);
+  const reservasRecientesPagina = reservasRecientes?.slice(0, dashboardPageSize) ?? [];
+  const stockBajoOrdenado = useMemo(() => {
+    return [...(stockBajo ?? [])].sort((a: any, b: any) => {
+      const dateA = new Date(a.updated_at ?? 0).getTime();
+      const dateB = new Date(b.updated_at ?? 0).getTime();
+      if (dateA !== dateB) return dateB - dateA;
+      return Number(b.producto_id ?? 0) - Number(a.producto_id ?? 0);
+    });
+  }, [stockBajo]);
+  const stockTotalPages = Math.max(1, Math.ceil(stockBajoOrdenado.length / dashboardPageSize));
+  const stockPagina = stockBajoOrdenado.slice((stockPage - 1) * dashboardPageSize, stockPage * dashboardPageSize);
+
+  useEffect(() => {
+    setStockPage((current) => Math.min(current, stockTotalPages));
+  }, [stockTotalPages]);
 
   return (
     <div className="space-y-6">
@@ -67,7 +86,7 @@ export function Dashboard() {
               <div className="space-y-2">
                 {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-12 w-full" />)}
               </div>
-            ) : (reservasRecientes?.slice(0, 5) ?? []).length === 0 ? (
+            ) : reservasRecientesPagina.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
                 No hay reservas recientes
               </div>
@@ -83,7 +102,7 @@ export function Dashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {(reservasRecientes?.slice(0, 5) ?? []).map((reserva) => (
+                    {reservasRecientesPagina.map((reserva) => (
                       <TableRow key={reserva.id}>
                         <TableCell className="font-medium">
                           {reserva.cliente_nombre}
@@ -129,14 +148,14 @@ export function Dashboard() {
               <div className="space-y-4">
                 {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 w-full" />)}
               </div>
-            ) : stockBajo?.length === 0 ? (
+            ) : stockBajoOrdenado.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-8 text-center">
                 <CheckCircle className="h-12 w-12 text-green-500 mb-2 opacity-50" />
                 <p className="text-muted-foreground">El inventario está en niveles óptimos</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {stockBajo?.map((item) => (
+                {stockPagina.map((item) => (
                   <div key={item.producto_id} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
                     <div>
                       <Link href={`/admin/inventario?producto=${item.producto_id}`} className="font-medium hover:text-primary transition-colors">
@@ -153,6 +172,29 @@ export function Dashboard() {
                     </div>
                   </div>
                 ))}
+                <div className="flex flex-col gap-3 border-t pt-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                  <span>
+                    Mostrando {((stockPage - 1) * dashboardPageSize) + 1} a {Math.min(stockPage * dashboardPageSize, stockBajoOrdenado.length)} de {stockBajoOrdenado.length} alertas
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={stockPage === 1}
+                      onClick={() => setStockPage((value) => Math.max(1, value - 1))}
+                    >
+                      Anterior
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded-md border px-3 py-1.5 text-sm font-medium transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={stockPage >= stockTotalPages}
+                      onClick={() => setStockPage((value) => Math.min(stockTotalPages, value + 1))}
+                    >
+                      Siguiente
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </CardContent>
