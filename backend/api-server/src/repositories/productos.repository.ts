@@ -14,6 +14,27 @@ function decimalToNumber(value: string | null): number | null {
   return value === null ? null : Number(value);
 }
 
+function normalizeSearchTerm(value?: string) {
+  return value?.trim().replace(/\s+/g, " ").slice(0, 120);
+}
+
+function buildProductoSearchCondition(value?: string) {
+  const normalized = normalizeSearchTerm(value);
+  if (!normalized) return undefined;
+
+  const tokens = normalized.split(" ").filter(Boolean).slice(0, 6);
+  const tokenConditions = tokens
+    .map((token) => or(
+      ilike(productosTable.nombre, `%${token}%`),
+      ilike(productosTable.descripcion, `%${token}%`),
+      ilike(categoriasTable.nombre, `%${token}%`),
+    ))
+    .filter(Boolean) as SQL[];
+
+  if (tokenConditions.length === 0) return undefined;
+  return and(...tokenConditions);
+}
+
 export async function findProductos(params: {
   categoriaId?: number;
   busqueda?: string;
@@ -29,15 +50,8 @@ export async function findProductos(params: {
   const conditions: SQL[] = [];
   if (soloActivos) conditions.push(eq(productosTable.activo, true));
   if (params.categoriaId) conditions.push(eq(productosTable.categoriaId, params.categoriaId));
-  if (params.busqueda) {
-    const term = `%${params.busqueda}%`;
-    const searchCondition = or(
-      ilike(productosTable.nombre, term),
-      ilike(productosTable.descripcion, term),
-      ilike(categoriasTable.nombre, term),
-    );
-    if (searchCondition) conditions.push(searchCondition);
-  }
+  const searchCondition = buildProductoSearchCondition(params.busqueda);
+  if (searchCondition) conditions.push(searchCondition);
   if (params.disponibilidad === "agotado") {
     conditions.push(sql`coalesce(${inventarioTable.cantidad}, 0) = 0`);
   }

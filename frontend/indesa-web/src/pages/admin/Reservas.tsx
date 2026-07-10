@@ -25,6 +25,7 @@ import { hasPermission } from "@/lib/permissions";
 import { errorMessages } from "@/lib/errorMessages";
 import { calcularUnidadesTarifa, getTarifaPrincipal, getTarifasProducto } from "@/lib/utils";
 import { apiFetch } from "@/lib/apiFetch";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 
 function formatDateOnly(value?: string | Date | null) {
   if (!value) return "Sin fecha";
@@ -182,7 +183,11 @@ export function Reservas() {
     setAgregarForm((prev) => ({ ...prev, fecha_fin: fechaFin.toISOString().slice(0, 10) }));
   }, [agregarForm.fecha_inicio, agregarForm.tipo_tarifa, agregarForm.unidades_tarifa]);
 
-  const busquedaNormalizada = busqueda.trim();
+  const busquedaNormalizada = useDebouncedValue(busqueda.trim(), 320);
+
+  useEffect(() => {
+    setPage(1);
+  }, [busquedaNormalizada, estadoFilter]);
 
   const { data: reservasResponse, isLoading, refetch } = useListReservas({
     page,

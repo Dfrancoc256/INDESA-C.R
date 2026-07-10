@@ -18,6 +18,34 @@ function mapReservaRow<T extends {
   };
 }
 
+function normalizeSearchTerm(value?: string) {
+  return value?.trim().replace(/\s+/g, " ").slice(0, 120);
+}
+
+function buildReservaSearchCondition(value?: string) {
+  const normalized = normalizeSearchTerm(value);
+  if (!normalized) return undefined;
+
+  const tokens = normalized.split(" ").filter(Boolean).slice(0, 6);
+  const tokenConditions = tokens
+    .map((token) => {
+      const textTerm = `%${token}%`;
+      const numericId = /^\d+$/.test(token) ? Number(token) : null;
+
+      return or(
+        ilike(reservasTable.clienteNombre, textTerm),
+        ilike(reservasTable.clienteEmail, textTerm),
+        ilike(reservasTable.clienteTelefono, textTerm),
+        ilike(productosTable.nombre, textTerm),
+        numericId ? eq(reservasTable.id, numericId) : undefined,
+      );
+    })
+    .filter(Boolean) as SQL[];
+
+  if (tokenConditions.length === 0) return undefined;
+  return and(...tokenConditions);
+}
+
 export async function findAllReservas(params: {
   estado?: string;
   busqueda?: string;
@@ -29,17 +57,8 @@ export async function findAllReservas(params: {
 
   const conditions: SQL[] = [];
   if (estado) conditions.push(eq(reservasTable.estado, estado));
-  if (busqueda?.trim()) {
-    const term = `%${busqueda.trim()}%`;
-    const searchCondition = or(
-      ilike(reservasTable.clienteNombre, term),
-      ilike(reservasTable.clienteEmail, term),
-      ilike(reservasTable.clienteTelefono, term),
-      ilike(productosTable.nombre, term),
-      sql`cast(${reservasTable.id} as text) ilike ${term}`,
-    );
-    if (searchCondition) conditions.push(searchCondition);
-  }
+  const searchCondition = buildReservaSearchCondition(busqueda);
+  if (searchCondition) conditions.push(searchCondition);
   const condition = conditions.length ? and(...conditions) : undefined;
 
   const rows = await db
@@ -79,6 +98,7 @@ export async function findAllReservas(params: {
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(reservasTable)
+    .leftJoin(productosTable, eq(reservasTable.productoId, productosTable.id))
     .where(condition);
 
   return { data: rows.map(mapReservaRow), total: Number(count), page, limit };

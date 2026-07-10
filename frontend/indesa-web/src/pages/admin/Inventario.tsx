@@ -20,6 +20,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateCatalogData } from "@/lib/queryInvalidation";
 import { errorMessages } from "@/lib/errorMessages";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 
 const inventarioSchema = z.object({
   cantidad: z.coerce.number().min(0, "La cantidad debe ser mayor o igual a 0"),
@@ -39,6 +40,7 @@ export function Inventario() {
   const [isHistorialOpen, setIsHistorialOpen] = useState(false);
   const [isAjusteOpen, setIsAjusteOpen] = useState(false);
   const [page, setPage] = useState(1);
+  const debouncedBusqueda = useDebouncedValue(busqueda.trim(), 250);
   const canEditInventory = hasPermission(usuario, "inventario.editar");
   const inventarioColSpan = canEditInventory ? 6 : 5;
   
@@ -101,7 +103,7 @@ export function Inventario() {
   };
 
   const filteredInventario = useMemo(() => {
-    const term = busqueda.trim().toLowerCase();
+    const term = debouncedBusqueda.toLowerCase();
     return [...(inventario ?? [])]
       .filter(item =>
         !term ||
@@ -114,13 +116,13 @@ export function Inventario() {
         if (dateA !== dateB) return dateB - dateA;
         return Number(b.producto_id ?? 0) - Number(a.producto_id ?? 0);
       });
-  }, [inventario, busqueda]);
+  }, [inventario, debouncedBusqueda]);
   const totalPages = Math.max(1, Math.ceil(filteredInventario.length / pageSize));
   const inventarioPagina = filteredInventario.slice((page - 1) * pageSize, page * pageSize);
 
   useEffect(() => {
     setPage(1);
-  }, [busqueda]);
+  }, [debouncedBusqueda]);
 
   useEffect(() => {
     setPage((current) => Math.min(current, totalPages));

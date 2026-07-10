@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { FaFacebookF, FaWhatsapp } from "react-icons/fa";
 import { getListProductosQueryKey, useListProductos, type Producto } from "@workspace/api-client-react";
 import { formatCurrency, getInitials, getTarifaPrincipal } from "@/lib/utils";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 import logoIndesa from "@/assets/logo-indesa-wordmark.png";
 import logoIndesaCompleto from "@/assets/logo-indesa-transparent.png";
 
@@ -119,19 +120,20 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   };
 
   const normalizedSearch = headerSearch.trim().toLowerCase();
+  const debouncedSearch = useDebouncedValue(normalizedSearch, 280);
   const searchParams = {
     page: 1,
     limit: 5,
-    busqueda: normalizedSearch || undefined,
+    busqueda: debouncedSearch || undefined,
     orden: "nombre_asc",
   } as const;
   const { data: searchResponse, isFetching: isFetchingSuggestions } = useListProductos(searchParams, {
     query: {
       queryKey: getListProductosQueryKey(searchParams),
-      enabled: Boolean(normalizedSearch),
+      enabled: Boolean(debouncedSearch),
     },
   });
-  const searchSuggestions = normalizedSearch ? searchResponse?.data ?? [] : [];
+  const searchSuggestions = debouncedSearch ? searchResponse?.data ?? [] : [];
   const showSearchSuggestions = isSearchFocused && Boolean(normalizedSearch);
 
   const goToProduct = (producto: Producto) => {

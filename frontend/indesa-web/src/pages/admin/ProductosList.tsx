@@ -1,5 +1,5 @@
 import { useDeleteProducto, useListCategorias, useListProductos, type Producto } from "@workspace/api-client-react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { formatCurrency, getInitials, getTarifaPrincipal, getTarifasProducto } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Plus, Search, Edit, Filter, BadgeCheck, XCircle, Trash2 } from "lucide-react";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 
 export function ProductosList() {
   const { usuario } = useAuth();
@@ -27,25 +28,12 @@ export function ProductosList() {
   const [busqueda, setBusqueda] = useState("");
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
   const [productoAEliminar, setProductoAEliminar] = useState<Producto | null>(null);
-  
-  // Debounce search
-  const [debouncedBusqueda, setDebouncedBusqueda] = useState("");
-  const searchTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
+  const debouncedBusqueda = useDebouncedValue(busqueda.trim(), 320);
   const canCreateProducts = hasPermission(usuario, "productos.crear");
   const canEditProducts = hasPermission(usuario, "productos.editar");
   const canDeleteProducts = hasPermission(usuario, "productos.eliminar");
   const canManageProducts = canCreateProducts || canEditProducts || canDeleteProducts;
   const productosColSpan = canManageProducts ? 6 : 5;
-  
-  const handleSearch = (val: string) => {
-    setBusqueda(val);
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    searchTimeout.current = setTimeout(() => {
-      setDebouncedBusqueda(val);
-      setPage(1);
-    }, 500);
-  };
-
   const { data: categorias } = useListCategorias();
   
   const { data: productosResponse, isLoading } = useListProductos({
@@ -55,6 +43,10 @@ export function ProductosList() {
     categoria_id: categoriaId,
     incluir_inactivos: true,
   } as any);
+
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedBusqueda, categoriaId]);
 
   const productosPagina = productosResponse?.data ?? [];
   const totalProductos = productosResponse?.total ?? 0;
@@ -111,7 +103,7 @@ export function ProductosList() {
               placeholder="Buscar productos por nombre o descripción..."
               className="pl-9"
               value={busqueda}
-              onChange={(e) => handleSearch(e.target.value)}
+              onChange={(e) => setBusqueda(e.target.value)}
             />
           </div>
           <div className="w-full md:w-64 flex items-center gap-2">

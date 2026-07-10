@@ -23,6 +23,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { errorMessages } from "@/lib/errorMessages";
+import { useDebouncedValue } from "@/hooks/use-debounced-value";
 
 const usuarioCreateSchema = z.object({
   nombre: z.string().min(2, "El nombre debe tener al menos 2 caracteres"),
@@ -54,6 +55,7 @@ export function Usuarios() {
   const queryClient = useQueryClient();
   const [busqueda, setBusqueda] = useState("");
   const [page, setPage] = useState(1);
+  const debouncedBusqueda = useDebouncedValue(busqueda.trim(), 250);
   
   const [isCrearOpen, setIsCrearOpen] = useState(false);
   const [isEditarOpen, setIsEditarOpen] = useState(false);
@@ -195,7 +197,7 @@ export function Usuarios() {
   };
 
   const usuariosFiltrados = useMemo(() => {
-    const term = busqueda.trim().toLowerCase();
+    const term = debouncedBusqueda.toLowerCase();
     return [...(usuarios ?? [])]
       .filter(u =>
         !term ||
@@ -209,13 +211,13 @@ export function Usuarios() {
         if (dateA !== dateB) return dateB - dateA;
         return Number(b.id ?? 0) - Number(a.id ?? 0);
       });
-  }, [usuarios, busqueda]);
+  }, [usuarios, debouncedBusqueda]);
   const totalPages = Math.max(1, Math.ceil(usuariosFiltrados.length / pageSize));
   const usuariosPagina = usuariosFiltrados.slice((page - 1) * pageSize, page * pageSize);
 
   useEffect(() => {
     setPage(1);
-  }, [busqueda]);
+  }, [debouncedBusqueda]);
 
   useEffect(() => {
     setPage((current) => Math.min(current, totalPages));
