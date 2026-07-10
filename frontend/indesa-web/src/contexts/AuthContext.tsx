@@ -8,7 +8,7 @@ import { errorMessages } from "@/lib/errorMessages";
 const ACCESS_TOKEN_KEY = "indesa_access_token";
 const REFRESH_TOKEN_KEY = "indesa_refresh_token";
 const LAST_ACTIVITY_KEY = "indesa_last_activity_at";
-const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000;
+const INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000;
 
 const getStoredAccessToken = () => {
   if (typeof window === "undefined") return null;

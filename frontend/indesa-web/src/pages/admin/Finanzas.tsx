@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { CalendarRange, CreditCard, DollarSign, FileDown, TrendingUp, Wallet } from "lucide-react";
+import { CalendarRange, CreditCard, DollarSign, FileDown, TrendingUp, Wallet, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiFetch } from "@/lib/apiFetch";
 
@@ -16,29 +16,56 @@ function getMonthStart() {
   return new Date(date.getFullYear(), date.getMonth(), 1).toISOString().slice(0, 10);
 }
 
+function normalizarEstado(value?: string | null) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function estaEnRango(dateString: string | Date | null | undefined, desde: string, hasta: string) {
+  if (!dateString) return false;
+  const value = new Date(dateString).getTime();
+  const start = new Date(`${desde}T00:00:00`).getTime();
+  const end = new Date(`${hasta}T23:59:59.999`).getTime();
+  if ([value, start, end].some(Number.isNaN)) return false;
+  return value >= start && value <= end;
+}
+
 export function Finanzas() {
   const { toast } = useToast();
   const [desde, setDesde] = useState(getMonthStart());
   const [hasta, setHasta] = useState(new Date().toISOString().slice(0, 10));
   const { data: resumen, isLoading: isLoadingResumen } = useGetDashboardResumen();
-  const { data: reservasResponse, isLoading: isLoadingReservas } = useListReservas({ page: 1, limit: 100 });
+  const { data: reservasResponse, isLoading: isLoadingReservas } = useListReservas({ page: 1, limit: 1000 });
 
   const reservas = reservasResponse?.data ?? [];
+  const reservasDelRango = useMemo(() => {
+    return reservas.filter((reserva) => estaEnRango(reserva.created_at, desde, hasta));
+  }, [reservas, desde, hasta]);
+
   const totales = useMemo(() => {
-    return reservas.reduce(
+    return reservasDelRango.reduce(
       (acc, reserva) => {
         const monto = Number(reserva.total_estimado ?? 0);
+        const estado = normalizarEstado(reserva.estado);
+        const estadoPago = normalizarEstado((reserva as any).estado_pago);
+        const cancelada = estado === "cancelada" || estado === "cancelado";
+
+        if (cancelada) {
+          acc.cancelado += monto;
+          acc.canceladas += 1;
+          return acc;
+        }
+
         acc.total += monto;
-        if ((reserva as any).estado_pago === "pagada") acc.pagado += monto;
-        if ((reserva as any).estado_pago !== "pagada" && reserva.estado !== "cancelada") acc.pendientePago += monto;
-        if (reserva.estado === "cancelada") acc.cancelado += monto;
+        if (estadoPago === "pagada") acc.pagado += monto;
+        if (estadoPago !== "pagada") acc.pendientePago += monto;
         return acc;
       },
-      { total: 0, pagado: 0, pendientePago: 0, cancelado: 0 },
+      { total: 0, pagado: 0, pendientePago: 0, cancelado: 0, canceladas: 0 },
     );
-  }, [reservas]);
+  }, [reservasDelRango]);
 
-  const reservasPagadas = reservas.filter((reserva) => (reserva as any).estado_pago === "pagada");
+  const reservasPagadas = reservasDelRango.filter((reserva) => normalizarEstado((reserva as any).estado_pago) === "pagada" && !["cancelada", "cancelado"].includes(normalizarEstado(reserva.estado)));
+  const reservasCanceladas = reservasDelRango.filter((reserva) => ["cancelada", "cancelado"].includes(normalizarEstado(reserva.estado)));
 
   const descargarReporte = async () => {
     if (!desde || !hasta) {
@@ -128,7 +155,7 @@ export function Finanzas() {
         <MetricCard title="Ingresos estimados" value={totales.total} icon={DollarSign} />
         <MetricCard title="Pagadas" value={totales.pagado} icon={TrendingUp} />
         <MetricCard title="Pendientes de pago" value={totales.pendientePago} icon={Wallet} />
-        <MetricCard title="Canceladas" value={totales.cancelado} icon={CreditCard} />
+        <MetricCard title="Canceladas" value={totales.cancelado} icon={CreditCard} caption={`${totales.canceladas} reserva${totales.canceladas === 1 ? "" : "s"}`} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]">
@@ -224,6 +251,66 @@ export function Finanzas() {
         </Card>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle>Reservas canceladas</CardTitle>
+          <CardDescription>
+            Muestra las solicitudes canceladas dentro del rango seleccionado.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingReservas ? (
+            <div className="space-y-2">
+              {Array.from({ length: 3 }).map((_, index) => (
+                <Skeleton key={index} className="h-12 w-full" />
+              ))}
+            </div>
+          ) : reservasCanceladas.length === 0 ? (
+            <div className="rounded-md border border-dashed p-8 text-center text-muted-foreground">
+              No hay reservas canceladas en este rango.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Cliente</TableHead>
+                    <TableHead>Producto</TableHead>
+                    <TableHead>Estado</TableHead>
+                    <TableHead className="text-right">Monto</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {reservasCanceladas.map((reserva) => (
+                    <TableRow key={reserva.id}>
+                      <TableCell>
+                        <div className="font-medium">{reserva.cliente_nombre}</div>
+                        <div className="text-xs text-muted-foreground">{formatDate(reserva.created_at)}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{reserva.producto_nombre}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {reserva.tipo_tarifa ?? "dia"} · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="destructive" className="gap-1">
+                          <XCircle className="h-3 w-3" />
+                          Cancelada
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right font-semibold">
+                        {formatCurrency(Number(reserva.total_estimado ?? 0))}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
     </div>
   );
 }
@@ -232,10 +319,12 @@ function MetricCard({
   title,
   value,
   icon: Icon,
+  caption,
 }: {
   title: string;
   value: number;
   icon: any;
+  caption?: string;
 }) {
   return (
     <Card>
@@ -245,6 +334,7 @@ function MetricCard({
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{formatCurrency(value)}</div>
+        {caption && <div className="mt-1 text-xs text-muted-foreground">{caption}</div>}
       </CardContent>
     </Card>
   );

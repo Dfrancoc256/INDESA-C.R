@@ -6,7 +6,7 @@ INSERT INTO roles (nombre, descripcion, permisos) VALUES
     'productos.crear', 'productos.editar', 'productos.eliminar',
     'categorias.ver',
     'inventario.ver', 'inventario.editar',
-    'reservas.ver', 'reservas.editar',
+    'reservas.ver', 'reservas.editar', 'reservas.cambiar_estado',
     'finanzas.ver',
     'usuarios.ver', 'usuarios.crear', 'usuarios.editar', 'usuarios.eliminar'
   ]),

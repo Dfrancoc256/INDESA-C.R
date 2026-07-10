@@ -39,11 +39,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
 
   const navLinks = [
     { href: "/admin/dashboard", label: "Dashboard", icon: Home, permiso: "dashboard.ver" },
-    { href: "/admin/productos", label: "Productos", icon: Package, permiso: "productos.ver" },
-    { href: "/admin/categorias", label: "Categorías", icon: Tags, permiso: "categorias.ver" },
-    { href: "/admin/inventario", label: "Inventario", icon: ClipboardList, permiso: "inventario.ver" },
-    { href: "/admin/reservas", label: "Reservas", icon: Calendar, permiso: "reservas.ver" },
     { href: "/admin/finanzas", label: "Finanzas", icon: Landmark, permiso: "finanzas.ver" },
+    { href: "/admin/productos", label: "Productos", icon: Package, permiso: "productos.ver" },
+    { href: "/admin/reservas", label: "Reservas", icon: Calendar, permiso: "reservas.ver" },
+    { href: "/admin/inventario", label: "Inventario", icon: ClipboardList, permiso: "inventario.ver" },
+    { href: "/admin/categorias", label: "Categorías", icon: Tags, permiso: "categorias.ver" },
     { href: "/admin/usuarios", label: "Usuarios", icon: Users, permiso: "usuarios.ver" },
   ].filter((link) => hasPermission(usuario, link.permiso));
 

@@ -68,7 +68,7 @@ export function ReservationDatePicker({
             <CalendarIcon className="h-4 w-4 opacity-60" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent align="start" className="w-auto p-0">
+        <PopoverContent align="start" className="w-[21rem] max-w-[calc(100vw-2rem)] p-0">
           <Calendar
             mode="single"
             selected={selected}
