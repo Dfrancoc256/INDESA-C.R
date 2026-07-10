@@ -32,9 +32,10 @@ import { Finanzas } from '@/pages/admin/Finanzas';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: false,
-      staleTime: 0,
-      refetchOnWindowFocus: true,
+      retry: 1,
+      staleTime: 60 * 1000,
+      gcTime: 5 * 60 * 1000,
+      refetchOnWindowFocus: false,
       refetchOnReconnect: true,
     },
   },

@@ -85,6 +85,7 @@ export interface Producto {
   /** @nullable */
   imagen_url?: string | null;
   activo: boolean;
+  advertencia_precio: boolean;
   /** @nullable */
   cantidad?: number | null;
   /** @nullable */
@@ -107,6 +108,7 @@ export interface ProductoInput {
   precio_mes?: number | null;
   imagen_url?: string;
   activo?: boolean;
+  advertencia_precio?: boolean;
   /** @minimum 0 */
   stock_inicial?: number;
   /** @minimum 0 */

@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { ReservationDatePicker } from "@/components/reservation-date-picker";
-import { CheckCircle2, ClipboardList } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ClipboardList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useReservaDisponibilidad } from "@/hooks/use-reserva-disponibilidad";
 import { useReservaCalendarioDisponibilidad } from "@/hooks/use-reserva-calendario-disponibilidad";
@@ -25,6 +25,7 @@ import {
   getTarifasProducto,
   getPrecioReferenciaProducto,
   getTodayDate,
+  PRODUCT_PRICE_WARNING,
 } from "@/lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateCatalogData } from "@/lib/queryInvalidation";
@@ -331,6 +332,12 @@ export function Reservar() {
                                 </span>
                               ))}
                             </div>
+                            {productoSeleccionado.advertencia_precio && (
+                              <div className="mt-3 flex gap-2 rounded-md border border-black/10 bg-white p-2 text-xs leading-snug text-black">
+                                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                                <span>{PRODUCT_PRICE_WARNING}</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}

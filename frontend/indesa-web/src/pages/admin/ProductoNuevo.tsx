@@ -34,6 +34,7 @@ const productoSchema = z.object({
   precio_mes: precioTiempoSchema,
   imagen_url: z.string().refine(isValidImageSource, "Debe ser una URL valida o una imagen cargada").optional(),
   activo: z.boolean().default(true),
+  advertencia_precio: z.boolean().default(false),
   stock_inicial: z.coerce.number().min(0, "El stock inicial no puede ser negativo").default(0),
   stock_minimo: z.coerce.number().min(0, "El stock mínimo no puede ser negativo").default(5),
 });
@@ -76,6 +77,7 @@ export function ProductoNuevo() {
       precio_mes: null,
       imagen_url: "",
       activo: true,
+      advertencia_precio: false,
       stock_inicial: 0,
       stock_minimo: 5,
     },
@@ -368,6 +370,26 @@ export function ProductoNuevo() {
                           <FormLabel className="text-base">Catálogo Público</FormLabel>
                           <FormDescription>
                             El producto será visible
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="advertencia_precio"
+                    render={({ field }) => (
+                      <FormItem className="mt-4 flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">Mostrar advertencia de precio</FormLabel>
+                          <FormDescription>
+                            Activa una nota visible junto a las tarifas del producto.
                           </FormDescription>
                         </div>
                         <FormControl>

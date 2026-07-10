@@ -16,6 +16,8 @@ type ProductoInput = {
   imagenUrl?: string;
   imagen_url?: string;
   activo?: boolean;
+  advertenciaPrecio?: boolean;
+  advertencia_precio?: boolean;
   stockInicial?: number;
   stock_inicial?: number;
   stockMinimo?: number;
@@ -33,6 +35,7 @@ function normalizeProductoInput(data: ProductoInput) {
     precioMes: data.precioMes !== undefined ? data.precioMes : data.precio_mes,
     imagenUrl: data.imagenUrl ?? data.imagen_url,
     activo: data.activo,
+    advertenciaPrecio: data.advertenciaPrecio ?? data.advertencia_precio,
     stockInicial: data.stockInicial ?? data.stock_inicial,
     stockMinimo: data.stockMinimo ?? data.stock_minimo,
   };
@@ -81,6 +84,7 @@ export async function createProducto(data: ProductoInput) {
     precioMes: productoData.precioMes,
     imagenUrl: productoData.imagenUrl,
     activo: productoData.activo,
+    advertenciaPrecio: productoData.advertenciaPrecio,
   });
 
   // Crear registro de inventario automáticamente

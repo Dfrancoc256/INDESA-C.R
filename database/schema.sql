@@ -38,6 +38,7 @@ CREATE TABLE productos (
   precio_mes NUMERIC(10, 2),
   imagen_url TEXT,
   activo BOOLEAN NOT NULL DEFAULT TRUE,
+  advertencia_precio BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );

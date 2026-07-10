@@ -35,6 +35,7 @@ const productoSchema = z.object({
   precio_mes: precioTiempoSchema,
   imagen_url: z.string().refine(isValidImageSource, "Debe ser una URL valida o una imagen cargada").optional(),
   activo: z.boolean().default(true),
+  advertencia_precio: z.boolean().default(false),
 });
 
 type ProductoValues = z.infer<typeof productoSchema>;
@@ -82,6 +83,7 @@ export function ProductoEditar() {
       precio_mes: null,
       imagen_url: "",
       activo: true,
+      advertencia_precio: false,
       categoria_id: 0
     },
   });
@@ -98,6 +100,7 @@ export function ProductoEditar() {
         precio_mes: producto.precio_mes ?? null,
         imagen_url: producto.imagen_url || "",
         activo: producto.activo,
+        advertencia_precio: producto.advertencia_precio ?? false,
         categoria_id: producto.categoria_id
       });
       setImageUrlPreview(producto.imagen_url || "");
@@ -398,6 +401,26 @@ export function ProductoEditar() {
                           <FormLabel className="text-base">Catálogo Público</FormLabel>
                           <FormDescription>
                             El producto es visible
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="advertencia_precio"
+                    render={({ field }) => (
+                      <FormItem className="mt-4 flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-base">Mostrar advertencia de precio</FormLabel>
+                          <FormDescription>
+                            Activa una nota visible junto a las tarifas del producto.
                           </FormDescription>
                         </div>
                         <FormControl>

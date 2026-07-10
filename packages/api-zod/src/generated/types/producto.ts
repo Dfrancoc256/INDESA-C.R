@@ -25,6 +25,7 @@ export interface Producto {
   /** @nullable */
   imagen_url?: string | null;
   activo: boolean;
+  advertencia_precio: boolean;
   /** @nullable */
   cantidad?: number | null;
   /** @nullable */

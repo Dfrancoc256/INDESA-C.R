@@ -1,13 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useListCategorias, useListProductos, type ListProductosOrden, type ProductosPaginados } from "@workspace/api-client-react";
-import { cn, formatCurrency, getInitials, getTarifaPrincipal } from "@/lib/utils";
+import { cn, formatCurrency, getInitials, getTarifaPrincipal, PRODUCT_PRICE_WARNING } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter, SlidersHorizontal, AlertCircle } from "lucide-react";
+import { Search, Filter, SlidersHorizontal, AlertCircle, AlertTriangle } from "lucide-react";
 import { errorMessages } from "@/lib/errorMessages";
 import { getTarifasProducto } from "@/lib/utils";
 
@@ -330,6 +330,12 @@ export function Catalogo() {
                           {formatCurrency(tarifa.value)}
                           <span className="ml-1 text-xs font-medium text-muted-foreground">/{tarifa.suffix}</span>
                         </div>
+                        {producto.advertencia_precio && (
+                          <div className="mb-3 flex gap-2 rounded-md border border-black/10 bg-black/[0.03] p-2 text-xs leading-snug text-black">
+                            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                            <span>{PRODUCT_PRICE_WARNING}</span>
+                          </div>
+                        )}
                         <div className="flex flex-wrap gap-2">
                           {tarifas
                             .filter((item) => item.tipo !== "dia")

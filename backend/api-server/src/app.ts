@@ -8,6 +8,7 @@ import { logger } from "./lib/logger";
 import { apiRateLimit } from "./middlewares/rate-limit.middleware";
 
 const app: Express = express();
+app.disable("x-powered-by");
 
 // Cuando la app corre detrás de Nginx/Cloudflare/otro proxy, Express debe
 // confiar en el encabezado X-Forwarded-For para leer la IP real del cliente.
@@ -15,6 +16,29 @@ app.set("trust proxy", Number(process.env["TRUST_PROXY"] ?? 1));
 
 // Seguridad HTTP headers
 app.use(helmet());
+
+app.use((req, res, next) => {
+  res.removeHeader("X-Powered-By");
+
+  if (req.method !== "GET") {
+    res.setHeader("Cache-Control", "no-store");
+    return next();
+  }
+
+  const path = req.originalUrl.split("?")[0] ?? "";
+  const isPublicCatalog =
+    (path === "/api/productos" || path.startsWith("/api/productos/")) &&
+    req.query["incluir_inactivos"] !== "true";
+  const isPublicCategoryList = path === "/api/categorias";
+
+  if (isPublicCatalog || isPublicCategoryList) {
+    res.setHeader("Cache-Control", "public, max-age=30, stale-while-revalidate=120");
+  } else {
+    res.setHeader("Cache-Control", "no-store");
+  }
+
+  next();
+});
 
 // Logging
 app.use(

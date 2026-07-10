@@ -19,6 +19,7 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
 let _unauthorizedHandler: UnauthorizedHandler | null = null;
+const pendingGetRequests = new Map<string, Promise<unknown>>();
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -371,23 +372,37 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, credentials: "include", method, headers });
+  const executeRequest = async (): Promise<T> => {
+    const response = await fetch(input, { ...init, credentials: "include", method, headers });
 
-  if (!response.ok) {
-    const errorData = await parseErrorBody(response, method);
-    const error = new ApiError(response, errorData, requestInfo);
+    if (!response.ok) {
+      const errorData = await parseErrorBody(response, method);
+      const error = new ApiError(response, errorData, requestInfo);
 
-    if (
-      response.status === 401 &&
-      _unauthorizedHandler &&
-      !requestInfo.url.includes("/api/auth/login") &&
-      !requestInfo.url.includes("/api/auth/logout")
-    ) {
-      void _unauthorizedHandler(error);
+      if (
+        response.status === 401 &&
+        _unauthorizedHandler &&
+        !requestInfo.url.includes("/api/auth/login") &&
+        !requestInfo.url.includes("/api/auth/logout")
+      ) {
+        void _unauthorizedHandler(error);
+      }
+
+      throw error;
     }
 
-    throw error;
+    return (await parseSuccessBody(response, responseType, requestInfo)) as T;
+  };
+
+  if (method === "GET") {
+    const cacheKey = `${method}:${requestInfo.url}`;
+    const pending = pendingGetRequests.get(cacheKey);
+    if (pending) return pending as Promise<T>;
+
+    const promise = executeRequest().finally(() => pendingGetRequests.delete(cacheKey));
+    pendingGetRequests.set(cacheKey, promise);
+    return promise;
   }
 
-  return (await parseSuccessBody(response, responseType, requestInfo)) as T;
+  return executeRequest();
 }

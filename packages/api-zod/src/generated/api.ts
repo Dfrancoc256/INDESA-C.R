@@ -190,6 +190,7 @@ export const ListProductosResponse = zod.object({
   "precio_mes": zod.number().nullish(),
   "imagen_url": zod.string().nullish(),
   "activo": zod.boolean(),
+  "advertencia_precio": zod.boolean(),
   "cantidad": zod.number().nullish(),
   "stock_minimo": zod.number().nullish(),
   "disponibilidad": zod.enum(['disponible', 'pocas_unidades', 'agotado']).optional()
@@ -222,6 +223,7 @@ export const CreateProductoBody = zod.object({
   "precio_mes": zod.number().min(0).nullish(),
   "imagen_url": zod.string().optional(),
   "activo": zod.boolean().optional(),
+  "advertencia_precio": zod.boolean().optional(),
   "stock_inicial": zod.number().min(createProductoBodyStockInicialMin).optional(),
   "stock_minimo": zod.number().min(createProductoBodyStockMinimoMin).optional()
 })
@@ -238,6 +240,7 @@ export const CreateProductoResponse = zod.object({
   "precio_mes": zod.number().nullish(),
   "imagen_url": zod.string().nullish(),
   "activo": zod.boolean(),
+  "advertencia_precio": zod.boolean(),
   "cantidad": zod.number().nullish(),
   "stock_minimo": zod.number().nullish(),
   "disponibilidad": zod.enum(['disponible', 'pocas_unidades', 'agotado']).optional()
@@ -263,6 +266,7 @@ export const GetProductoResponse = zod.object({
   "precio_mes": zod.number().nullish(),
   "imagen_url": zod.string().nullish(),
   "activo": zod.boolean(),
+  "advertencia_precio": zod.boolean(),
   "cantidad": zod.number().nullish(),
   "stock_minimo": zod.number().nullish(),
   "disponibilidad": zod.enum(['disponible', 'pocas_unidades', 'agotado']).optional()
@@ -295,6 +299,7 @@ export const UpdateProductoBody = zod.object({
   "precio_mes": zod.number().min(0).nullish(),
   "imagen_url": zod.string().optional(),
   "activo": zod.boolean().optional(),
+  "advertencia_precio": zod.boolean().optional(),
   "stock_inicial": zod.number().min(updateProductoBodyStockInicialMin).optional(),
   "stock_minimo": zod.number().min(updateProductoBodyStockMinimoMin).optional()
 })
@@ -311,6 +316,7 @@ export const UpdateProductoResponse = zod.object({
   "precio_mes": zod.number().nullish(),
   "imagen_url": zod.string().nullish(),
   "activo": zod.boolean(),
+  "advertencia_precio": zod.boolean(),
   "cantidad": zod.number().nullish(),
   "stock_minimo": zod.number().nullish(),
   "disponibilidad": zod.enum(['disponible', 'pocas_unidades', 'agotado']).optional()
@@ -346,6 +352,7 @@ export const ToggleProductoResponse = zod.object({
   "precio_mes": zod.number().nullish(),
   "imagen_url": zod.string().nullish(),
   "activo": zod.boolean(),
+  "advertencia_precio": zod.boolean(),
   "cantidad": zod.number().nullish(),
   "stock_minimo": zod.number().nullish(),
   "disponibilidad": zod.enum(['disponible', 'pocas_unidades', 'agotado']).optional()

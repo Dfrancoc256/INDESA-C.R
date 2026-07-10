@@ -19,6 +19,9 @@ type ProductPricing = {
   precio_mes?: number | null;
 }
 
+export const PRODUCT_PRICE_WARNING =
+  "Precio referencial. La tarifa final puede variar según horario, duración, operador o condiciones del servicio. Comunícate con nosotros para verificar disponibilidad.";
+
 export type TipoTarifaProducto = "dia" | "semana" | "mes" | "base";
 
 type TarifaProducto = {

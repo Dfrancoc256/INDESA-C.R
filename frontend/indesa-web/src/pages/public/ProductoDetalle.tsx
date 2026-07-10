@@ -10,6 +10,7 @@ import {
   getTarifaPrincipal,
   getTarifasProducto,
   getTodayDate,
+  PRODUCT_PRICE_WARNING,
 } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -317,6 +318,12 @@ export function ProductoDetalle() {
                 <p className="text-sm font-medium text-muted-foreground mb-6">
                   La coordinación final depende del lugar, horario y tipo de trabajo.
                 </p>
+                {productoActual.advertencia_precio && (
+                  <div className="mb-5 flex gap-3 rounded-lg border border-black/10 bg-black/[0.03] p-3 text-sm leading-relaxed text-black">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>{PRODUCT_PRICE_WARNING}</span>
+                  </div>
+                )}
                 <div className="mb-6 grid gap-3 sm:grid-cols-3">
                   {tarifas.map((tarifa) => (
                     <div key={tarifa.suffix} className="rounded-lg border bg-gray-50 p-3">

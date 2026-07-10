@@ -9,6 +9,7 @@ import {
   getTarifaPrincipal,
   getTarifasProducto,
   getTodayDate,
+  PRODUCT_PRICE_WARNING,
 } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ import { useReservaCalendarioDisponibilidad } from "@/hooks/use-reserva-calendar
 import { getFriendlyApiErrorMessage } from "@/lib/apiErrorMessage";
 import {
   ArrowRight,
+  AlertTriangle,
   Clock,
   ClipboardList,
   MessageCircle,
@@ -484,6 +486,12 @@ export function Home() {
                       {formatCurrency(tarifa.value)}
                       <span className="ml-1 text-xs font-medium text-muted-foreground">/{tarifa.suffix}</span>
                     </div>
+                    {producto.advertencia_precio && (
+                      <div className="mb-3 flex gap-2 rounded-md border border-black/10 bg-black/[0.03] p-2 text-xs leading-snug text-black">
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <span>{PRODUCT_PRICE_WARNING}</span>
+                      </div>
+                    )}
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex flex-wrap gap-2">
                         {tarifasDisponibles.length > 1 && tarifasDisponibles
@@ -605,6 +613,12 @@ export function Home() {
                       </span>
                     ))}
                   </div>
+                  {selectedProduct.advertencia_precio && (
+                    <div className="mt-3 flex gap-2 rounded-md border border-black/10 bg-white p-2 text-xs leading-snug text-black">
+                      <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                      <span>{PRODUCT_PRICE_WARNING}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 

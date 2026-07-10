@@ -7,6 +7,7 @@
     "dev": "pnpm --parallel --filter @indesa/api-server --filter @indesa/web dev",
     "dev:backend": "pnpm --filter @indesa/api-server dev",
     "dev:frontend": "pnpm --filter @indesa/web dev",
+    "load:test": "node scripts/load-test.mjs",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck": "pnpm run typecheck:packages && pnpm -r --if-present run typecheck",
     "typecheck:packages": "tsc --build"

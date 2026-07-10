@@ -14,6 +14,7 @@ export const productosTable = pgTable("productos", {
   precioMes: decimal("precio_mes", { precision: 10, scale: 2 }),
   imagenUrl: text("imagen_url"),
   activo: boolean("activo").notNull().default(true),
+  advertenciaPrecio: boolean("advertencia_precio").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
 });

@@ -1,6 +1,8 @@
-import { useListUsuarios, useCreateUsuario, useUpdateUsuario, useToggleUsuario, useResetUsuarioPassword, useListRoles } from "@workspace/api-client-react";
+import { useListUsuarios, useCreateUsuario, useUpdateUsuario, useToggleUsuario, useResetUsuarioPassword, useListRoles, useDeleteUsuario } from "@workspace/api-client-react";
 import { useEffect, useMemo, useState } from "react";
 import { formatDate } from "@/lib/utils";
+import { hasPermission } from "@/lib/permissions";
+import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,7 +14,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { UserPlus, Search, Edit, ShieldCheck, Key, MoreHorizontal } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { UserPlus, Search, Edit, ShieldCheck, Key, MoreHorizontal, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getFriendlyApiErrorMessage } from "@/lib/apiErrorMessage";
 import { useForm } from "react-hook-form";
@@ -47,6 +50,7 @@ const pageSize = 10;
 
 export function Usuarios() {
   const { toast } = useToast();
+  const { usuario: usuarioActual } = useAuth();
   const queryClient = useQueryClient();
   const [busqueda, setBusqueda] = useState("");
   const [page, setPage] = useState(1);
@@ -54,8 +58,10 @@ export function Usuarios() {
   const [isCrearOpen, setIsCrearOpen] = useState(false);
   const [isEditarOpen, setIsEditarOpen] = useState(false);
   const [isResetOpen, setIsResetOpen] = useState(false);
+  const [isEliminarOpen, setIsEliminarOpen] = useState(false);
   
   const [usuarioSeleccionado, setUsuarioSeleccionado] = useState<any>(null);
+  const canDeleteUsers = hasPermission(usuarioActual, "usuarios.eliminar");
   
   const { data: usuarios, isLoading, refetch } = useListUsuarios();
   const { data: roles } = useListRoles();
@@ -127,6 +133,20 @@ export function Usuarios() {
     }
   });
 
+  const deleteMutation = useDeleteUsuario({
+    mutation: {
+      onSuccess: () => {
+        toast({ title: "Usuario eliminado", description: "El usuario fue retirado correctamente." });
+        refetch();
+        setIsEliminarOpen(false);
+        setUsuarioSeleccionado(null);
+      },
+      onError: (err: any) => {
+        toast({ variant: "destructive", title: "No fue posible eliminar el usuario", description: getFriendlyApiErrorMessage(err, errorMessages.generic) });
+      }
+    }
+  });
+
   const onCreateSubmit = (data: UsuarioCreateValues) => {
     createMutation.mutate({ data });
   };
@@ -160,8 +180,18 @@ export function Usuarios() {
     setIsResetOpen(true);
   };
 
+  const handleOpenEliminar = (usuario: any) => {
+    setUsuarioSeleccionado(usuario);
+    setIsEliminarOpen(true);
+  };
+
   const handleToggleEstado = (id: number, currentEstado: boolean) => {
     toggleMutation.mutate({ id });
+  };
+
+  const confirmarEliminarUsuario = () => {
+    if (!usuarioSeleccionado) return;
+    deleteMutation.mutate({ id: usuarioSeleccionado.id });
   };
 
   const usuariosFiltrados = useMemo(() => {
@@ -294,6 +324,17 @@ export function Usuarios() {
                           <DropdownMenuItem onClick={() => handleOpenReset(usuario)}>
                             <Key className="mr-2 h-4 w-4" /> Restablecer Contraseña
                           </DropdownMenuItem>
+                          {canDeleteUsers && (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                                onClick={() => handleOpenEliminar(usuario)}
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" /> Eliminar Usuario
+                              </DropdownMenuItem>
+                            </>
+                          )}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -453,6 +494,33 @@ export function Usuarios() {
           </Form>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={isEliminarOpen} onOpenChange={(open) => {
+        setIsEliminarOpen(open);
+        if (!open) setUsuarioSeleccionado(null);
+      }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar usuario</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción eliminará a {usuarioSeleccionado?.nombre} {usuarioSeleccionado?.apellido} del sistema. Si solo necesita bloquear el acceso, puede cambiar su estado a inactivo.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                confirmarEliminarUsuario();
+              }}
+            >
+              {deleteMutation.isPending ? "Eliminando..." : "Eliminar usuario"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

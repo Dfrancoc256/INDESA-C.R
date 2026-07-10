@@ -70,6 +70,7 @@ export async function findProductos(params: {
       precio_mes: productosTable.precioMes,
       imagen_url: productosTable.imagenUrl,
       activo: productosTable.activo,
+      advertencia_precio: productosTable.advertenciaPrecio,
       cantidad: inventarioTable.cantidad,
       stock_minimo: inventarioTable.stockMinimo,
     })
@@ -114,6 +115,7 @@ export async function findProductoById(id: number) {
       precio_mes: productosTable.precioMes,
       imagen_url: productosTable.imagenUrl,
       activo: productosTable.activo,
+      advertencia_precio: productosTable.advertenciaPrecio,
       cantidad: inventarioTable.cantidad,
       stock_minimo: inventarioTable.stockMinimo,
     })
@@ -145,6 +147,7 @@ export async function createProducto(data: {
   precioMes?: number | null;
   imagenUrl?: string;
   activo?: boolean;
+  advertenciaPrecio?: boolean;
 }) {
   const rows = await db.insert(productosTable).values({
     ...data,
@@ -166,6 +169,7 @@ export async function updateProducto(id: number, data: Partial<{
   precioMes: number | null;
   imagenUrl: string;
   activo: boolean;
+  advertenciaPrecio: boolean;
 }>) {
   const update: Record<string, unknown> = { ...data, updatedAt: new Date() };
   if (data.precio !== undefined) update["precio"] = String(data.precio);

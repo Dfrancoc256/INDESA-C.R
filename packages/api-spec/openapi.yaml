@@ -818,7 +818,7 @@ components:
     # ─── PRODUCTOS ────────────────────────────────────────────────────────────
     Producto:
       type: object
-      required: [id, nombre, activo, categoria_id, precio]
+      required: [id, nombre, activo, advertencia_precio, categoria_id, precio]
       properties:
         id:
           type: integer
@@ -841,6 +841,8 @@ components:
         imagen_url:
           type: ["string", "null"]
         activo:
+          type: boolean
+        advertencia_precio:
           type: boolean
         cantidad:
           type: ["integer", "null"]
@@ -876,6 +878,8 @@ components:
         imagen_url:
           type: string
         activo:
+          type: boolean
+        advertencia_precio:
           type: boolean
         stock_inicial:
           type: integer
