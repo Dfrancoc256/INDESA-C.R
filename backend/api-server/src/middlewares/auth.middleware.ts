@@ -11,12 +11,15 @@ declare global {
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
   const header = req.headers["authorization"];
-  if (!header || !header.startsWith("Bearer ")) {
+  const bearerToken = typeof header === "string" && header.startsWith("Bearer ") ? header.slice(7) : null;
+  const cookieToken = req.cookies?.["indesa_access_token"] as string | undefined;
+  const token = bearerToken ?? cookieToken;
+
+  if (!token) {
     res.status(401).json({ error: "Token de acceso requerido" });
     return;
   }
 
-  const token = header.slice(7);
   try {
     req.usuario = verifyAccessToken(token);
     next();

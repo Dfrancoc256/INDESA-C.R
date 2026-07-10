@@ -4,10 +4,14 @@ import { verifyAccessToken } from "../lib/jwt";
 
 function hasValidAccessToken(req: Request): boolean {
   const header = req.headers["authorization"];
-  if (!header || !header.startsWith("Bearer ")) return false;
+  const bearerToken = typeof header === "string" && header.startsWith("Bearer ") ? header.slice(7) : null;
+  const cookieToken = req.cookies?.["indesa_access_token"] as string | undefined;
+  const token = bearerToken ?? cookieToken;
+
+  if (!token) return false;
 
   try {
-    verifyAccessToken(header.slice(7));
+    verifyAccessToken(token);
     return true;
   } catch {
     return false;

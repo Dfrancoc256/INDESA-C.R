@@ -1,9 +1,14 @@
-import { useListCategorias, useListProductos, type Producto } from "@workspace/api-client-react";
+import { useDeleteProducto, useListCategorias, useListProductos, type Producto } from "@workspace/api-client-react";
 import { useEffect, useState, useRef } from "react";
 import { Link } from "wouter";
 import { formatCurrency, getInitials, getTarifaPrincipal, getTarifasProducto } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { hasPermission } from "@/lib/permissions";
+import { getFriendlyApiErrorMessage } from "@/lib/apiErrorMessage";
+import { errorMessages } from "@/lib/errorMessages";
+import { invalidateCatalogData } from "@/lib/queryInvalidation";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -11,21 +16,25 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Search, Edit, Filter, BadgeCheck, XCircle } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Plus, Search, Edit, Filter, BadgeCheck, XCircle, Trash2 } from "lucide-react";
 
 export function ProductosList() {
   const { usuario } = useAuth();
+  const queryClient = useQueryClient();
   const pageSize = 10;
   const [page, setPage] = useState(1);
   const [busqueda, setBusqueda] = useState("");
   const [categoriaId, setCategoriaId] = useState<number | undefined>(undefined);
+  const [productoAEliminar, setProductoAEliminar] = useState<Producto | null>(null);
   
   // Debounce search
   const [debouncedBusqueda, setDebouncedBusqueda] = useState("");
   const searchTimeout = useRef<NodeJS.Timeout | undefined>(undefined);
   const canCreateProducts = hasPermission(usuario, "productos.crear");
   const canEditProducts = hasPermission(usuario, "productos.editar");
-  const canManageProducts = canCreateProducts || canEditProducts;
+  const canDeleteProducts = hasPermission(usuario, "productos.eliminar");
+  const canManageProducts = canCreateProducts || canEditProducts || canDeleteProducts;
   const productosColSpan = canManageProducts ? 6 : 5;
   
   const handleSearch = (val: string) => {
@@ -51,6 +60,31 @@ export function ProductosList() {
   const totalProductos = productosResponse?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalProductos / pageSize));
   const showInitialSkeleton = isLoading && productosPagina.length === 0;
+
+  const deleteMutation = useDeleteProducto({
+    mutation: {
+      onSuccess: async () => {
+        toast({ title: "Producto eliminado", description: "El producto fue retirado del catálogo correctamente." });
+        setProductoAEliminar(null);
+        await invalidateCatalogData(queryClient);
+        if (productosPagina.length === 1 && page > 1) {
+          setPage((currentPage) => Math.max(1, currentPage - 1));
+        }
+      },
+      onError: (err: any) => {
+        toast({
+          variant: "destructive",
+          title: "No fue posible eliminar el producto",
+          description: getFriendlyApiErrorMessage(err, errorMessages.generic),
+        });
+      },
+    },
+  });
+
+  const confirmarEliminacion = () => {
+    if (!productoAEliminar) return;
+    deleteMutation.mutate({ id: productoAEliminar.id });
+  };
 
   // Mantiene la página dentro del rango cuando cambian los filtros o el total
   return (
@@ -193,6 +227,7 @@ export function ProductosList() {
                     </TableCell>
                     {canManageProducts && (
                       <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
                         {canEditProducts && (
                           <Button asChild variant="ghost" size="sm">
                             <Link href={`/admin/productos/editar/${producto.id}`}>
@@ -200,6 +235,18 @@ export function ProductosList() {
                             </Link>
                           </Button>
                         )}
+                        {canDeleteProducts && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                            onClick={() => setProductoAEliminar(producto)}
+                          >
+                            <Trash2 className="h-4 w-4 mr-1" /> Eliminar
+                          </Button>
+                        )}
+                        </div>
                       </TableCell>
                     )}
                   </TableRow>
@@ -237,6 +284,30 @@ export function ProductosList() {
           </div>
         )}
       </Card>
+
+      <AlertDialog open={Boolean(productoAEliminar)} onOpenChange={(open) => !open && setProductoAEliminar(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Eliminar producto</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción retirará el producto "{productoAEliminar?.nombre}" del sistema. Si solo necesita ocultarlo del catálogo, puede editarlo y desactivar su publicación.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleteMutation.isPending}
+              onClick={(event) => {
+                event.preventDefault();
+                confirmarEliminacion();
+              }}
+            >
+              {deleteMutation.isPending ? "Eliminando..." : "Eliminar producto"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -131,8 +131,12 @@ export function Finanzas() {
       link.download = filename;
       document.body.appendChild(link);
       link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      window.setTimeout(() => {
+        if (link.parentNode) {
+          link.parentNode.removeChild(link);
+        }
+        window.URL.revokeObjectURL(url);
+      }, 0);
 
       toast({
         title: "Reporte descargado",

@@ -5,21 +5,37 @@ import { useGetMe, login as apiLogin, logout as apiLogout, refreshToken as apiRe
 import { toast } from "@/hooks/use-toast";
 import { errorMessages } from "@/lib/errorMessages";
 
-const ACCESS_TOKEN_KEY = "indesa_access_token";
-const REFRESH_TOKEN_KEY = "indesa_refresh_token";
+const SESSION_MARKER_KEY = "indesa_session_active";
 const LAST_ACTIVITY_KEY = "indesa_last_activity_at";
+const LAST_REFRESH_KEY = "indesa_last_refresh_at";
 const INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000;
+const SESSION_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
+const ACTIVITY_REFRESH_THROTTLE_MS = 60 * 1000;
 
-const getStoredAccessToken = () => {
+const clearLegacyVisibleTokens = () => {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem("indesa_access_token");
+  window.localStorage.removeItem("indesa_refresh_token");
+};
+
+const hasSessionMarker = () => {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(ACCESS_TOKEN_KEY);
+  clearLegacyVisibleTokens();
+  return window.localStorage.getItem(SESSION_MARKER_KEY) === "true";
 };
 
 const clearStoredSession = () => {
   if (typeof window === "undefined") return;
-  window.localStorage.removeItem(ACCESS_TOKEN_KEY);
-  window.localStorage.removeItem(REFRESH_TOKEN_KEY);
+  clearLegacyVisibleTokens();
+  window.localStorage.removeItem(SESSION_MARKER_KEY);
   window.localStorage.removeItem(LAST_ACTIVITY_KEY);
+  window.localStorage.removeItem(LAST_REFRESH_KEY);
+};
+
+const markSessionActive = () => {
+  if (typeof window === "undefined") return;
+  clearLegacyVisibleTokens();
+  window.localStorage.setItem(SESSION_MARKER_KEY, "true");
 };
 
 const markActivity = () => {
@@ -27,32 +43,22 @@ const markActivity = () => {
   window.localStorage.setItem(LAST_ACTIVITY_KEY, String(Date.now()));
 };
 
+const markRefresh = () => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(LAST_REFRESH_KEY, String(Date.now()));
+};
+
 const getLastActivity = () => {
   if (typeof window === "undefined") return 0;
   return Number(window.localStorage.getItem(LAST_ACTIVITY_KEY) || 0);
 };
 
-const getTokenExpiryAt = (token: string | null) => {
-  if (!token) return null;
-
-  try {
-    const [, payload] = token.split(".");
-    if (!payload) return null;
-
-    const normalized = payload.replace(/-/g, "+").replace(/_/g, "/");
-    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-    const decoded =
-      typeof window !== "undefined"
-        ? window.atob(padded)
-        : Buffer.from(padded, "base64").toString("binary");
-    const data = JSON.parse(decoded) as { exp?: number };
-    return typeof data.exp === "number" ? data.exp * 1000 : null;
-  } catch {
-    return null;
-  }
+const getLastRefresh = () => {
+  if (typeof window === "undefined") return 0;
+  return Number(window.localStorage.getItem(LAST_REFRESH_KEY) || 0);
 };
 
-setAuthTokenGetter(getStoredAccessToken);
+setAuthTokenGetter(null);
 
 interface AuthContextType {
   usuario: UsuarioMe | null;
@@ -66,7 +72,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [usuario, setUsuario] = useState<UsuarioMe | null>(null);
-  const [hasStoredToken, setHasStoredToken] = useState(() => Boolean(getStoredAccessToken()));
+  const [hasStoredToken, setHasStoredToken] = useState(() => Boolean(hasSessionMarker()));
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshingSession, setIsRefreshingSession] = useState(false);
   const unauthorizedHandledRef = useRef(false);
@@ -85,7 +91,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback((options?: { remote?: boolean; redirect?: boolean }) => {
     const shouldCallRemoteLogout = options?.remote ?? true;
     const shouldRedirect = options?.redirect ?? true;
-    const token = getStoredAccessToken();
 
     logoutInProgressRef.current = true;
     unauthorizedHandledRef.current = false;
@@ -99,8 +104,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLocation("/admin/login");
     }
 
-    if (shouldCallRemoteLogout && token) {
-      void apiLogout({ headers: { Authorization: `Bearer ${token}` } }).catch(() => {
+    if (shouldCallRemoteLogout) {
+      void apiLogout().catch(() => {
         // La sesión local ya quedó cerrada; la revocación remota es secundaria.
       });
     }
@@ -115,8 +120,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return true;
     }
 
-    const storedRefreshToken = window.localStorage.getItem(REFRESH_TOKEN_KEY);
-    if (!storedRefreshToken) {
+    if (!hasSessionMarker()) {
       logout({ remote: false });
       return false;
     }
@@ -124,9 +128,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       refreshInProgressRef.current = true;
       setIsRefreshingSession(true);
-      const response = await apiRefreshToken({ refresh_token: storedRefreshToken });
-      localStorage.setItem(ACCESS_TOKEN_KEY, response.access_token);
-      localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+      const response = await apiRefreshToken({ refresh_token: "" });
+      markSessionActive();
+      markRefresh();
       unauthorizedHandledRef.current = false;
       setHasStoredToken(true);
       setUsuario(response.usuario);
@@ -189,7 +193,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     markActivity();
 
-    const events: Array<keyof WindowEventMap> = ["click", "keydown", "mousemove", "scroll", "touchstart"];
+    const events: Array<keyof WindowEventMap> = ["click", "keydown", "mousemove", "scroll", "touchstart", "input", "pointerdown", "focus"];
     let timeoutId = window.setTimeout(() => {
       logout();
     }, INACTIVITY_TIMEOUT_MS);
@@ -200,6 +204,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       timeoutId = window.setTimeout(() => {
         logout();
       }, INACTIVITY_TIMEOUT_MS);
+
+      const lastRefresh = getLastRefresh();
+      if (!lastRefresh || Date.now() - lastRefresh > ACTIVITY_REFRESH_THROTTLE_MS) {
+        void refreshSession();
+      }
     };
 
     events.forEach((eventName) => window.addEventListener(eventName, resetTimer, { passive: true }));
@@ -214,17 +223,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (typeof window === "undefined") return;
     if (!hasStoredToken) return;
 
-    const accessToken = getStoredAccessToken();
-    const expiresAt = getTokenExpiryAt(accessToken);
-    if (!expiresAt) return;
-
-    const remainingMs = expiresAt - Date.now();
-    if (remainingMs <= 0) {
-      void refreshSession();
-      return;
-    }
-
-    const timeoutId = window.setTimeout(() => {
+    const intervalId = window.setInterval(() => {
       const lastActivity = getLastActivity();
       if (lastActivity && Date.now() - lastActivity > INACTIVITY_TIMEOUT_MS) {
         toast({
@@ -237,10 +236,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       void refreshSession();
-    }, Math.max(remainingMs - 30_000, 0));
+    }, SESSION_REFRESH_INTERVAL_MS);
 
     return () => {
-      window.clearTimeout(timeoutId);
+      window.clearInterval(intervalId);
     };
   }, [hasStoredToken, logout, refreshSession]);
 
@@ -273,8 +272,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (data: LoginInput) => {
     try {
       const response = await apiLogin(data);
-      localStorage.setItem(ACCESS_TOKEN_KEY, response.access_token);
-      localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+      markSessionActive();
+      markRefresh();
       markActivity();
       unauthorizedHandledRef.current = false;
       setHasStoredToken(true);
