@@ -1,6 +1,6 @@
 import { useListUsuarios, useCreateUsuario, useUpdateUsuario, useToggleUsuario, useResetUsuarioPassword, useListRoles } from "@workspace/api-client-react";
-import { useState, useEffect } from "react";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { useEffect, useMemo, useState } from "react";
+import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -43,11 +43,13 @@ const passwordResetSchema = z.object({
 type UsuarioCreateValues = z.infer<typeof usuarioCreateSchema>;
 type UsuarioUpdateValues = z.infer<typeof usuarioUpdateSchema>;
 type PasswordResetValues = z.infer<typeof passwordResetSchema>;
+const pageSize = 10;
 
 export function Usuarios() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [busqueda, setBusqueda] = useState("");
+  const [page, setPage] = useState(1);
   
   const [isCrearOpen, setIsCrearOpen] = useState(false);
   const [isEditarOpen, setIsEditarOpen] = useState(false);
@@ -162,12 +164,32 @@ export function Usuarios() {
     toggleMutation.mutate({ id });
   };
 
-  const usuariosFiltrados = usuarios?.filter(u => 
-    !busqueda || 
-    u.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-    u.apellido?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    u.email.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  const usuariosFiltrados = useMemo(() => {
+    const term = busqueda.trim().toLowerCase();
+    return [...(usuarios ?? [])]
+      .filter(u =>
+        !term ||
+        u.nombre.toLowerCase().includes(term) ||
+        u.apellido?.toLowerCase().includes(term) ||
+        u.email.toLowerCase().includes(term)
+      )
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.created_at ?? 0).getTime();
+        const dateB = new Date(b.created_at ?? 0).getTime();
+        if (dateA !== dateB) return dateB - dateA;
+        return Number(b.id ?? 0) - Number(a.id ?? 0);
+      });
+  }, [usuarios, busqueda]);
+  const totalPages = Math.max(1, Math.ceil(usuariosFiltrados.length / pageSize));
+  const usuariosPagina = usuariosFiltrados.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [busqueda]);
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, totalPages));
+  }, [totalPages]);
 
   const rolesDisponibles = Array.isArray(roles) ? roles : [];
 
@@ -222,14 +244,14 @@ export function Usuarios() {
                     <TableCell className="text-right"><Skeleton className="h-6 w-10 ml-auto rounded-full" /></TableCell>
                   </TableRow>
                 ))
-              ) : usuariosFiltrados?.length === 0 ? (
+              ) : usuariosFiltrados.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
                     No se encontraron usuarios.
                   </TableCell>
                 </TableRow>
               ) : (
-                usuariosFiltrados?.map((usuario) => (
+                usuariosPagina.map((usuario) => (
                   <TableRow key={usuario.id}>
                     <TableCell className="font-medium text-foreground">
                       {usuario.nombre} {usuario.apellido}
@@ -281,6 +303,21 @@ export function Usuarios() {
             </TableBody>
           </Table>
         </div>
+        {usuariosFiltrados.length > 0 && (
+          <div className="flex flex-col gap-3 border-t px-4 py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              Mostrando {((page - 1) * pageSize) + 1} a {Math.min(page * pageSize, usuariosFiltrados.length)} de {usuariosFiltrados.length} usuarios
+            </span>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>
+                Anterior
+              </Button>
+              <Button type="button" variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>
+                Siguiente
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       {/* Modal Nuevo Usuario */}

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useListReservas, useGetDashboardResumen } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,16 +29,27 @@ function estaEnRango(dateString: string | Date | null | undefined, desde: string
   return value >= start && value <= end;
 }
 
+const pageSize = 10;
+
 export function Finanzas() {
   const { toast } = useToast();
   const [desde, setDesde] = useState(getMonthStart());
   const [hasta, setHasta] = useState(new Date().toISOString().slice(0, 10));
+  const [pagadasPage, setPagadasPage] = useState(1);
+  const [canceladasPage, setCanceladasPage] = useState(1);
   const { data: resumen, isLoading: isLoadingResumen } = useGetDashboardResumen();
   const { data: reservasResponse, isLoading: isLoadingReservas } = useListReservas({ page: 1, limit: 1000 });
 
   const reservas = reservasResponse?.data ?? [];
   const reservasDelRango = useMemo(() => {
-    return reservas.filter((reserva) => estaEnRango(reserva.created_at, desde, hasta));
+    return reservas
+      .filter((reserva) => estaEnRango(reserva.created_at, desde, hasta))
+      .sort((a, b) => {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        if (dateA !== dateB) return dateB - dateA;
+        return Number(b.id ?? 0) - Number(a.id ?? 0);
+      });
   }, [reservas, desde, hasta]);
 
   const totales = useMemo(() => {
@@ -66,6 +77,23 @@ export function Finanzas() {
 
   const reservasPagadas = reservasDelRango.filter((reserva) => normalizarEstado((reserva as any).estado_pago) === "pagada" && !["cancelada", "cancelado"].includes(normalizarEstado(reserva.estado)));
   const reservasCanceladas = reservasDelRango.filter((reserva) => ["cancelada", "cancelado"].includes(normalizarEstado(reserva.estado)));
+  const pagadasTotalPages = Math.max(1, Math.ceil(reservasPagadas.length / pageSize));
+  const canceladasTotalPages = Math.max(1, Math.ceil(reservasCanceladas.length / pageSize));
+  const reservasPagadasPagina = reservasPagadas.slice((pagadasPage - 1) * pageSize, pagadasPage * pageSize);
+  const reservasCanceladasPagina = reservasCanceladas.slice((canceladasPage - 1) * pageSize, canceladasPage * pageSize);
+
+  useEffect(() => {
+    setPagadasPage(1);
+    setCanceladasPage(1);
+  }, [desde, hasta]);
+
+  useEffect(() => {
+    setPagadasPage((current) => Math.min(current, pagadasTotalPages));
+  }, [pagadasTotalPages]);
+
+  useEffect(() => {
+    setCanceladasPage((current) => Math.min(current, canceladasTotalPages));
+  }, [canceladasTotalPages]);
 
   const descargarReporte = async () => {
     if (!desde || !hasta) {
@@ -189,7 +217,7 @@ export function Finanzas() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {reservasPagadas.map((reserva) => (
+                    {reservasPagadasPagina.map((reserva) => (
                       <TableRow key={reserva.id}>
                         <TableCell>
                           <div className="font-medium">{reserva.cliente_nombre}</div>
@@ -218,6 +246,14 @@ export function Finanzas() {
                     ))}
                   </TableBody>
                 </Table>
+                <PaginationFooter
+                  page={pagadasPage}
+                  totalPages={pagadasTotalPages}
+                  total={reservasPagadas.length}
+                  label="reservas pagadas"
+                  onPrevious={() => setPagadasPage((value) => Math.max(1, value - 1))}
+                  onNext={() => setPagadasPage((value) => Math.min(pagadasTotalPages, value + 1))}
+                />
               </div>
             )}
           </CardContent>
@@ -281,7 +317,7 @@ export function Finanzas() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {reservasCanceladas.map((reserva) => (
+                  {reservasCanceladasPagina.map((reserva) => (
                     <TableRow key={reserva.id}>
                       <TableCell>
                         <div className="font-medium">{reserva.cliente_nombre}</div>
@@ -306,11 +342,51 @@ export function Finanzas() {
                   ))}
                 </TableBody>
               </Table>
+              <PaginationFooter
+                page={canceladasPage}
+                totalPages={canceladasTotalPages}
+                total={reservasCanceladas.length}
+                label="reservas canceladas"
+                onPrevious={() => setCanceladasPage((value) => Math.max(1, value - 1))}
+                onNext={() => setCanceladasPage((value) => Math.min(canceladasTotalPages, value + 1))}
+              />
             </div>
           )}
         </CardContent>
       </Card>
 
+    </div>
+  );
+}
+
+function PaginationFooter({
+  page,
+  totalPages,
+  total,
+  label,
+  onPrevious,
+  onNext,
+}: {
+  page: number;
+  totalPages: number;
+  total: number;
+  label: string;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <div className="mt-4 flex flex-col gap-3 border-t pt-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+      <span>
+        Mostrando {((page - 1) * pageSize) + 1} a {Math.min(page * pageSize, total)} de {total} {label}
+      </span>
+      <div className="flex gap-2">
+        <Button type="button" variant="outline" size="sm" disabled={page === 1} onClick={onPrevious}>
+          Anterior
+        </Button>
+        <Button type="button" variant="outline" size="sm" disabled={page >= totalPages} onClick={onNext}>
+          Siguiente
+        </Button>
+      </div>
     </div>
   );
 }

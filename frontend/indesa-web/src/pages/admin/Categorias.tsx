@@ -1,5 +1,5 @@
 import { useCreateCategoria, useListCategorias, useUpdateCategoria, type Categoria } from "@workspace/api-client-react";
-import { useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/contexts/AuthContext";
 import { hasPermission } from "@/lib/permissions";
@@ -27,18 +27,35 @@ const emptyForm: CategoriaForm = {
   activa: true,
 };
 
+const pageSize = 10;
+
 export function Categorias() {
   const { usuario } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [editingCategory, setEditingCategory] = useState<Categoria | null>(null);
   const [form, setForm] = useState<CategoriaForm>(emptyForm);
+  const [page, setPage] = useState(1);
   const canCreateCategories = hasPermission(usuario, "categorias.crear");
   const canEditCategories = hasPermission(usuario, "categorias.editar");
   const canDeleteCategories = hasPermission(usuario, "categorias.eliminar");
   const canManageCategories = canCreateCategories || canEditCategories || canDeleteCategories;
 
   const { data: categorias = [], isLoading } = useListCategorias();
+  const categoriasOrdenadas = useMemo(() => {
+    return [...categorias].sort((a: any, b: any) => {
+      const dateA = new Date(a.created_at ?? 0).getTime();
+      const dateB = new Date(b.created_at ?? 0).getTime();
+      if (dateA !== dateB) return dateB - dateA;
+      return Number(b.id ?? 0) - Number(a.id ?? 0);
+    });
+  }, [categorias]);
+  const totalPages = Math.max(1, Math.ceil(categoriasOrdenadas.length / pageSize));
+  const categoriasPagina = categoriasOrdenadas.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, totalPages));
+  }, [totalPages]);
 
   const createMutation = useCreateCategoria({
     mutation: {
@@ -221,58 +238,73 @@ export function Categorias() {
                   <div key={index} className="h-24 animate-pulse rounded-lg bg-muted" />
                 ))}
               </div>
-            ) : categorias.length === 0 ? (
+            ) : categoriasOrdenadas.length === 0 ? (
               <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
                 No hay categorías creadas todavía.
               </div>
             ) : (
-              <div className="grid gap-3">
-                {categorias.map((categoria) => (
-                  <div
-                    key={categoria.id}
-                    className="flex flex-col gap-4 rounded-lg border bg-white p-4 transition-all hover:border-primary/40 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="min-w-0">
-                      <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <h3 className="font-semibold text-foreground">{categoria.nombre}</h3>
-                        <Badge variant={categoria.activa ? "secondary" : "outline"} className="gap-1">
-                          {categoria.activa ? (
-                            <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                          ) : (
-                            <XCircle className="h-3.5 w-3.5 text-muted-foreground" />
-                          )}
-                          {categoria.activa ? "Activa" : "Inactiva"}
-                        </Badge>
+              <div className="space-y-4">
+                <div className="grid gap-3">
+                  {categoriasPagina.map((categoria) => (
+                    <div
+                      key={categoria.id}
+                      className="flex flex-col gap-4 rounded-lg border bg-white p-4 transition-all hover:border-primary/40 hover:shadow-sm sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="min-w-0">
+                        <div className="mb-2 flex flex-wrap items-center gap-2">
+                          <h3 className="font-semibold text-foreground">{categoria.nombre}</h3>
+                          <Badge variant={categoria.activa ? "secondary" : "outline"} className="gap-1">
+                            {categoria.activa ? (
+                              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                            ) : (
+                              <XCircle className="h-3.5 w-3.5 text-muted-foreground" />
+                            )}
+                            {categoria.activa ? "Activa" : "Inactiva"}
+                          </Badge>
+                        </div>
+                        <p className="line-clamp-2 text-sm text-muted-foreground">
+                          {categoria.descripcion || "Sin descripción registrada."}
+                        </p>
                       </div>
-                      <p className="line-clamp-2 text-sm text-muted-foreground">
-                        {categoria.descripcion || "Sin descripción registrada."}
-                      </p>
+                      <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+                        {canManageCategories && (
+                          <>
+                            {canEditCategories && (
+                              <Button type="button" variant="outline" size="sm" onClick={() => startEdit(categoria)} className="gap-2">
+                                <Pencil className="h-4 w-4" />
+                                Editar
+                              </Button>
+                            )}
+                            {canDeleteCategories && (
+                              <Button
+                                type="button"
+                                variant={categoria.activa ? "outline" : "default"}
+                                size="sm"
+                                onClick={() => toggleCategoria(categoria)}
+                                disabled={updateMutation.isPending}
+                              >
+                                {categoria.activa ? "Desactivar" : "Activar"}
+                              </Button>
+                            )}
+                          </>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
-                      {canManageCategories && (
-                        <>
-                          {canEditCategories && (
-                            <Button type="button" variant="outline" size="sm" onClick={() => startEdit(categoria)} className="gap-2">
-                              <Pencil className="h-4 w-4" />
-                              Editar
-                            </Button>
-                          )}
-                          {canDeleteCategories && (
-                            <Button
-                              type="button"
-                              variant={categoria.activa ? "outline" : "default"}
-                              size="sm"
-                              onClick={() => toggleCategoria(categoria)}
-                              disabled={updateMutation.isPending}
-                            >
-                              {categoria.activa ? "Desactivar" : "Activar"}
-                            </Button>
-                          )}
-                        </>
-                      )}
-                    </div>
+                  ))}
+                </div>
+                <div className="flex flex-col gap-3 border-t pt-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+                  <span>
+                    Mostrando {((page - 1) * pageSize) + 1} a {Math.min(page * pageSize, categoriasOrdenadas.length)} de {categoriasOrdenadas.length} categorías
+                  </span>
+                  <div className="flex gap-2">
+                    <Button type="button" variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>
+                      Anterior
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>
+                      Siguiente
+                    </Button>
                   </div>
-                ))}
+                </div>
               </div>
             )}
           </CardContent>

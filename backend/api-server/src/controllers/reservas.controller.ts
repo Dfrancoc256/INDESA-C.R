@@ -31,7 +31,7 @@ export async function list(req: Request, res: Response): Promise<void> {
       estado,
       busqueda,
       page: page ? Number(page) : 1,
-      limit: limit ? Number(limit) : 20,
+      limit: limit ? Number(limit) : 10,
     });
     res.json(data);
   } catch (err: any) {

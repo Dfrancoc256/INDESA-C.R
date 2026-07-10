@@ -1,6 +1,6 @@
 import { useListInventario, useUpdateInventario, useGetMovimientosInventario, getGetMovimientosInventarioQueryKey } from "@workspace/api-client-react";
-import { useState, useRef } from "react";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { useEffect, useMemo, useState } from "react";
+import { formatDate } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { hasPermission } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ const inventarioSchema = z.object({
 });
 
 type InventarioValues = z.infer<typeof inventarioSchema>;
+const pageSize = 10;
 
 export function Inventario() {
   const { usuario } = useAuth();
@@ -37,6 +38,7 @@ export function Inventario() {
   const [productoSeleccionado, setProductoSeleccionado] = useState<number | null>(null);
   const [isHistorialOpen, setIsHistorialOpen] = useState(false);
   const [isAjusteOpen, setIsAjusteOpen] = useState(false);
+  const [page, setPage] = useState(1);
   const canEditInventory = hasPermission(usuario, "inventario.editar");
   const inventarioColSpan = canEditInventory ? 6 : 5;
   
@@ -98,11 +100,31 @@ export function Inventario() {
     setIsHistorialOpen(true);
   };
 
-  const filteredInventario = inventario?.filter(item => 
-    !busqueda || 
-    item.producto_nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-    item.categoria_nombre?.toLowerCase().includes(busqueda.toLowerCase())
-  );
+  const filteredInventario = useMemo(() => {
+    const term = busqueda.trim().toLowerCase();
+    return [...(inventario ?? [])]
+      .filter(item =>
+        !term ||
+        item.producto_nombre?.toLowerCase().includes(term) ||
+        item.categoria_nombre?.toLowerCase().includes(term)
+      )
+      .sort((a: any, b: any) => {
+        const dateA = new Date(a.updated_at ?? 0).getTime();
+        const dateB = new Date(b.updated_at ?? 0).getTime();
+        if (dateA !== dateB) return dateB - dateA;
+        return Number(b.producto_id ?? 0) - Number(a.producto_id ?? 0);
+      });
+  }, [inventario, busqueda]);
+  const totalPages = Math.max(1, Math.ceil(filteredInventario.length / pageSize));
+  const inventarioPagina = filteredInventario.slice((page - 1) * pageSize, page * pageSize);
+
+  useEffect(() => {
+    setPage(1);
+  }, [busqueda]);
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, totalPages));
+  }, [totalPages]);
 
   return (
     <div className="space-y-6">
@@ -150,14 +172,14 @@ export function Inventario() {
                     {canEditInventory && <TableCell className="text-right"><Skeleton className="h-8 w-24 ml-auto" /></TableCell>}
                   </TableRow>
                 ))
-              ) : filteredInventario?.length === 0 ? (
+              ) : filteredInventario.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={inventarioColSpan} className="h-32 text-center text-muted-foreground">
                     No se encontró inventario.
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredInventario?.map((item) => (
+                inventarioPagina.map((item) => (
                   <TableRow key={item.producto_id}>
                     <TableCell className="font-medium text-foreground">
                       {item.producto_nombre}
@@ -197,6 +219,21 @@ export function Inventario() {
             </TableBody>
           </Table>
         </div>
+        {filteredInventario.length > 0 && (
+          <div className="flex flex-col gap-3 border-t px-4 py-4 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+            <span>
+              Mostrando {((page - 1) * pageSize) + 1} a {Math.min(page * pageSize, filteredInventario.length)} de {filteredInventario.length} registros
+            </span>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" size="sm" disabled={page === 1} onClick={() => setPage((value) => Math.max(1, value - 1))}>
+                Anterior
+              </Button>
+              <Button type="button" variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((value) => Math.min(totalPages, value + 1))}>
+                Siguiente
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       {canEditInventory && (

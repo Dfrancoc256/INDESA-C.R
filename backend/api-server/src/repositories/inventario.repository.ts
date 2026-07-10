@@ -1,5 +1,5 @@
 import { db, inventarioTable, productosTable, categoriasTable, movimientosTable } from "@workspace/db";
-import { eq, lte, sql } from "drizzle-orm";
+import { desc, eq, lte, sql } from "drizzle-orm";
 
 function calcularDisponibilidad(cantidad: number, stockMinimo: number): string {
   if (cantidad === 0) return "agotado";
@@ -20,7 +20,7 @@ export async function findAllInventario() {
     .from(inventarioTable)
     .leftJoin(productosTable, eq(inventarioTable.productoId, productosTable.id))
     .leftJoin(categoriasTable, eq(productosTable.categoriaId, categoriasTable.id))
-    .orderBy(productosTable.nombre);
+    .orderBy(desc(inventarioTable.updatedAt), desc(inventarioTable.id));
 
   return rows.map((r) => ({
     ...r,
@@ -121,5 +121,5 @@ export async function findMovimientosByProducto(productoId: number) {
     .from(movimientosTable)
     .leftJoin(usuariosTable, eq(movimientosTable.usuarioId, usuariosTable.id))
     .where(eq(movimientosTable.productoId, productoId))
-    .orderBy(movimientosTable.createdAt);
+    .orderBy(desc(movimientosTable.createdAt), desc(movimientosTable.id));
 }

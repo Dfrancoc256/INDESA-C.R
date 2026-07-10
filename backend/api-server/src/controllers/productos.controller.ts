@@ -23,7 +23,7 @@ export async function list(req: Request, res: Response): Promise<void> {
       disponibilidad: disponibilidad as any,
       orden: orden as any,
       page: page ? Number(page) : 1,
-      limit: limit ? Number(limit) : 20,
+      limit: limit ? Number(limit) : 10,
     };
 
     if (incluir_inactivos === "true") {

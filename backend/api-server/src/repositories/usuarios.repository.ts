@@ -1,5 +1,5 @@
 import { db, usuariosTable, rolesTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 
 export async function findAllUsuarios() {
   return db
@@ -16,7 +16,7 @@ export async function findAllUsuarios() {
     })
     .from(usuariosTable)
     .leftJoin(rolesTable, eq(usuariosTable.roleId, rolesTable.id))
-    .orderBy(usuariosTable.createdAt);
+    .orderBy(desc(usuariosTable.createdAt), desc(usuariosTable.id));
 }
 
 export async function findUsuarioById(id: number) {
