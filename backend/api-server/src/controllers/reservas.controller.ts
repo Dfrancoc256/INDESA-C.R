@@ -1,14 +1,24 @@
 import { Request, Response } from "express";
 import * as service from "../services/reservas.service";
 import { verifyAccessToken } from "../lib/jwt";
+import { db, rolesTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
-function puedeSobrescribirPrecio(req: Request): boolean {
+async function puedeSobrescribirPrecio(req: Request): Promise<boolean> {
   const header = req.headers["authorization"];
   if (!header || !header.startsWith("Bearer ")) return false;
 
   try {
     const payload = verifyAccessToken(header.slice(7));
-    return payload.rolNombre === "admin";
+    if (payload.rolNombre === "admin") return true;
+
+    const roles = await db
+      .select({ permisos: rolesTable.permisos })
+      .from(rolesTable)
+      .where(eq(rolesTable.id, payload.roleId))
+      .limit(1);
+
+    return Boolean(roles[0]?.permisos?.includes("reservas.editar"));
   } catch {
     return false;
   }
@@ -41,7 +51,7 @@ export async function getOne(req: Request, res: Response): Promise<void> {
 export async function create(req: Request, res: Response): Promise<void> {
   try {
     const data = await service.createReserva(req.body, {
-      allowPrecioOverride: puedeSobrescribirPrecio(req),
+      allowPrecioOverride: await puedeSobrescribirPrecio(req),
     });
     res.status(201).json(data);
   } catch (err: any) {
@@ -90,12 +100,6 @@ export async function updateEstado(req: Request, res: Response): Promise<void> {
 
 export async function update(req: Request, res: Response): Promise<void> {
   try {
-    const usuario = req.usuario;
-    if (!usuario || usuario.rolNombre !== "admin") {
-      res.status(403).json({ error: "Solo el administrador puede editar el precio de una reserva" });
-      return;
-    }
-
     const data = await service.updateReserva(Number(req.params["id"]), req.body);
     res.json(data);
   } catch (err: any) {
@@ -114,12 +118,6 @@ export async function updatePago(req: Request, res: Response): Promise<void> {
 
 export async function reporte(req: Request, res: Response): Promise<void> {
   try {
-    const usuario = req.usuario;
-    if (!usuario || usuario.rolNombre !== "admin") {
-      res.status(403).json({ error: "Solo el administrador puede descargar reportes financieros" });
-      return;
-    }
-
     const { desde, hasta } = req.query as Record<string, string>;
     const reporte = await service.getReservasReporte({ desde, hasta });
     res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

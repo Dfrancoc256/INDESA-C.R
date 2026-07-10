@@ -71,6 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isRefreshingSession, setIsRefreshingSession] = useState(false);
   const unauthorizedHandledRef = useRef(false);
   const logoutInProgressRef = useRef(false);
+  const refreshInProgressRef = useRef(false);
   const [, setLocation] = useLocation();
 
   const { data: meData, error, isLoading: isMeLoading } = useGetMe({
@@ -109,6 +110,37 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, 0);
   }, [setLocation]);
 
+  const refreshSession = useCallback(async () => {
+    if (refreshInProgressRef.current) {
+      return true;
+    }
+
+    const storedRefreshToken = window.localStorage.getItem(REFRESH_TOKEN_KEY);
+    if (!storedRefreshToken) {
+      logout({ remote: false });
+      return false;
+    }
+
+    try {
+      refreshInProgressRef.current = true;
+      setIsRefreshingSession(true);
+      const response = await apiRefreshToken({ refresh_token: storedRefreshToken });
+      localStorage.setItem(ACCESS_TOKEN_KEY, response.access_token);
+      localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
+      unauthorizedHandledRef.current = false;
+      setHasStoredToken(true);
+      setUsuario(response.usuario);
+      setIsLoading(false);
+      return true;
+    } catch {
+      logout({ remote: false });
+      return false;
+    } finally {
+      refreshInProgressRef.current = false;
+      setIsRefreshingSession(false);
+    }
+  }, [logout]);
+
   useEffect(() => {
     if (!hasStoredToken) {
       setUsuario(null);
@@ -139,25 +171,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     if (error) {
-      const refreshToken = window.localStorage.getItem(REFRESH_TOKEN_KEY);
-
-      if (refreshToken && !isRefreshingSession) {
-        setIsRefreshingSession(true);
-        void (async () => {
-          try {
-            const response = await apiRefreshToken({ refresh_token: refreshToken });
-            localStorage.setItem(ACCESS_TOKEN_KEY, response.access_token);
-            localStorage.setItem(REFRESH_TOKEN_KEY, response.refresh_token);
-            unauthorizedHandledRef.current = false;
-            setHasStoredToken(true);
-            setUsuario(response.usuario);
-            setIsLoading(false);
-          } catch {
-            logout({ remote: false });
-          } finally {
-            setIsRefreshingSession(false);
-          }
-        })();
+      if (!isRefreshingSession) {
+        void refreshSession();
         return;
       }
 
@@ -166,7 +181,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     setIsLoading(isMeLoading);
-  }, [error, hasStoredToken, isMeLoading, isRefreshingSession, logout, meData]);
+  }, [error, hasStoredToken, isMeLoading, isRefreshingSession, logout, meData, refreshSession]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -205,28 +220,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const remainingMs = expiresAt - Date.now();
     if (remainingMs <= 0) {
-      toast({
-        variant: "destructive",
-        title: "Sesión expirada",
-        description: errorMessages.sessionExpired,
-      });
-      logout({ remote: false });
+      void refreshSession();
       return;
     }
 
     const timeoutId = window.setTimeout(() => {
-      toast({
-        variant: "destructive",
-        title: "Sesión expirada",
-        description: errorMessages.sessionExpired,
-      });
-      logout({ remote: false });
-    }, remainingMs);
+      const lastActivity = getLastActivity();
+      if (lastActivity && Date.now() - lastActivity > INACTIVITY_TIMEOUT_MS) {
+        toast({
+          variant: "destructive",
+          title: "Sesión expirada",
+          description: errorMessages.sessionExpired,
+        });
+        logout({ remote: false });
+        return;
+      }
+
+      void refreshSession();
+    }, Math.max(remainingMs - 30_000, 0));
 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [hasStoredToken, logout]);
+  }, [hasStoredToken, logout, refreshSession]);
 
   useEffect(() => {
     setUnauthorizedHandler((error) => {
@@ -235,6 +251,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       unauthorizedHandledRef.current = true;
+      const lastActivity = getLastActivity();
+      if (!lastActivity || Date.now() - lastActivity <= INACTIVITY_TIMEOUT_MS) {
+        void refreshSession();
+        return;
+      }
+
       toast({
         variant: "destructive",
         title: "Sesión expirada",
@@ -246,7 +268,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       setUnauthorizedHandler(null);
     };
-  }, [logout]);
+  }, [logout, refreshSession]);
 
   const login = async (data: LoginInput) => {
     try {

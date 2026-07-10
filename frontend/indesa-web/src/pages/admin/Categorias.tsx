@@ -33,7 +33,10 @@ export function Categorias() {
   const queryClient = useQueryClient();
   const [editingCategory, setEditingCategory] = useState<Categoria | null>(null);
   const [form, setForm] = useState<CategoriaForm>(emptyForm);
-  const canManageCategories = hasPermission(usuario, "productos.crear") || hasPermission(usuario, "productos.editar");
+  const canCreateCategories = hasPermission(usuario, "categorias.crear");
+  const canEditCategories = hasPermission(usuario, "categorias.editar");
+  const canDeleteCategories = hasPermission(usuario, "categorias.eliminar");
+  const canManageCategories = canCreateCategories || canEditCategories || canDeleteCategories;
 
   const { data: categorias = [], isLoading } = useListCategorias();
 
@@ -94,7 +97,16 @@ export function Categorias() {
     }
 
     if (editingCategory) {
+      if (!canEditCategories) {
+        toast({ variant: "destructive", title: "Acción no disponible", description: "No tiene permiso para editar categorías." });
+        return;
+      }
       updateMutation.mutate({ id: editingCategory.id, data: payload });
+      return;
+    }
+
+    if (!canCreateCategories) {
+      toast({ variant: "destructive", title: "Acción no disponible", description: "No tiene permiso para crear categorías." });
       return;
     }
 
@@ -102,6 +114,11 @@ export function Categorias() {
   };
 
   const toggleCategoria = (categoria: Categoria) => {
+    if (!canDeleteCategories) {
+      toast({ variant: "destructive", title: "Acción no disponible", description: "No tiene permiso para cambiar el estado de categorías." });
+      return;
+    }
+
     updateMutation.mutate({
       id: categoria.id,
       data: {
@@ -119,7 +136,7 @@ export function Categorias() {
           <h1 className="text-2xl font-bold tracking-tight md:text-3xl">Categorías</h1>
           <p className="text-muted-foreground">Organiza el catálogo público desde la base de datos.</p>
         </div>
-        {canManageCategories && (
+        {canCreateCategories && (
           <Button type="button" variant="outline" onClick={cancelEdit} className="w-full gap-2 sm:w-auto">
             <Plus className="h-4 w-4" />
             Nueva categoría
@@ -234,19 +251,23 @@ export function Categorias() {
                     <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
                       {canManageCategories && (
                         <>
-                          <Button type="button" variant="outline" size="sm" onClick={() => startEdit(categoria)} className="gap-2">
-                            <Pencil className="h-4 w-4" />
-                            Editar
-                          </Button>
-                          <Button
-                            type="button"
-                            variant={categoria.activa ? "outline" : "default"}
-                            size="sm"
-                            onClick={() => toggleCategoria(categoria)}
-                            disabled={updateMutation.isPending}
-                          >
-                            {categoria.activa ? "Desactivar" : "Activar"}
-                          </Button>
+                          {canEditCategories && (
+                            <Button type="button" variant="outline" size="sm" onClick={() => startEdit(categoria)} className="gap-2">
+                              <Pencil className="h-4 w-4" />
+                              Editar
+                            </Button>
+                          )}
+                          {canDeleteCategories && (
+                            <Button
+                              type="button"
+                              variant={categoria.activa ? "outline" : "default"}
+                              size="sm"
+                              onClick={() => toggleCategoria(categoria)}
+                              disabled={updateMutation.isPending}
+                            >
+                              {categoria.activa ? "Desactivar" : "Activar"}
+                            </Button>
+                          )}
                         </>
                       )}
                     </div>

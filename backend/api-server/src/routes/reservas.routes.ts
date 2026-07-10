@@ -13,7 +13,7 @@ router.get("/calendario-disponibilidad", ctrl.calendarioDisponibilidad);
 
 // Protegidas
 router.get("/",                authMiddleware, requirePermiso("reservas.ver"),    ctrl.list);
-router.get("/reporte",         authMiddleware, requirePermiso("reservas.ver"),    ctrl.reporte);
+router.get("/reporte",         authMiddleware, requirePermiso("finanzas.ver"),    ctrl.reporte);
 router.get("/:id",             authMiddleware, requirePermiso("reservas.ver"),    ctrl.getOne);
 router.patch("/:id",           authMiddleware, requirePermiso("reservas.editar"), ctrl.update);
 router.patch("/:id/estado",    authMiddleware, requirePermiso("reservas.cambiar_estado"), ctrl.updateEstado);

@@ -137,6 +137,7 @@ VALUES (
     'productos.ver',
     'productos.crear', 'productos.editar', 'productos.eliminar',
     'categorias.ver',
+    'categorias.crear', 'categorias.editar', 'categorias.eliminar',
     'inventario.ver', 'inventario.editar',
     'reservas.ver', 'reservas.editar', 'reservas.cambiar_estado',
     'finanzas.ver',
@@ -158,6 +159,7 @@ VALUES (
     'productos.ver',
     'productos.crear', 'productos.editar', 'productos.eliminar',
     'categorias.ver',
+    'categorias.crear', 'categorias.editar', 'categorias.eliminar',
     'inventario.ver', 'inventario.editar',
     'reservas.ver', 'reservas.editar', 'reservas.cambiar_estado'
   ]
