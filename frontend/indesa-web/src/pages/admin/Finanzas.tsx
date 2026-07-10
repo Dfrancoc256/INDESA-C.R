@@ -196,56 +196,58 @@ export function Finanzas() {
           </CardHeader>
           <CardContent>
             {isLoadingReservas ? (
-              <div className="space-y-2">
+              <div className="h-[260px] space-y-2 overflow-hidden">
                 {Array.from({ length: 5 }).map((_, index) => (
                   <Skeleton key={index} className="h-12 w-full" />
                 ))}
               </div>
             ) : reservasPagadas.length === 0 ? (
-              <div className="rounded-md border border-dashed p-8 text-center text-muted-foreground">
+              <div className="flex h-[260px] items-center justify-center rounded-md border border-dashed p-8 text-center text-muted-foreground">
                 Aún no hay reservas marcadas como pagadas.
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Producto</TableHead>
-                      <TableHead>Pago</TableHead>
-                      <TableHead className="text-right">Monto</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {reservasPagadasPagina.map((reserva) => (
-                      <TableRow key={reserva.id}>
-                        <TableCell>
-                          <div className="font-medium">{reserva.cliente_nombre}</div>
-                          <div className="text-xs text-muted-foreground">{formatDate(reserva.created_at)}</div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="font-medium">{reserva.producto_nombre}</div>
-                          <div className="text-xs text-muted-foreground">
-                            {reserva.tipo_tarifa ?? "dia"} · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="success" className="capitalize">
-                            {(reserva as any).metodo_pago ? `Pagada · ${(reserva as any).metodo_pago}` : "Pagada"}
-                          </Badge>
-                          {(reserva as any).fecha_pago && (
-                            <div className="mt-1 text-xs text-muted-foreground">
-                              {formatDate((reserva as any).fecha_pago)}
-                            </div>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold text-primary">
-                          {formatCurrency(Number(reserva.total_estimado ?? 0))}
-                        </TableCell>
+              <div>
+                <div className="h-[260px] overflow-auto pr-2">
+                  <Table>
+                    <TableHeader className="sticky top-0 z-10 bg-card">
+                      <TableRow>
+                        <TableHead>Cliente</TableHead>
+                        <TableHead>Producto</TableHead>
+                        <TableHead>Pago</TableHead>
+                        <TableHead className="text-right">Monto</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {reservasPagadasPagina.map((reserva) => (
+                        <TableRow key={reserva.id}>
+                          <TableCell>
+                            <div className="font-medium">{reserva.cliente_nombre}</div>
+                            <div className="text-xs text-muted-foreground">{formatDate(reserva.created_at)}</div>
+                          </TableCell>
+                          <TableCell>
+                            <div className="font-medium">{reserva.producto_nombre}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {reserva.tipo_tarifa ?? "dia"} · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="success" className="capitalize">
+                              {(reserva as any).metodo_pago ? `Pagada · ${(reserva as any).metodo_pago}` : "Pagada"}
+                            </Badge>
+                            {(reserva as any).fecha_pago && (
+                              <div className="mt-1 text-xs text-muted-foreground">
+                                {formatDate((reserva as any).fecha_pago)}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold text-primary">
+                            {formatCurrency(Number(reserva.total_estimado ?? 0))}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
                 <PaginationFooter
                   page={pagadasPage}
                   totalPages={pagadasTotalPages}
@@ -296,52 +298,54 @@ export function Finanzas() {
         </CardHeader>
         <CardContent>
           {isLoadingReservas ? (
-            <div className="space-y-2">
+            <div className="h-[300px] space-y-2 overflow-hidden">
               {Array.from({ length: 3 }).map((_, index) => (
                 <Skeleton key={index} className="h-12 w-full" />
               ))}
             </div>
           ) : reservasCanceladas.length === 0 ? (
-            <div className="rounded-md border border-dashed p-8 text-center text-muted-foreground">
+            <div className="flex h-[300px] items-center justify-center rounded-md border border-dashed p-8 text-center text-muted-foreground">
               No hay reservas canceladas en este rango.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Cliente</TableHead>
-                    <TableHead>Producto</TableHead>
-                    <TableHead>Estado</TableHead>
-                    <TableHead className="text-right">Monto</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {reservasCanceladasPagina.map((reserva) => (
-                    <TableRow key={reserva.id}>
-                      <TableCell>
-                        <div className="font-medium">{reserva.cliente_nombre}</div>
-                        <div className="text-xs text-muted-foreground">{formatDate(reserva.created_at)}</div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium">{reserva.producto_nombre}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {reserva.tipo_tarifa ?? "dia"} · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="destructive" className="gap-1">
-                          <XCircle className="h-3 w-3" />
-                          Cancelada
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-semibold">
-                        {formatCurrency(Number(reserva.total_estimado ?? 0))}
-                      </TableCell>
+            <div>
+              <div className="h-[300px] overflow-auto pr-2">
+                <Table>
+                  <TableHeader className="sticky top-0 z-10 bg-card">
+                    <TableRow>
+                      <TableHead>Cliente</TableHead>
+                      <TableHead>Producto</TableHead>
+                      <TableHead>Estado</TableHead>
+                      <TableHead className="text-right">Monto</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {reservasCanceladasPagina.map((reserva) => (
+                      <TableRow key={reserva.id}>
+                        <TableCell>
+                          <div className="font-medium">{reserva.cliente_nombre}</div>
+                          <div className="text-xs text-muted-foreground">{formatDate(reserva.created_at)}</div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="font-medium">{reserva.producto_nombre}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {reserva.tipo_tarifa ?? "dia"} · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="destructive" className="gap-1">
+                            <XCircle className="h-3 w-3" />
+                            Cancelada
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-semibold">
+                          {formatCurrency(Number(reserva.total_estimado ?? 0))}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
               <PaginationFooter
                 page={canceladasPage}
                 totalPages={canceladasTotalPages}

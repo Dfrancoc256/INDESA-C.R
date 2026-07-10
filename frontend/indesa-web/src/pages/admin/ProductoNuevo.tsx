@@ -387,9 +387,9 @@ export function ProductoNuevo() {
                   <CardTitle>Fotografía</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="aspect-square w-full rounded-lg border-2 border-dashed bg-muted flex flex-col items-center justify-center overflow-hidden relative">
+                  <div className="aspect-square w-full rounded-lg border-2 border-dashed bg-white flex flex-col items-center justify-center overflow-hidden relative">
                     {imageUrlPreview ? (
-                      <img src={imageUrlPreview} alt="Preview" className="w-full h-full object-cover" onError={() => setImageUrlPreview("")} />
+                      <img src={imageUrlPreview} alt="Preview" className="w-full h-full object-contain" onError={() => setImageUrlPreview("")} />
                     ) : (
                       <>
                         <ImageIcon className="h-10 w-10 text-muted-foreground mb-2 opacity-50" />
