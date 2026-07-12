@@ -36,6 +36,8 @@ const productoSchema = z.object({
   imagen_url: z.string().refine(isValidImageSource, "Debe ser una URL valida o una imagen cargada").optional(),
   activo: z.boolean().default(true),
   advertencia_precio: z.boolean().default(false),
+  stock_inicial: z.coerce.number().min(0, "El stock actual no puede ser negativo").default(0),
+  stock_minimo: z.coerce.number().min(0, "El stock mínimo no puede ser negativo").default(5),
 });
 
 type ProductoValues = z.infer<typeof productoSchema>;
@@ -84,6 +86,8 @@ export function ProductoEditar() {
       imagen_url: "",
       activo: true,
       advertencia_precio: false,
+      stock_inicial: 0,
+      stock_minimo: 5,
       categoria_id: 0
     },
   });
@@ -101,6 +105,8 @@ export function ProductoEditar() {
         imagen_url: producto.imagen_url || "",
         activo: producto.activo,
         advertencia_precio: producto.advertencia_precio ?? false,
+        stock_inicial: producto.cantidad ?? 0,
+        stock_minimo: producto.stock_minimo ?? 5,
         categoria_id: producto.categoria_id
       });
       setImageUrlPreview(producto.imagen_url || "");
@@ -376,13 +382,43 @@ export function ProductoEditar() {
                 </CardContent>
               </Card>
 
-              {/* Note about inventory */}
-              <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-lg p-4 flex gap-3 text-sm">
-                <div className="flex-1">
-                  <strong>Nota sobre inventario:</strong> Las existencias y alertas de stock de este producto 
-                  se gestionan en el módulo de <Link href={`/admin/inventario?producto=${producto?.id}`} className="underline font-medium hover:text-blue-900">Inventario</Link>.
-                </div>
-              </div>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Inventario</CardTitle>
+                  <CardDescription>Actualice las existencias y el mínimo de alerta de este producto.</CardDescription>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="stock_inicial"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Stock actual</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" {...field} />
+                        </FormControl>
+                        <FormDescription>Unidades disponibles ahora</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="stock_minimo"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Stock mínimo</FormLabel>
+                        <FormControl>
+                          <Input type="number" min="0" {...field} />
+                        </FormControl>
+                        <FormDescription>Alerta de reabastecimiento</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </CardContent>
+              </Card>
             </div>
 
             {/* Sidebar col */}

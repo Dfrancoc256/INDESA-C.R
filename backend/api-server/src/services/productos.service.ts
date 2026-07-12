@@ -95,13 +95,13 @@ export async function createProducto(data: ProductoInput) {
 
 export async function updateProducto(id: number, data: ProductoInput) {
   const normalized = normalizeProductoInput(data);
-  const { stockInicial: _stockInicial, stockMinimo, ...productoData } = normalized;
+  const { stockInicial, stockMinimo, ...productoData } = normalized;
   const updated = await productosRepo.updateProducto(id, productoData);
   if (!updated) throw Object.assign(new Error("Producto no encontrado"), { status: 404 });
 
-  if (stockMinimo !== undefined) {
+  if (stockInicial !== undefined || stockMinimo !== undefined) {
     const inv = await inventarioRepo.findInventarioByProducto(id);
-    await inventarioRepo.upsertInventario(id, inv?.cantidad ?? 0, stockMinimo);
+    await inventarioRepo.upsertInventario(id, stockInicial ?? inv?.cantidad ?? 0, stockMinimo);
   }
 
   return productosRepo.findProductoById(id);
