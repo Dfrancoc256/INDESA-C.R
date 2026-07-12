@@ -45,7 +45,7 @@ export function Dashboard() {
           value={resumen?.total_productos} 
           icon={Package} 
           isLoading={isLoadingResumen}
-          description="En catálogo"
+          description="Registrados"
         />
         <MetricCard 
           title="Reservas Pendientes" 

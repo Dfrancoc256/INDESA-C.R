@@ -2,7 +2,7 @@ import { db, productosTable, reservasTable, usuariosTable, inventarioTable } fro
 import { eq, sql, lte } from "drizzle-orm";
 
 export async function getDashboardCounts() {
-  const [productos] = await db.select({ count: sql<number>`count(*)::int` }).from(productosTable).where(eq(productosTable.activo, true));
+  const [productos] = await db.select({ count: sql<number>`count(*)::int` }).from(productosTable);
   const [reservasTotal] = await db.select({ count: sql<number>`count(*)::int` }).from(reservasTable);
   const [pendientes] = await db.select({ count: sql<number>`count(*)::int` }).from(reservasTable).where(eq(reservasTable.estado, "pendiente"));
   const [confirmadas] = await db.select({ count: sql<number>`count(*)::int` }).from(reservasTable).where(eq(reservasTable.estado, "confirmada"));
