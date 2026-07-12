@@ -61,6 +61,7 @@ type ReservaFormState = {
 };
 
 const whatsappPhone = "50252149029";
+const pendingWhatsAppField = "Pendiente por completar";
 const todayDate = getTodayDate();
 const calendarLimitDate = (() => {
   const date = new Date(`${todayDate}T00:00:00`);
@@ -105,20 +106,35 @@ const heroSlides = [
 ];
 
 function buildWhatsAppUrl(producto: HomeProduct, form?: ReservaFormState) {
+  const tarifaPrincipal = getTarifaPrincipal(producto);
+  const tarifaForm = form
+    ? getTarifasProducto(producto).find((tarifa) => tarifa.tipo === form.tipo_tarifa) ?? tarifaPrincipal
+    : tarifaPrincipal;
+  const fechaFin = form
+    ? form.tipo_tarifa === "dia"
+      ? form.fecha_fin
+      : calcularFechaFinPorTarifa(form.fecha_inicio, form.tipo_tarifa, Number(form.unidades_tarifa) || 1)
+    : "";
+  const unidades = form
+    ? calcularUnidadesTarifa(form.tipo_tarifa, form.fecha_inicio, fechaFin, Number(form.unidades_tarifa) || 1)
+    : 1;
+  const cantidad = form ? Number(form.cantidad) || 1 : 1;
+  const total = tarifaForm.value * unidades * cantidad;
   const lines = [
     "Hola, quiero información para reservar este equipo:",
     `Producto: ${producto.nombre}`,
-    `Tarifa: ${formatCurrency(getTarifaPrincipal(producto).value)} por ${getTarifaPrincipal(producto).suffix}`,
+    `Tarifa: ${formatCurrency(tarifaForm.value)} por ${tarifaForm.suffix}`,
   ];
 
   if (form) {
     lines.push(
       `Cantidad solicitada: ${form.cantidad || "1"}`,
-      `Modalidad: ${form.tipo_tarifa} x ${form.unidades_tarifa || "1"}`,
-      `Fechas: ${form.fecha_inicio} al ${form.fecha_fin}`,
-      `Nombre: ${form.cliente_nombre || "Pendiente"}`,
-      `Teléfono: ${form.cliente_telefono || "Pendiente"}`,
-      `Correo: ${form.cliente_email || "Pendiente"}`
+      `Modalidad: ${tarifaForm.label} x ${unidades}`,
+      `Fechas: ${form.fecha_inicio} al ${fechaFin}`,
+      `Total estimado: ${formatCurrency(total)}`,
+      `Nombre: ${form.cliente_nombre || pendingWhatsAppField}`,
+      `Teléfono: ${form.cliente_telefono || pendingWhatsAppField}`,
+      `Correo: ${form.cliente_email || pendingWhatsAppField}`
     );
 
     if (form.notas.trim()) {
@@ -753,7 +769,7 @@ export function Home() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <Button asChild type="button" variant="outline" className="gap-2 border-[#128C7E]/70 bg-white text-[#128C7E] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#075E54] hover:bg-[#128C7E]/10 hover:text-[#075E54] hover:shadow-md">
-                  <a href={buildWhatsAppUrl(selectedProduct)} target="_blank" rel="noreferrer">
+                  <a href={buildWhatsAppUrl(selectedProduct, reservaForm)} target="_blank" rel="noreferrer">
                     <FaWhatsapp className="h-4 w-4" />
                     Consultar por WhatsApp
                   </a>

@@ -206,11 +206,16 @@ export function Reservar() {
     ? `https://wa.me/${whatsappPhone}?text=${encodeURIComponent([
         "Hola, quiero información para reservar este equipo:",
         `Producto: ${productoSeleccionado.nombre}`,
-        `Tarifa: ${formatCurrency(getTarifaPrincipal(productoSeleccionado).value)} por ${getTarifaPrincipal(productoSeleccionado).suffix}`,
+        `Tarifa: ${formatCurrency(tarifaSeleccionada?.value ?? getTarifaPrincipal(productoSeleccionado).value)} por ${tarifaSeleccionada?.suffix ?? getTarifaPrincipal(productoSeleccionado).suffix}`,
+        `Cantidad solicitada: ${form.watch("cantidad") || 1}`,
+        `Modalidad: ${tarifaSeleccionada?.label ?? tipoTarifa} x ${unidadesTarifa}`,
+        `Fechas: ${fechaInicio} al ${fechaFin}`,
+        `Total estimado: ${formatCurrency(totalEstimado)}`,
         `Nombre: ${form.watch("cliente_nombre") || "Pendiente"}`,
         `Teléfono: ${form.watch("cliente_telefono") || "Pendiente"}`,
         `Correo: ${form.watch("cliente_email") || "Pendiente"}`,
-      ].join("\n"))}`
+        form.watch("notas")?.trim() ? `Notas: ${form.watch("notas")?.trim()}` : "",
+      ].filter(Boolean).join("\n"))}`
     : `https://wa.me/${whatsappPhone}`;
 
   return (

@@ -1,4 +1,4 @@
-import { useGetProducto, useCreateReserva, getGetProductoQueryKey } from "@workspace/api-client-react";
+import { useGetProducto, useCreateReserva, getGetProductoQueryKey, type Producto } from "@workspace/api-client-react";
 import { useEffect, useState } from "react";
 import { useParams, Link } from "wouter";
 import {
@@ -28,6 +28,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { invalidateCatalogData } from "@/lib/queryInvalidation";
+import { FaWhatsapp } from "react-icons/fa";
 
 const reservaSchema = z.object({
   cliente_nombre: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
@@ -46,11 +47,39 @@ const reservaSchema = z.object({
 
 type ReservaValues = z.infer<typeof reservaSchema>;
 const todayDate = getTodayDate();
+const whatsappPhone = "50252149029";
+const pendingWhatsAppField = "Pendiente por completar";
 const calendarLimitDate = (() => {
   const date = new Date(`${todayDate}T00:00:00`);
   date.setMonth(date.getMonth() + 6);
   return date.toISOString().slice(0, 10);
 })();
+
+function buildWhatsAppUrl(producto: Producto, data: ReservaValues, totalEstimado: number, unidadesTarifa: number) {
+  const tarifaPrincipal = getTarifaPrincipal(producto);
+  const tarifa = getTarifasProducto(producto).find((item) => item.tipo === data.tipo_tarifa) ?? tarifaPrincipal;
+  const fechaFin = data.tipo_tarifa === "dia"
+    ? data.fecha_fin
+    : calcularFechaFinPorTarifa(data.fecha_inicio, data.tipo_tarifa, data.unidades_tarifa);
+  const lines = [
+    "Hola, quiero información para reservar este equipo:",
+    `Producto: ${producto.nombre}`,
+    `Tarifa: ${formatCurrency(tarifa.value)} por ${tarifa.suffix}`,
+    `Cantidad solicitada: ${data.cantidad || 1}`,
+    `Modalidad: ${tarifa.label} x ${unidadesTarifa}`,
+    `Fechas: ${data.fecha_inicio} al ${fechaFin}`,
+    `Total estimado: ${formatCurrency(totalEstimado)}`,
+    `Nombre: ${data.cliente_nombre || pendingWhatsAppField}`,
+    `Teléfono: ${data.cliente_telefono || pendingWhatsAppField}`,
+    `Correo: ${data.cliente_email || pendingWhatsAppField}`,
+  ];
+
+  if (data.notas?.trim()) {
+    lines.push(`Notas: ${data.notas.trim()}`);
+  }
+
+  return `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(lines.join("\n"))}`;
+}
 
 export function ProductoDetalle() {
   const { id } = useParams<{ id: string }>();
@@ -165,6 +194,10 @@ export function ProductoDetalle() {
   const totalEstimado = tarifaSeleccionada
     ? tarifaSeleccionada.value * unidadesTarifa * cantidadSolicitada
     : 0;
+  const formValues = form.watch();
+  const detalleWhatsappUrl = productoActual
+    ? buildWhatsAppUrl(productoActual, formValues, totalEstimado, unidadesTarifa)
+    : `https://wa.me/${whatsappPhone}`;
   const calendarioDisponibilidad = useReservaCalendarioDisponibilidad({
     productoId: productoActual?.id,
     desde: todayDate,
@@ -553,7 +586,19 @@ export function ProductoDetalle() {
                           )}
                         />
 
-                        <div className="pt-2">
+                        <div className="grid gap-3 pt-2 sm:grid-cols-2">
+                          <Button
+                            asChild
+                            type="button"
+                            variant="outline"
+                            size="lg"
+                            className="h-12 w-full gap-2 border-[#128C7E]/70 bg-white text-[#128C7E] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#075E54] hover:bg-[#128C7E]/10 hover:text-[#075E54] hover:shadow-md md:h-14 md:text-lg"
+                          >
+                            <a href={detalleWhatsappUrl} target="_blank" rel="noreferrer">
+                              <FaWhatsapp className="h-4 w-4" />
+                              Consultar por WhatsApp
+                            </a>
+                          </Button>
                           <Button
                             type="submit"
                             size="lg"
@@ -562,10 +607,10 @@ export function ProductoDetalle() {
                           >
                             {reservaMutation.isPending ? "Procesando..." : "Confirmar Reserva"}
                           </Button>
-                          <p className="text-center text-xs text-muted-foreground mt-4">
-                            Al confirmar, un asesor se comunicará para coordinar operador, horario y condiciones del servicio.
-                          </p>
                         </div>
+                        <p className="text-center text-xs text-muted-foreground mt-4">
+                          Al confirmar, un asesor se comunicará para coordinar operador, horario y condiciones del servicio.
+                        </p>
                       </form>
                     </Form>
                 </CardContent>
