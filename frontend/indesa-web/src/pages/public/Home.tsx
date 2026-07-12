@@ -61,7 +61,6 @@ type ReservaFormState = {
 };
 
 const whatsappPhone = "50252149029";
-const pendingWhatsAppField = "Pendiente por completar";
 const todayDate = getTodayDate();
 const calendarLimitDate = (() => {
   const date = new Date(`${todayDate}T00:00:00`);
@@ -105,8 +104,34 @@ const heroSlides = [
   },
 ];
 
+function getDefaultReservaForm(producto: HomeProduct): ReservaFormState {
+  return {
+    ...emptyReservaForm,
+    cantidad: (producto.cantidad ?? 0) > 0 ? "1" : "0",
+    tipo_tarifa: getTarifaPrincipal(producto).tipo,
+    unidades_tarifa: "1",
+  };
+}
+
+function hasReservaFormData(producto: HomeProduct, form: ReservaFormState) {
+  const defaultForm = getDefaultReservaForm(producto);
+
+  return Boolean(
+    form.cliente_nombre.trim() ||
+      form.cliente_email.trim() ||
+      form.cliente_telefono.trim() ||
+      form.notas.trim() ||
+      form.cantidad !== defaultForm.cantidad ||
+      form.fecha_inicio !== defaultForm.fecha_inicio ||
+      form.fecha_fin !== defaultForm.fecha_fin ||
+      form.tipo_tarifa !== defaultForm.tipo_tarifa ||
+      form.unidades_tarifa !== defaultForm.unidades_tarifa
+  );
+}
+
 function buildWhatsAppUrl(producto: HomeProduct, form?: ReservaFormState) {
   const tarifaPrincipal = getTarifaPrincipal(producto);
+  const shouldIncludeForm = form ? hasReservaFormData(producto, form) : false;
   const tarifaForm = form
     ? getTarifasProducto(producto).find((tarifa) => tarifa.tipo === form.tipo_tarifa) ?? tarifaPrincipal
     : tarifaPrincipal;
@@ -126,17 +151,17 @@ function buildWhatsAppUrl(producto: HomeProduct, form?: ReservaFormState) {
     `Tarifa: ${formatCurrency(tarifaForm.value)} por ${tarifaForm.suffix}`,
   ];
 
-  if (form) {
+  if (form && shouldIncludeForm) {
     lines.push(
       `Cantidad solicitada: ${form.cantidad || "1"}`,
       `Modalidad: ${tarifaForm.label} x ${unidades}`,
       `Fechas: ${form.fecha_inicio} al ${fechaFin}`,
       `Total estimado: ${formatCurrency(total)}`,
-      `Nombre: ${form.cliente_nombre || pendingWhatsAppField}`,
-      `Teléfono: ${form.cliente_telefono || pendingWhatsAppField}`,
-      `Correo: ${form.cliente_email || pendingWhatsAppField}`
     );
 
+    if (form.cliente_nombre.trim()) lines.push(`Nombre: ${form.cliente_nombre.trim()}`);
+    if (form.cliente_telefono.trim()) lines.push(`Teléfono: ${form.cliente_telefono.trim()}`);
+    if (form.cliente_email.trim()) lines.push(`Correo: ${form.cliente_email.trim()}`);
     if (form.notas.trim()) {
       lines.push(`Notas: ${form.notas.trim()}`);
     }
@@ -266,14 +291,8 @@ export function Home() {
   }, [productosCatalogo, queryClient]);
 
   const openReservaModal = (producto: HomeProduct) => {
-    const tarifaPrincipal = getTarifaPrincipal(producto);
     setSelectedProduct(producto);
-    setReservaForm({
-      ...emptyReservaForm,
-      cantidad: (producto.cantidad ?? 0) > 0 ? "1" : "0",
-      tipo_tarifa: tarifaPrincipal.tipo,
-      unidades_tarifa: "1",
-    });
+    setReservaForm(getDefaultReservaForm(producto));
     setReservaOpen(true);
   };
 

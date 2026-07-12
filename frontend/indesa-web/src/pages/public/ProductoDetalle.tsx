@@ -48,12 +48,25 @@ const reservaSchema = z.object({
 type ReservaValues = z.infer<typeof reservaSchema>;
 const todayDate = getTodayDate();
 const whatsappPhone = "50252149029";
-const pendingWhatsAppField = "Pendiente por completar";
 const calendarLimitDate = (() => {
   const date = new Date(`${todayDate}T00:00:00`);
   date.setMonth(date.getMonth() + 6);
   return date.toISOString().slice(0, 10);
 })();
+
+function hasReservaFormData(producto: Producto, data: ReservaValues) {
+  return Boolean(
+    data.cliente_nombre.trim() ||
+      data.cliente_email.trim() ||
+      data.cliente_telefono.trim() ||
+      data.notas?.trim() ||
+      Number(data.cantidad) !== 1 ||
+      data.fecha_inicio !== todayDate ||
+      data.fecha_fin !== todayDate ||
+      data.tipo_tarifa !== getTarifaPrincipal(producto).tipo ||
+      Number(data.unidades_tarifa) !== 1
+  );
+}
 
 function buildWhatsAppUrl(producto: Producto, data: ReservaValues, totalEstimado: number, unidadesTarifa: number) {
   const tarifaPrincipal = getTarifaPrincipal(producto);
@@ -61,21 +74,27 @@ function buildWhatsAppUrl(producto: Producto, data: ReservaValues, totalEstimado
   const fechaFin = data.tipo_tarifa === "dia"
     ? data.fecha_fin
     : calcularFechaFinPorTarifa(data.fecha_inicio, data.tipo_tarifa, data.unidades_tarifa);
+  const shouldIncludeForm = hasReservaFormData(producto, data);
   const lines = [
     "Hola, quiero información para reservar este equipo:",
     `Producto: ${producto.nombre}`,
     `Tarifa: ${formatCurrency(tarifa.value)} por ${tarifa.suffix}`,
-    `Cantidad solicitada: ${data.cantidad || 1}`,
-    `Modalidad: ${tarifa.label} x ${unidadesTarifa}`,
-    `Fechas: ${data.fecha_inicio} al ${fechaFin}`,
-    `Total estimado: ${formatCurrency(totalEstimado)}`,
-    `Nombre: ${data.cliente_nombre || pendingWhatsAppField}`,
-    `Teléfono: ${data.cliente_telefono || pendingWhatsAppField}`,
-    `Correo: ${data.cliente_email || pendingWhatsAppField}`,
   ];
 
-  if (data.notas?.trim()) {
-    lines.push(`Notas: ${data.notas.trim()}`);
+  if (shouldIncludeForm) {
+    lines.push(
+      `Cantidad solicitada: ${data.cantidad || 1}`,
+      `Modalidad: ${tarifa.label} x ${unidadesTarifa}`,
+      `Fechas: ${data.fecha_inicio} al ${fechaFin}`,
+      `Total estimado: ${formatCurrency(totalEstimado)}`
+    );
+
+    if (data.cliente_nombre.trim()) lines.push(`Nombre: ${data.cliente_nombre.trim()}`);
+    if (data.cliente_telefono.trim()) lines.push(`Teléfono: ${data.cliente_telefono.trim()}`);
+    if (data.cliente_email.trim()) lines.push(`Correo: ${data.cliente_email.trim()}`);
+    if (data.notas?.trim()) {
+      lines.push(`Notas: ${data.notas.trim()}`);
+    }
   }
 
   return `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(lines.join("\n"))}`;

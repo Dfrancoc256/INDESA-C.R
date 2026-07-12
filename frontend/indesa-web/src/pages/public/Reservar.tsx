@@ -60,6 +60,49 @@ function onlyDigits(value: string) {
   return value.replace(/\D/g, "");
 }
 
+function hasReservaFormData(producto: any, data: ReservaGlobalValues) {
+  return Boolean(
+    data.cliente_nombre.trim() ||
+      data.cliente_email.trim() ||
+      data.cliente_telefono.trim() ||
+      data.notas?.trim() ||
+      Number(data.cantidad) !== 1 ||
+      data.fecha_inicio !== todayDate ||
+      data.fecha_fin !== todayDate ||
+      data.tipo_tarifa !== getTarifaPrincipal(producto).tipo ||
+      Number(data.unidades_tarifa) !== 1
+  );
+}
+
+function buildWhatsAppUrl(producto: any, data: ReservaGlobalValues, totalEstimado: number, unidadesTarifa: number) {
+  const tarifaPrincipal = getTarifaPrincipal(producto);
+  const tarifa = getTarifasProducto(producto).find((item) => item.tipo === data.tipo_tarifa) ?? tarifaPrincipal;
+  const fechaFin = data.tipo_tarifa === "dia"
+    ? data.fecha_fin
+    : calcularFechaFinPorTarifa(data.fecha_inicio, data.tipo_tarifa, data.unidades_tarifa);
+  const lines = [
+    "Hola, quiero información para reservar este equipo:",
+    `Producto: ${producto.nombre}`,
+    `Tarifa: ${formatCurrency(tarifa.value)} por ${tarifa.suffix}`,
+  ];
+
+  if (hasReservaFormData(producto, data)) {
+    lines.push(
+      `Cantidad solicitada: ${data.cantidad || 1}`,
+      `Modalidad: ${tarifa.label} x ${unidadesTarifa}`,
+      `Fechas: ${data.fecha_inicio} al ${fechaFin}`,
+      `Total estimado: ${formatCurrency(totalEstimado)}`
+    );
+
+    if (data.cliente_nombre.trim()) lines.push(`Nombre: ${data.cliente_nombre.trim()}`);
+    if (data.cliente_telefono.trim()) lines.push(`Teléfono: ${data.cliente_telefono.trim()}`);
+    if (data.cliente_email.trim()) lines.push(`Correo: ${data.cliente_email.trim()}`);
+    if (data.notas?.trim()) lines.push(`Notas: ${data.notas.trim()}`);
+  }
+
+  return `https://wa.me/${whatsappPhone}?text=${encodeURIComponent(lines.join("\n"))}`;
+}
+
 export function Reservar() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -202,20 +245,9 @@ export function Reservar() {
   const fechasBloqueadas = calendarioDisponibilidad.data?.fechasBloqueadas ?? [];
   const disponibilidadActual = disponibilidadReserva.data;
   const productImage = productoSeleccionado?.imagen_url;
+  const formValues = form.watch();
   const whatsappUrl = productoSeleccionado
-    ? `https://wa.me/${whatsappPhone}?text=${encodeURIComponent([
-        "Hola, quiero información para reservar este equipo:",
-        `Producto: ${productoSeleccionado.nombre}`,
-        `Tarifa: ${formatCurrency(tarifaSeleccionada?.value ?? getTarifaPrincipal(productoSeleccionado).value)} por ${tarifaSeleccionada?.suffix ?? getTarifaPrincipal(productoSeleccionado).suffix}`,
-        `Cantidad solicitada: ${form.watch("cantidad") || 1}`,
-        `Modalidad: ${tarifaSeleccionada?.label ?? tipoTarifa} x ${unidadesTarifa}`,
-        `Fechas: ${fechaInicio} al ${fechaFin}`,
-        `Total estimado: ${formatCurrency(totalEstimado)}`,
-        `Nombre: ${form.watch("cliente_nombre") || "Pendiente"}`,
-        `Teléfono: ${form.watch("cliente_telefono") || "Pendiente"}`,
-        `Correo: ${form.watch("cliente_email") || "Pendiente"}`,
-        form.watch("notas")?.trim() ? `Notas: ${form.watch("notas")?.trim()}` : "",
-      ].filter(Boolean).join("\n"))}`
+    ? buildWhatsAppUrl(productoSeleccionado, formValues, totalEstimado, unidadesTarifa)
     : `https://wa.me/${whatsappPhone}`;
 
   return (
