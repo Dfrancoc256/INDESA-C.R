@@ -48,6 +48,13 @@ const calendarLimitDate = (() => {
   return date.toISOString().slice(0, 10);
 })();
 
+const estadosReservaDisponibles = [
+  { value: "pendiente", label: "Marcar pendiente", icon: Clock, iconClassName: "text-warning" },
+  { value: "confirmada", label: "Confirmar", icon: CheckCircle, iconClassName: "text-info" },
+  { value: "entregada", label: "Marcar entregada", icon: Truck, iconClassName: "text-success" },
+  { value: "cancelada", label: "Cancelar", icon: XCircle, iconClassName: "text-destructive", requiereNota: true },
+];
+
 export function Reservas() {
   const { usuario } = useAuth();
   const { toast } = useToast();
@@ -634,7 +641,7 @@ export function Reservas() {
                   </div>
                 </div>
 
-                <div className="mt-3 grid grid-cols-4 gap-2">
+                <div className="mt-3 grid grid-cols-2 gap-2">
                   <Button variant="outline" size="icon" onClick={() => verDetalle(reserva)} aria-label="Ver detalle">
                     <Eye className="h-4 w-4" />
                   </Button>
@@ -648,18 +655,12 @@ export function Reservas() {
                       <CreditCard className="h-4 w-4" />
                     </Button>
                   )}
-                  {(reserva as any).comprobante_pago_nombre && (
-                    <Button variant="outline" size="icon" onClick={() => abrirComprobantePago(reserva)} aria-label="Ver comprobante de pago">
-                      <Paperclip className="h-4 w-4" />
-                    </Button>
-                  )}
                   {canChangeEstadoReservas && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
                           variant="outline"
                           size="icon"
-                          disabled={reserva.estado === "entregada" || reserva.estado === "cancelada"}
                           aria-label="Cambiar estado"
                         >
                           <MoreHorizontal className="h-4 w-4" />
@@ -668,26 +669,19 @@ export function Reservas() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuLabel>Cambiar estado</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        {reserva.estado === "pendiente" && (
-                          <>
-                            <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, "confirmada")}>
-                              <CheckCircle className="mr-2 h-4 w-4 text-info" /> Confirmar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, "cancelada", true)}>
-                              <XCircle className="mr-2 h-4 w-4 text-destructive" /> Cancelar
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                        {reserva.estado === "confirmada" && (
-                          <>
-                            <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, "entregada")}>
-                              <Truck className="mr-2 h-4 w-4 text-success" /> Marcar entregada
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, "cancelada", true)}>
-                              <XCircle className="mr-2 h-4 w-4 text-destructive" /> Cancelar
-                            </DropdownMenuItem>
-                          </>
-                        )}
+                        {estadosReservaDisponibles
+                          .filter((estado) => estado.value !== reserva.estado)
+                          .map((estado) => {
+                            const Icon = estado.icon;
+                            return (
+                              <DropdownMenuItem
+                                key={estado.value}
+                                onClick={() => handleCambiarEstado(reserva.id, estado.value, estado.requiereNota)}
+                              >
+                                <Icon className={`mr-2 h-4 w-4 ${estado.iconClassName}`} /> {estado.label}
+                              </DropdownMenuItem>
+                            );
+                          })}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}
@@ -697,16 +691,16 @@ export function Reservas() {
           )}
         </div>
 
-        <div className="hidden overflow-x-auto md:block">
-          <Table>
+        <div className="hidden md:block">
+          <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-20">ID</TableHead>
-                <TableHead>Fecha</TableHead>
-                <TableHead>Cliente</TableHead>
-                <TableHead>Producto</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
+                <TableHead className="w-[5.5rem]">ID</TableHead>
+                <TableHead className="w-[10rem]">Fecha</TableHead>
+                <TableHead className="w-[20%]">Cliente</TableHead>
+                <TableHead className="w-[32%]">Producto</TableHead>
+                <TableHead className="w-[12rem]">Estado</TableHead>
+                <TableHead className="w-[13rem] text-right">Acciones</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -743,13 +737,13 @@ export function Reservas() {
                       })}
                     </TableCell>
                     <TableCell>
-                      <div className="font-medium">{reserva.cliente_nombre}</div>
-                      <div className="text-xs text-muted-foreground flex items-center gap-2">
+                      <div className="truncate font-medium">{reserva.cliente_nombre}</div>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
                         <span>{reserva.cliente_telefono}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="font-medium text-sm truncate max-w-[250px]">{reserva.producto_nombre}</div>
+                      <div className="truncate text-sm font-medium">{reserva.producto_nombre}</div>
                       <div className="text-xs text-muted-foreground">
                         Cant: {reserva.cantidad} unid. · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
                       </div>
@@ -767,7 +761,7 @@ export function Reservas() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end items-center gap-1.5">
+                      <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" onClick={() => verDetalle(reserva)} aria-label="Ver detalle">
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -781,18 +775,12 @@ export function Reservas() {
                             <CreditCard className="h-4 w-4" />
                           </Button>
                         )}
-                        {(reserva as any).comprobante_pago_nombre && (
-                          <Button variant="ghost" size="icon" onClick={() => abrirComprobantePago(reserva)} aria-label="Ver comprobante de pago">
-                            <Paperclip className="h-4 w-4" />
-                          </Button>
-                        )}
                         {canChangeEstadoReservas && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                disabled={reserva.estado === 'entregada' || reserva.estado === 'cancelada'}
                                 aria-label="Cambiar estado"
                               >
                                 <MoreHorizontal className="h-4 w-4" />
@@ -801,26 +789,19 @@ export function Reservas() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuLabel>Cambiar estado</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              {reserva.estado === 'pendiente' && (
-                                <>
-                                  <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, 'confirmada')}>
-                                    <CheckCircle className="mr-2 h-4 w-4 text-info" /> Confirmar
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, 'cancelada', true)}>
-                                    <XCircle className="mr-2 h-4 w-4 text-destructive" /> Cancelar
-                                  </DropdownMenuItem>
-                                </>
-                              )}
-                              {reserva.estado === 'confirmada' && (
-                                <>
-                                  <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, 'entregada')}>
-                                    <Truck className="mr-2 h-4 w-4 text-success" /> Marcar entregada
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, 'cancelada', true)}>
-                                    <XCircle className="mr-2 h-4 w-4 text-destructive" /> Cancelar
-                                  </DropdownMenuItem>
-                                </>
-                              )}
+                              {estadosReservaDisponibles
+                                .filter((estado) => estado.value !== reserva.estado)
+                                .map((estado) => {
+                                  const Icon = estado.icon;
+                                  return (
+                                    <DropdownMenuItem
+                                      key={estado.value}
+                                      onClick={() => handleCambiarEstado(reserva.id, estado.value, estado.requiereNota)}
+                                    >
+                                      <Icon className={`mr-2 h-4 w-4 ${estado.iconClassName}`} /> {estado.label}
+                                    </DropdownMenuItem>
+                                  );
+                                })}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         )}
@@ -1119,16 +1100,16 @@ export function Reservas() {
 
       {/* Modal de Detalle */}
       <Dialog open={isDetalleOpen} onOpenChange={setIsDetalleOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-h-[90dvh] w-[calc(100vw-1rem)] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="flex justify-between items-center pr-8">
-              <span>Detalle de Reserva #{reservaSeleccionada?.id.toString().padStart(5, '0')}</span>
+            <DialogTitle className="flex flex-col gap-2 pr-8 sm:flex-row sm:items-center sm:justify-between">
+              <span className="break-words">Detalle de Reserva #{reservaSeleccionada?.id.toString().padStart(5, '0')}</span>
               {reservaSeleccionada && <EstadoBadge estado={reservaSeleccionada.estado} />}
             </DialogTitle>
           </DialogHeader>
           
           {reservaSeleccionada && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-6">
               <div className="space-y-4">
                 <div className="bg-muted/50 p-4 rounded-lg">
                   <h3 className="font-semibold flex items-center gap-2 mb-3">
@@ -1179,12 +1160,12 @@ export function Reservas() {
                   <h3 className="font-semibold mb-3">Información del Cliente</h3>
                   <div className="space-y-2 text-sm">
                     <div className="flex items-start gap-2">
-                      <div className="font-medium min-w-[80px]">Nombre:</div>
-                      <div>{reservaDetalle?.cliente_nombre ?? reservaSeleccionada.cliente_nombre}</div>
+                      <div className="min-w-[70px] font-medium">Nombre:</div>
+                      <div className="min-w-0 break-words">{reservaDetalle?.cliente_nombre ?? reservaSeleccionada.cliente_nombre}</div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground" />
-                      <a href={`mailto:${reservaDetalle?.cliente_email ?? reservaSeleccionada.cliente_email}`} className="text-primary hover:underline">
+                      <a href={`mailto:${reservaDetalle?.cliente_email ?? reservaSeleccionada.cliente_email}`} className="min-w-0 break-all text-primary hover:underline">
                         {reservaDetalle?.cliente_email ?? reservaSeleccionada.cliente_email}
                       </a>
                     </div>
@@ -1206,12 +1187,34 @@ export function Reservas() {
                     {formatDate(reservaDetalle?.created_at ?? reservaSeleccionada.created_at)}
                   </div>
                 </div>
+
+                {((reservaDetalle as any)?.comprobante_pago_nombre ?? reservaSeleccionada.comprobante_pago_nombre) && (
+                  <div className="border-t pt-4">
+                    <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                      <Paperclip className="h-4 w-4 text-primary" />
+                      Comprobante de pago
+                    </h3>
+                    <button
+                      type="button"
+                      className="flex w-full items-center justify-between gap-3 rounded-md border bg-white p-3 text-left text-sm transition hover:border-primary hover:bg-primary/5"
+                      onClick={() => abrirComprobantePago(reservaDetalle ?? reservaSeleccionada)}
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium">
+                          {(reservaDetalle as any)?.comprobante_pago_nombre ?? reservaSeleccionada.comprobante_pago_nombre}
+                        </span>
+                        <span className="text-xs text-muted-foreground">Abrir archivo guardado</span>
+                      </span>
+                      <Eye className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
           
-          <DialogFooter className="mt-6">
-            <Button variant="outline" onClick={() => setIsDetalleOpen(false)}>Cerrar</Button>
+          <DialogFooter className="sticky -bottom-6 mt-6 border-t bg-background/95 pt-4 backdrop-blur sm:static sm:border-0 sm:bg-transparent sm:pt-0">
+            <Button className="w-full sm:w-auto" variant="outline" onClick={() => setIsDetalleOpen(false)}>Cerrar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1382,10 +1385,20 @@ export function Reservas() {
                 />
               </label>
               {reservaPago?.comprobante_pago_nombre && (
-                <Button type="button" variant="outline" size="sm" onClick={() => abrirComprobantePago(reservaPago)}>
-                  <Paperclip className="mr-2 h-4 w-4" />
-                  Ver comprobante actual
-                </Button>
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between gap-3 rounded-md border bg-white p-3 text-left text-sm transition hover:border-primary hover:bg-primary/5"
+                  onClick={() => abrirComprobantePago(reservaPago)}
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <Paperclip className="h-4 w-4 shrink-0 text-primary" />
+                    <span className="min-w-0">
+                      <span className="block truncate font-medium">{reservaPago.comprobante_pago_nombre}</span>
+                      <span className="text-xs text-muted-foreground">Comprobante guardado actualmente</span>
+                    </span>
+                  </span>
+                  <Eye className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </button>
               )}
             </div>
           </div>

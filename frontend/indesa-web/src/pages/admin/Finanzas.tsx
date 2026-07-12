@@ -211,25 +211,45 @@ export function Finanzas() {
               </div>
             ) : (
               <div>
-                <div className="h-[260px] overflow-auto pr-2">
-                  <Table>
+                <div className="grid h-[260px] gap-3 overflow-auto pr-2 md:hidden">
+                  {reservasPagadasPagina.map((reserva) => (
+                    <div key={reserva.id} className="rounded-md border bg-white p-3 text-sm">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate font-semibold">{reserva.cliente_nombre}</div>
+                          <div className="text-xs text-muted-foreground">{formatDate(reserva.created_at)}</div>
+                        </div>
+                        <div className="shrink-0 font-semibold text-primary">{formatCurrency(Number(reserva.total_estimado ?? 0))}</div>
+                      </div>
+                      <div className="mt-2 line-clamp-2 font-medium">{reserva.producto_nombre}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {reserva.tipo_tarifa ?? "dia"} · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
+                      </div>
+                      <Badge variant="success" className="mt-2 capitalize">
+                        {(reserva as any).metodo_pago ? `Pagada · ${(reserva as any).metodo_pago}` : "Pagada"}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+                <div className="hidden h-[260px] overflow-auto pr-2 md:block">
+                  <Table className="w-full table-fixed">
                     <TableHeader className="sticky top-0 z-10 bg-card">
                       <TableRow>
-                        <TableHead>Cliente</TableHead>
-                        <TableHead>Producto</TableHead>
-                        <TableHead>Pago</TableHead>
-                        <TableHead className="text-right">Monto</TableHead>
+                        <TableHead className="w-[27%]">Cliente</TableHead>
+                        <TableHead className="w-[31%]">Producto</TableHead>
+                        <TableHead className="w-[25%]">Pago</TableHead>
+                        <TableHead className="w-[17%] text-right">Monto</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {reservasPagadasPagina.map((reserva) => (
                         <TableRow key={reserva.id}>
                           <TableCell>
-                            <div className="font-medium">{reserva.cliente_nombre}</div>
+                            <div className="truncate font-medium">{reserva.cliente_nombre}</div>
                             <div className="text-xs text-muted-foreground">{formatDate(reserva.created_at)}</div>
                           </TableCell>
                           <TableCell>
-                            <div className="font-medium">{reserva.producto_nombre}</div>
+                            <div className="truncate font-medium">{reserva.producto_nombre}</div>
                             <div className="text-xs text-muted-foreground">
                               {reserva.tipo_tarifa ?? "dia"} · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
                             </div>
@@ -313,25 +333,46 @@ export function Finanzas() {
             </div>
           ) : (
             <div>
-              <div className="h-[300px] overflow-auto pr-2">
-                <Table>
+              <div className="grid h-[300px] gap-3 overflow-auto pr-2 md:hidden">
+                {reservasCanceladasPagina.map((reserva) => (
+                  <div key={reserva.id} className="rounded-md border bg-white p-3 text-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="truncate font-semibold">{reserva.cliente_nombre}</div>
+                        <div className="text-xs text-muted-foreground">{formatDate(reserva.created_at)}</div>
+                      </div>
+                      <div className="shrink-0 font-semibold">{formatCurrency(Number(reserva.total_estimado ?? 0))}</div>
+                    </div>
+                    <div className="mt-2 line-clamp-2 font-medium">{reserva.producto_nombre}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {reserva.tipo_tarifa ?? "dia"} · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
+                    </div>
+                    <Badge variant="destructive" className="mt-2 gap-1">
+                      <XCircle className="h-3 w-3" />
+                      Cancelada
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+              <div className="hidden h-[300px] overflow-auto pr-2 md:block">
+                <Table className="w-full table-fixed">
                   <TableHeader className="sticky top-0 z-10 bg-card">
                     <TableRow>
-                      <TableHead>Cliente</TableHead>
-                      <TableHead>Producto</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead className="text-right">Monto</TableHead>
+                      <TableHead className="w-[30%]">Cliente</TableHead>
+                      <TableHead className="w-[35%]">Producto</TableHead>
+                      <TableHead className="w-[18%]">Estado</TableHead>
+                      <TableHead className="w-[17%] text-right">Monto</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {reservasCanceladasPagina.map((reserva) => (
                       <TableRow key={reserva.id}>
                         <TableCell>
-                          <div className="font-medium">{reserva.cliente_nombre}</div>
+                          <div className="truncate font-medium">{reserva.cliente_nombre}</div>
                           <div className="text-xs text-muted-foreground">{formatDate(reserva.created_at)}</div>
                         </TableCell>
                         <TableCell>
-                          <div className="font-medium">{reserva.producto_nombre}</div>
+                          <div className="truncate font-medium">{reserva.producto_nombre}</div>
                           <div className="text-xs text-muted-foreground">
                             {reserva.tipo_tarifa ?? "dia"} · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
                           </div>

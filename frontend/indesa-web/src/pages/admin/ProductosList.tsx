@@ -213,16 +213,16 @@ export function ProductosList() {
           )}
         </div>
 
-        <div className="hidden overflow-x-auto md:block">
-          <Table>
+        <div className="hidden md:block">
+          <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-32">Imagen</TableHead>
-                <TableHead>Producto</TableHead>
-                <TableHead>Categoría</TableHead>
-                <TableHead className="text-right">Precio</TableHead>
-                <TableHead>Estado</TableHead>
-                {canManageProducts && <TableHead className="text-right">Acciones</TableHead>}
+                <TableHead className="w-[10rem]">Imagen</TableHead>
+                <TableHead className="w-[34%]">Producto</TableHead>
+                <TableHead className="w-[18%]">Categoría</TableHead>
+                <TableHead className="w-[12%] text-right">Precio</TableHead>
+                <TableHead className="w-[12%]">Estado</TableHead>
+                {canManageProducts && <TableHead className="w-[13rem] text-right">Acciones</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -268,13 +268,13 @@ export function ProductosList() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="font-medium text-foreground">{producto.nombre}</div>
-                      <div className="text-xs text-muted-foreground truncate max-w-xs" title={producto.descripcion || ""}>
+                      <div className="truncate font-medium text-foreground">{producto.nombre}</div>
+                      <div className="truncate text-xs text-muted-foreground" title={producto.descripcion || ""}>
                         {producto.descripcion || "Sin descripción"}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className="font-normal">{producto.categoria_nombre}</Badge>
+                      <Badge variant="secondary" className="max-w-full truncate font-normal">{producto.categoria_nombre}</Badge>
                     </TableCell>
                     <TableCell className="text-right font-medium">
                       <div>{formatCurrency(tarifa.value)}</div>
@@ -302,7 +302,7 @@ export function ProductosList() {
                     </TableCell>
                     {canManageProducts && (
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1">
                         {canEditProducts && (
                           <Button asChild variant="ghost" size="sm">
                             <Link href={`/admin/productos/editar/${producto.id}`}>
