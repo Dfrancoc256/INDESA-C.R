@@ -1,5 +1,5 @@
 import { db, productosTable, reservasTable, usuariosTable, inventarioTable } from "@workspace/db";
-import { eq, sql, lte } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export async function getDashboardCounts() {
   const [productos] = await db.select({ count: sql<number>`count(*)::int` }).from(productosTable);
@@ -10,13 +10,15 @@ export async function getDashboardCounts() {
   const [usuarios] = await db.select({ count: sql<number>`count(*)::int` }).from(usuariosTable);
   const [agotados] = await db
     .select({ count: sql<number>`count(*)::int` })
-    .from(inventarioTable)
-    .where(eq(inventarioTable.cantidad, 0));
+    .from(productosTable)
+    .leftJoin(inventarioTable, eq(productosTable.id, inventarioTable.productoId))
+    .where(sql`coalesce(${inventarioTable.cantidad}, 0) = 0`);
   const [pocasUnidades] = await db
     .select({ count: sql<number>`count(*)::int` })
-    .from(inventarioTable)
+    .from(productosTable)
+    .leftJoin(inventarioTable, eq(productosTable.id, inventarioTable.productoId))
     .where(
-      sql`${inventarioTable.cantidad} > 0 AND ${inventarioTable.cantidad} <= ${inventarioTable.stockMinimo}`
+      sql`coalesce(${inventarioTable.cantidad}, 0) > 0 AND coalesce(${inventarioTable.cantidad}, 0) <= coalesce(${inventarioTable.stockMinimo}, 1)`
     );
 
   return {

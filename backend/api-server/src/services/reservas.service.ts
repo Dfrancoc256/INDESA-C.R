@@ -805,3 +805,14 @@ export async function updateEstadoReserva(id: number, estado: string, notas?: st
 export async function getReservasRecientes() {
   return repo.findReservasRecientes(10);
 }
+
+export async function getFinanzasResumen(input: { desde?: string; hasta?: string }) {
+  const desde = toDateOnly(input.desde, "desde");
+  const hasta = toDateOnly(input.hasta, "hasta");
+
+  if (new Date(`${hasta}T00:00:00`).getTime() < new Date(`${desde}T00:00:00`).getTime()) {
+    throw Object.assign(new Error("La fecha final no puede ser anterior a la fecha inicial"), { status: 400 });
+  }
+
+  return repo.getFinanzasResumen({ desde, hasta });
+}

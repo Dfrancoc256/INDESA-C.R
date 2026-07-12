@@ -31,12 +31,21 @@ function estaEnRango(dateString: string | Date | null | undefined, desde: string
 
 const pageSize = 10;
 
+type FinanzasResumen = {
+  ingresos_estimados: number;
+  pagadas: number;
+  pendientes_pago: number;
+  canceladas: number;
+  total_canceladas: number;
+};
+
 export function Finanzas() {
   const { toast } = useToast();
   const [desde, setDesde] = useState(getMonthStart());
   const [hasta, setHasta] = useState(new Date().toISOString().slice(0, 10));
   const [pagadasPage, setPagadasPage] = useState(1);
   const [canceladasPage, setCanceladasPage] = useState(1);
+  const [finanzasResumen, setFinanzasResumen] = useState<FinanzasResumen | null>(null);
   const { data: resumen, isLoading: isLoadingResumen } = useGetDashboardResumen();
   const { data: reservasResponse, isLoading: isLoadingReservas } = useListReservas({ page: 1, limit: 1000 });
 
@@ -52,7 +61,7 @@ export function Finanzas() {
       });
   }, [reservas, desde, hasta]);
 
-  const totales = useMemo(() => {
+  const totalesLocales = useMemo(() => {
     return reservasDelRango.reduce(
       (acc, reserva) => {
         const monto = Number(reserva.total_estimado ?? 0);
@@ -75,6 +84,16 @@ export function Finanzas() {
     );
   }, [reservasDelRango]);
 
+  const totales = finanzasResumen
+    ? {
+        total: finanzasResumen.ingresos_estimados,
+        pagado: finanzasResumen.pagadas,
+        pendientePago: finanzasResumen.pendientes_pago,
+        cancelado: finanzasResumen.canceladas,
+        canceladas: finanzasResumen.total_canceladas,
+      }
+    : totalesLocales;
+
   const reservasPagadas = reservasDelRango.filter((reserva) => normalizarEstado((reserva as any).estado_pago) === "pagada" && !["cancelada", "cancelado"].includes(normalizarEstado(reserva.estado)));
   const reservasCanceladas = reservasDelRango.filter((reserva) => ["cancelada", "cancelado"].includes(normalizarEstado(reserva.estado)));
   const pagadasTotalPages = Math.max(1, Math.ceil(reservasPagadas.length / pageSize));
@@ -94,6 +113,35 @@ export function Finanzas() {
   useEffect(() => {
     setCanceladasPage((current) => Math.min(current, canceladasTotalPages));
   }, [canceladasTotalPages]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function cargarResumenFinanciero() {
+      if (!desde || !hasta) {
+        setFinanzasResumen(null);
+        return;
+      }
+
+      try {
+        const response = await apiFetch(
+          `/api/reservas/finanzas-resumen?desde=${encodeURIComponent(desde)}&hasta=${encodeURIComponent(hasta)}`,
+          { signal: controller.signal },
+        );
+
+        if (!response.ok) throw new Error("No fue posible cargar el resumen financiero.");
+        const data = await response.json();
+        setFinanzasResumen(data);
+      } catch (error: any) {
+        if (error?.name !== "AbortError") {
+          setFinanzasResumen(null);
+        }
+      }
+    }
+
+    cargarResumenFinanciero();
+    return () => controller.abort();
+  }, [desde, hasta]);
 
   const descargarReporte = async () => {
     if (!desde || !hasta) {
@@ -296,7 +344,7 @@ export function Finanzas() {
             ) : (
               <div className="space-y-3">
                 <div className="rounded-lg border bg-muted/30 p-4">
-                  <div className="text-sm text-muted-foreground">Productos activos</div>
+                  <div className="text-sm text-muted-foreground">Productos registrados</div>
                   <div className="text-2xl font-bold">{resumen?.total_productos ?? 0}</div>
                 </div>
                 <div className="rounded-lg border bg-muted/30 p-4">

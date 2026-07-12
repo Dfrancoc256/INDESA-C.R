@@ -166,3 +166,13 @@ export async function reporte(req: Request, res: Response): Promise<void> {
     res.status(err.status ?? 400).json({ error: err.message });
   }
 }
+
+export async function finanzasResumen(req: Request, res: Response): Promise<void> {
+  try {
+    const { desde, hasta } = req.query as Record<string, string>;
+    const data = await service.getFinanzasResumen({ desde, hasta });
+    res.json(data);
+  } catch (err: any) {
+    res.status(err.status ?? 400).json({ error: err.message });
+  }
+}

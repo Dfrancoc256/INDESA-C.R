@@ -380,3 +380,31 @@ export async function findReservasParaReporte(params: {
     .orderBy(desc(reservasTable.createdAt))
     .then((rows) => rows.map(mapReservaRow));
 }
+
+export async function getFinanzasResumen(params: {
+  desde: string;
+  hasta: string;
+}) {
+  const { desde, hasta } = params;
+  const [row] = await db
+    .select({
+      ingresos_estimados: sql<string>`coalesce(sum(${reservasTable.totalEstimado}) filter (where ${reservasTable.estado} not in ('cancelada', 'cancelado')), 0)::text`,
+      pagadas: sql<string>`coalesce(sum(${reservasTable.totalEstimado}) filter (where ${reservasTable.estado} not in ('cancelada', 'cancelado') and ${reservasTable.estadoPago} = 'pagada'), 0)::text`,
+      pendientes_pago: sql<string>`coalesce(sum(${reservasTable.totalEstimado}) filter (where ${reservasTable.estado} not in ('cancelada', 'cancelado') and ${reservasTable.estadoPago} <> 'pagada'), 0)::text`,
+      canceladas: sql<string>`coalesce(sum(${reservasTable.totalEstimado}) filter (where ${reservasTable.estado} in ('cancelada', 'cancelado')), 0)::text`,
+      total_canceladas: sql<number>`count(*) filter (where ${reservasTable.estado} in ('cancelada', 'cancelado'))::int`,
+    })
+    .from(reservasTable)
+    .where(and(
+      gte(reservasTable.createdAt, new Date(`${desde}T00:00:00`)),
+      lte(reservasTable.createdAt, new Date(`${hasta}T23:59:59.999`)),
+    ));
+
+  return {
+    ingresos_estimados: Number(row?.ingresos_estimados ?? 0),
+    pagadas: Number(row?.pagadas ?? 0),
+    pendientes_pago: Number(row?.pendientes_pago ?? 0),
+    canceladas: Number(row?.canceladas ?? 0),
+    total_canceladas: Number(row?.total_canceladas ?? 0),
+  };
+}
