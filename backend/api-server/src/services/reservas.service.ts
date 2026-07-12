@@ -4,6 +4,7 @@ import * as productosRepo from "../repositories/productos.repository";
 import { notificarReservaPorWhatsApp } from "../lib/whatsapp";
 import { notificarReservaPorCorreo } from "../lib/email";
 import { logger } from "../lib/logger";
+import { readPaymentProof, storePaymentProof } from "../lib/payment-proof-storage";
 
 type TipoTarifa = "dia" | "semana" | "mes" | "base";
 
@@ -495,6 +496,9 @@ export async function updatePagoReserva(id: number, input: Partial<{
   metodo_pago: string;
   referenciaPago: string;
   referencia_pago: string;
+  comprobantePagoPath: string;
+  comprobantePagoNombre: string;
+  comprobantePagoTipo: string;
 }>) {
   const reserva = await repo.findReservaById(id);
   if (!reserva) {
@@ -515,10 +519,62 @@ export async function updatePagoReserva(id: number, input: Partial<{
     fechaPago: estadoPago === "pagada" ? new Date() : null,
     metodoPago: (input.metodoPago ?? input.metodo_pago ?? "").trim() || null,
     referenciaPago: (input.referenciaPago ?? input.referencia_pago ?? "").trim() || null,
+    comprobantePagoPath: input.comprobantePagoPath,
+    comprobantePagoNombre: input.comprobantePagoNombre,
+    comprobantePagoTipo: input.comprobantePagoTipo,
   });
 
   if (!actualizado) throw Object.assign(new Error("Reserva no encontrada"), { status: 404 });
   return actualizado;
+}
+
+export async function guardarComprobantePago(id: number, input: {
+  buffer: Buffer;
+  originalName?: string | null;
+  mimeType?: string | null;
+}) {
+  const reserva = await repo.findReservaById(id);
+  if (!reserva) {
+    throw Object.assign(new Error("Reserva no encontrada"), { status: 404 });
+  }
+
+  const comprobante = await storePaymentProof({
+    reservaId: id,
+    buffer: input.buffer,
+    originalName: input.originalName,
+    mimeType: input.mimeType,
+  });
+
+  const actualizado = await repo.updateReservaPago(id, {
+    estadoPago: reserva.estado_pago ?? "pendiente",
+    fechaPago: reserva.fecha_pago ? new Date(reserva.fecha_pago) : null,
+    metodoPago: reserva.metodo_pago ?? null,
+    referenciaPago: reserva.referencia_pago ?? null,
+    comprobantePagoPath: comprobante.storedPath,
+    comprobantePagoNombre: comprobante.originalName,
+    comprobantePagoTipo: comprobante.mimeType,
+  });
+
+  if (!actualizado) throw Object.assign(new Error("Reserva no encontrada"), { status: 404 });
+  return actualizado;
+}
+
+export async function obtenerComprobantePago(id: number) {
+  const reserva = await repo.findReservaById(id);
+  if (!reserva) {
+    throw Object.assign(new Error("Reserva no encontrada"), { status: 404 });
+  }
+
+  if (!reserva.comprobante_pago_path) {
+    throw Object.assign(new Error("Esta reserva no tiene comprobante adjunto"), { status: 404 });
+  }
+
+  const content = await readPaymentProof(reserva.comprobante_pago_path);
+  return {
+    content,
+    filename: reserva.comprobante_pago_nombre || `comprobante-reserva-${id}`,
+    contentType: reserva.comprobante_pago_tipo || "application/octet-stream",
+  };
 }
 
 export async function getReservasReporte(input: { desde?: string; hasta?: string }) {
@@ -578,6 +634,7 @@ export async function getReservasReporte(input: { desde?: string; hasta?: string
     "Fecha Pago",
     "Método Pago",
     "Referencia Pago",
+    "Comprobante Pago",
     "Notas",
   ];
 
@@ -601,6 +658,7 @@ export async function getReservasReporte(input: { desde?: string; hasta?: string
     { value: formatDateTimeForReport(reserva.fecha_pago), type: "text" as const },
     { value: reserva.metodo_pago ?? "", type: "text" as const },
     { value: reserva.referencia_pago ?? "", type: "text" as const },
+    { value: reserva.comprobante_pago_nombre ?? "", type: "text" as const },
     { value: reserva.notas, type: "text" as const },
   ]);
 

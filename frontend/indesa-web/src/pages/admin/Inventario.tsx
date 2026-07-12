@@ -150,7 +150,60 @@ export function Inventario() {
       </Card>
 
       <Card>
-        <div className="overflow-x-auto">
+        <div className="grid gap-3 p-3 md:hidden">
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-md border bg-white p-3">
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="mt-2 h-3 w-1/2" />
+                <Skeleton className="mt-3 h-8 w-full rounded-md" />
+              </div>
+            ))
+          ) : filteredInventario.length === 0 ? (
+            <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
+              No se encontró inventario.
+            </div>
+          ) : (
+            inventarioPagina.map((item) => (
+              <div key={item.producto_id} className="rounded-md border bg-white p-3 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="line-clamp-2 text-sm font-semibold">{item.producto_nombre}</h3>
+                    <p className="mt-1 text-xs text-muted-foreground">{item.categoria_nombre}</p>
+                  </div>
+                  <div className="text-right">
+                    <div className={`text-2xl font-bold ${
+                      item.cantidad <= item.stock_minimo && item.cantidad > 0 ? "text-amber-500" :
+                      item.cantidad === 0 ? "text-destructive" : "text-foreground"
+                    }`}>
+                      {item.cantidad}
+                    </div>
+                    <div className="text-xs text-muted-foreground">mín. {item.stock_minimo}</div>
+                  </div>
+                </div>
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    {item.disponibilidad === "disponible" && <Badge variant="success">Disponible</Badge>}
+                    {item.disponibilidad === "pocas_unidades" && <Badge variant="warning">Poco Stock</Badge>}
+                    {item.disponibilidad === "agotado" && <Badge variant="destructive">Agotado</Badge>}
+                  </div>
+                  {canEditInventory && (
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={() => handleOpenAjuste(item)}>
+                        Ajustar
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => handleOpenHistorial(item.producto_id)} title="Historial">
+                        <History className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <Table>
             <TableHeader>
               <TableRow>

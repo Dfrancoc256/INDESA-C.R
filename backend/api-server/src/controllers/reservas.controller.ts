@@ -120,6 +120,41 @@ export async function updatePago(req: Request, res: Response): Promise<void> {
   }
 }
 
+export async function uploadComprobantePago(req: Request, res: Response): Promise<void> {
+  try {
+    const rawBody = Buffer.isBuffer(req.body) ? req.body : Buffer.from([]);
+    const originalNameHeader = req.headers["x-file-name"];
+    const originalNameValue = Array.isArray(originalNameHeader) ? originalNameHeader[0] : originalNameHeader;
+    let originalName = originalNameValue;
+    if (originalNameValue) {
+      try {
+        originalName = decodeURIComponent(originalNameValue);
+      } catch {
+        originalName = originalNameValue;
+      }
+    }
+    const data = await service.guardarComprobantePago(Number(req.params["id"]), {
+      buffer: rawBody,
+      originalName,
+      mimeType: req.headers["content-type"],
+    });
+    res.status(201).json(data);
+  } catch (err: any) {
+    res.status(err.status ?? 500).json({ error: err.message });
+  }
+}
+
+export async function downloadComprobantePago(req: Request, res: Response): Promise<void> {
+  try {
+    const comprobante = await service.obtenerComprobantePago(Number(req.params["id"]));
+    res.setHeader("Content-Type", comprobante.contentType);
+    res.setHeader("Content-Disposition", `inline; filename="${encodeURIComponent(comprobante.filename)}"`);
+    res.status(200).send(comprobante.content);
+  } catch (err: any) {
+    res.status(err.status ?? 500).json({ error: err.message });
+  }
+}
+
 export async function reporte(req: Request, res: Response): Promise<void> {
   try {
     const { desde, hasta } = req.query as Record<string, string>;

@@ -1,4 +1,4 @@
-import { db, productosTable, categoriasTable, inventarioTable } from "@workspace/db";
+import { db, productosTable, categoriasTable, inventarioTable, movimientosTable, reservasTable } from "@workspace/db";
 import { eq, ilike, and, or, sql, asc, desc, type SQL } from "drizzle-orm";
 
 type DisponibilidadFiltro = "disponible" | "pocas_unidades" | "agotado" | undefined;
@@ -201,6 +201,22 @@ export async function toggleProductoActivo(id: number) {
   return rows[0] ?? null;
 }
 
-export async function softDeleteProducto(id: number) {
-  await db.update(productosTable).set({ activo: false, updatedAt: new Date() }).where(eq(productosTable.id, id));
+export async function countReservasByProducto(id: number) {
+  const [row] = await db
+    .select({ count: sql<number>`count(*)::int` })
+    .from(reservasTable)
+    .where(eq(reservasTable.productoId, id));
+
+  return Number(row?.count ?? 0);
+}
+
+export async function hardDeleteProducto(id: number) {
+  await db.delete(movimientosTable).where(eq(movimientosTable.productoId, id));
+
+  const rows = await db
+    .delete(productosTable)
+    .where(eq(productosTable.id, id))
+    .returning({ id: productosTable.id });
+
+  return rows[0] ?? null;
 }

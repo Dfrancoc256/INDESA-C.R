@@ -252,7 +252,77 @@ export function Usuarios() {
       </Card>
 
       <Card>
-        <div className="overflow-x-auto">
+        <div className="grid gap-3 p-3 md:hidden">
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-md border bg-white p-3">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="mt-2 h-3 w-52" />
+                <Skeleton className="mt-3 h-8 w-full rounded-md" />
+              </div>
+            ))
+          ) : usuariosFiltrados.length === 0 ? (
+            <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
+              No se encontraron usuarios.
+            </div>
+          ) : (
+            usuariosPagina.map((usuario) => (
+              <div key={usuario.id} className="rounded-md border bg-white p-3 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-sm font-semibold">{usuario.nombre} {usuario.apellido}</h3>
+                    <p className="truncate text-xs text-muted-foreground">{usuario.email}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Último acceso: {usuario.last_login ? formatDate(usuario.last_login) : "Nunca"}
+                    </p>
+                  </div>
+                  <Badge variant="outline" className={`shrink-0 font-normal capitalize ${usuario.rol_nombre === "admin" ? "border-primary text-primary" : ""}`}>
+                    {usuario.rol_nombre === "admin" && <ShieldCheck className="mr-1 h-3 w-3" />}
+                    {usuario.rol_nombre ?? "Sin rol"}
+                  </Badge>
+                </div>
+                <div className="mt-3 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      checked={usuario.activo}
+                      onCheckedChange={() => handleToggleEstado(usuario.id, usuario.activo)}
+                      disabled={toggleMutation.isPending}
+                    />
+                    <span className="text-xs text-muted-foreground">{usuario.activo ? "Activo" : "Inactivo"}</span>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon">
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handleOpenEditar(usuario)}>
+                        <Edit className="mr-2 h-4 w-4" /> Editar Datos
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleOpenReset(usuario)}>
+                        <Key className="mr-2 h-4 w-4" /> Restablecer Contraseña
+                      </DropdownMenuItem>
+                      {canDeleteUsers && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-destructive focus:bg-destructive/10 focus:text-destructive"
+                            onClick={() => handleOpenEliminar(usuario)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Eliminar Usuario
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <Table>
             <TableHeader>
               <TableRow>

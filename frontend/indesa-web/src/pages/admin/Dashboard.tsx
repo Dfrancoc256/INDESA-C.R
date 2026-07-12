@@ -91,8 +91,31 @@ export function Dashboard() {
                 No hay reservas recientes
               </div>
             ) : (
-              <div className="max-h-[430px] overflow-y-auto overflow-x-auto pr-2">
-                <Table>
+              <div className="max-h-[430px] overflow-y-auto pr-2">
+                <div className="space-y-3 md:hidden">
+                  {reservasRecientesPagina.map((reserva) => (
+                    <div key={reserva.id} className="rounded-md border bg-white p-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="truncate text-sm font-semibold">{reserva.cliente_nombre}</div>
+                          <div className="truncate text-xs text-muted-foreground">{reserva.cliente_email}</div>
+                        </div>
+                        <EstadoBadge estado={reserva.estado} />
+                      </div>
+                      <div className="mt-3 rounded-md bg-muted/40 p-2">
+                        <div className="line-clamp-2 text-sm">{reserva.producto_nombre}</div>
+                        <div className="text-xs text-muted-foreground">
+                          Cant: {reserva.cantidad} · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
+                        </div>
+                        <div className="text-xs font-medium text-primary">
+                          {reserva.tipo_tarifa ?? "dia"} · {formatCurrency(reserva.total_estimado ?? 0)}
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">{formatDate(reserva.created_at)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <Table className="hidden md:table">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Cliente</TableHead>

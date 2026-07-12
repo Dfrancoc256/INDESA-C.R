@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, raw } from "express";
 import * as ctrl from "../controllers/reservas.controller";
 import { authMiddleware } from "../middlewares/auth.middleware";
 import { requirePermiso } from "../middlewares/rbac.middleware";
@@ -18,5 +18,13 @@ router.get("/:id",             authMiddleware, requirePermiso("reservas.ver"),  
 router.patch("/:id",           authMiddleware, requirePermiso("reservas.editar"), ctrl.update);
 router.patch("/:id/estado",    authMiddleware, requirePermiso("reservas.cambiar_estado"), ctrl.updateEstado);
 router.patch("/:id/pago",      authMiddleware, requirePermiso("reservas.cambiar_estado"), ctrl.updatePago);
+router.post(
+  "/:id/pago/comprobante",
+  authMiddleware,
+  requirePermiso("reservas.cambiar_estado"),
+  raw({ type: "*/*", limit: process.env["PAYMENT_PROOF_MAX_SIZE"] ?? "50mb" }),
+  ctrl.uploadComprobantePago,
+);
+router.get("/:id/pago/comprobante", authMiddleware, requirePermiso("reservas.ver"), ctrl.downloadComprobantePago);
 
 export default router;

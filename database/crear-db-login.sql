@@ -79,6 +79,9 @@ CREATE TABLE IF NOT EXISTS reservas (
   fecha_pago TIMESTAMPTZ,
   metodo_pago TEXT,
   referencia_pago TEXT,
+  comprobante_pago_path TEXT,
+  comprobante_pago_nombre TEXT,
+  comprobante_pago_tipo TEXT,
   notas TEXT,
   whatsapp_enviado BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMPTZ DEFAULT NOW(),
@@ -97,7 +100,10 @@ ALTER TABLE reservas
   ADD COLUMN IF NOT EXISTS estado_pago TEXT NOT NULL DEFAULT 'pendiente',
   ADD COLUMN IF NOT EXISTS fecha_pago TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS metodo_pago TEXT,
-  ADD COLUMN IF NOT EXISTS referencia_pago TEXT;
+  ADD COLUMN IF NOT EXISTS referencia_pago TEXT,
+  ADD COLUMN IF NOT EXISTS comprobante_pago_path TEXT,
+  ADD COLUMN IF NOT EXISTS comprobante_pago_nombre TEXT,
+  ADD COLUMN IF NOT EXISTS comprobante_pago_tipo TEXT;
 
 CREATE TABLE IF NOT EXISTS movimientos_inventario (
   id SERIAL PRIMARY KEY,

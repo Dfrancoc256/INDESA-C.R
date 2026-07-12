@@ -78,7 +78,7 @@ export async function update(req: Request, res: Response): Promise<void> {
 export async function remove(req: Request, res: Response): Promise<void> {
   try {
     await service.deleteProducto(Number(req.params["id"]));
-    res.json({ message: "Producto dado de baja" });
+    res.json({ message: "Producto eliminado" });
   } catch (err: any) {
     res.status(err.status ?? 500).json({ error: err.message });
   }

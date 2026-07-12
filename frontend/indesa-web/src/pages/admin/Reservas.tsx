@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, Filter, Phone, Mail, CheckCircle, Truck, XCircle, Clock, Plus, Eye, PencilLine, MoreHorizontal, CreditCard } from "lucide-react";
+import { Search, Filter, Phone, Mail, CheckCircle, Truck, XCircle, Clock, Plus, Eye, PencilLine, MoreHorizontal, CreditCard, Paperclip, UploadCloud } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useReservaDisponibilidad } from "@/hooks/use-reserva-disponibilidad";
 import { useReservaCalendarioDisponibilidad } from "@/hooks/use-reserva-calendario-disponibilidad";
@@ -75,6 +75,8 @@ export function Reservas() {
     metodo_pago: "",
     referencia_pago: "",
   });
+  const [comprobantePago, setComprobantePago] = useState<File | null>(null);
+  const [isConfirmandoPago, setIsConfirmandoPago] = useState(false);
   const [editarForm, setEditarForm] = useState({
     precio_unitario: "",
     descuento: "",
@@ -450,6 +452,7 @@ export function Reservas() {
   const abrirConfirmacionPago = (reserva: any) => {
     setReservaPago(reserva);
     setPagoError("");
+    setComprobantePago(null);
     setPagoForm({
       metodo_pago: reserva.metodo_pago ?? "",
       referencia_pago: reserva.referencia_pago ?? "",
@@ -460,6 +463,7 @@ export function Reservas() {
   const confirmarPagoReserva = async () => {
     if (!reservaPago) return;
 
+    setIsConfirmandoPago(true);
     try {
       const response = await apiFetch(`/api/reservas/${reservaPago.id}/pago`, {
         method: "PATCH",
@@ -475,11 +479,31 @@ export function Reservas() {
         throw new Error(payload?.error ?? "No fue posible confirmar el pago");
       }
 
-      toast({ title: "Pago confirmado", description: "La reserva quedó marcada como pagada." });
+      if (comprobantePago) {
+        const uploadResponse = await apiFetch(`/api/reservas/${reservaPago.id}/pago/comprobante`, {
+          method: "POST",
+          headers: {
+            "Content-Type": comprobantePago.type || "application/octet-stream",
+            "X-File-Name": encodeURIComponent(comprobantePago.name),
+          },
+          body: comprobantePago,
+        });
+
+        if (!uploadResponse.ok) {
+          const payload = await uploadResponse.json().catch(() => null);
+          throw new Error(payload?.error ?? "El pago fue confirmado, pero no se pudo guardar el comprobante.");
+        }
+      }
+
+      toast({
+        title: "Pago confirmado",
+        description: comprobantePago ? "La reserva quedó pagada y el comprobante fue guardado." : "La reserva quedó marcada como pagada.",
+      });
       await invalidateCatalogData(queryClient);
       await refetch();
       setIsPagoOpen(false);
       setReservaPago(null);
+      setComprobantePago(null);
     } catch (error: any) {
       const friendlyMessage = getFriendlyApiErrorMessage(error, "No fue posible confirmar el pago. Intenta nuevamente.");
       setPagoError(friendlyMessage);
@@ -487,6 +511,29 @@ export function Reservas() {
         variant: "destructive",
         title: "No fue posible confirmar el pago",
         description: friendlyMessage,
+      });
+    } finally {
+      setIsConfirmandoPago(false);
+    }
+  };
+
+  const abrirComprobantePago = async (reserva: any) => {
+    try {
+      const response = await apiFetch(`/api/reservas/${reserva.id}/pago/comprobante`);
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? "No fue posible abrir el comprobante");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "No fue posible abrir el comprobante",
+        description: getFriendlyApiErrorMessage(error, "Intenta nuevamente."),
       });
     }
   };
@@ -545,7 +592,112 @@ export function Reservas() {
       </Card>
 
       <Card>
-        <div className="overflow-x-auto">
+        <div className="grid gap-3 p-3 md:hidden">
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-md border bg-white p-3">
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="mt-3 h-4 w-3/4" />
+                <Skeleton className="mt-2 h-3 w-1/2" />
+                <Skeleton className="mt-3 h-9 w-full rounded-md" />
+              </div>
+            ))
+          ) : reservasFiltradas?.length === 0 ? (
+            <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
+              No se encontraron reservas.
+            </div>
+          ) : (
+            reservasFiltradas?.map((reserva) => (
+              <div key={reserva.id} className="rounded-md border bg-white p-3 shadow-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-mono text-xs text-muted-foreground">#{reserva.id.toString().padStart(5, "0")}</div>
+                    <div className="mt-1 text-sm font-semibold">{reserva.cliente_nombre}</div>
+                    <div className="text-xs text-muted-foreground">{reserva.cliente_telefono}</div>
+                  </div>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <EstadoBadge estado={reserva.estado} />
+                    <PagoBadge estadoPago={(reserva as any).estado_pago ?? "pendiente"} />
+                  </div>
+                </div>
+
+                <div className="mt-3 rounded-md bg-muted/40 p-3">
+                  <div className="line-clamp-2 text-sm font-medium">{reserva.producto_nombre}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    Cant: {reserva.cantidad} unid. · {reserva.dias_reserva ?? 1} día{(reserva.dias_reserva ?? 1) === 1 ? "" : "s"}
+                  </div>
+                  <div className="text-xs font-medium text-primary">
+                    {reserva.tipo_tarifa ?? "dia"} x {reserva.unidades_tarifa ?? reserva.dias_reserva ?? 1} · {formatCurrency(reserva.total_estimado ?? 0)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {formatDateOnly(reserva.fecha_inicio)} - {formatDateOnly(reserva.fecha_fin)}
+                  </div>
+                </div>
+
+                <div className="mt-3 grid grid-cols-4 gap-2">
+                  <Button variant="outline" size="icon" onClick={() => verDetalle(reserva)} aria-label="Ver detalle">
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  {canEditReservas && (
+                    <Button variant="outline" size="icon" onClick={() => abrirEdicionReserva(reserva)} aria-label="Editar reserva">
+                      <PencilLine className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {canChangeEstadoReservas && (reserva as any).estado_pago !== "pagada" && reserva.estado !== "cancelada" && (
+                    <Button variant="outline" size="icon" onClick={() => abrirConfirmacionPago(reserva)} aria-label="Confirmar pago">
+                      <CreditCard className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {(reserva as any).comprobante_pago_nombre && (
+                    <Button variant="outline" size="icon" onClick={() => abrirComprobantePago(reserva)} aria-label="Ver comprobante de pago">
+                      <Paperclip className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {canChangeEstadoReservas && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          disabled={reserva.estado === "entregada" || reserva.estado === "cancelada"}
+                          aria-label="Cambiar estado"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Cambiar estado</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {reserva.estado === "pendiente" && (
+                          <>
+                            <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, "confirmada")}>
+                              <CheckCircle className="mr-2 h-4 w-4 text-info" /> Confirmar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, "cancelada", true)}>
+                              <XCircle className="mr-2 h-4 w-4 text-destructive" /> Cancelar
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        {reserva.estado === "confirmada" && (
+                          <>
+                            <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, "entregada")}>
+                              <Truck className="mr-2 h-4 w-4 text-success" /> Marcar entregada
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleCambiarEstado(reserva.id, "cancelada", true)}>
+                              <XCircle className="mr-2 h-4 w-4 text-destructive" /> Cancelar
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -629,6 +781,11 @@ export function Reservas() {
                             <CreditCard className="h-4 w-4" />
                           </Button>
                         )}
+                        {(reserva as any).comprobante_pago_nombre && (
+                          <Button variant="ghost" size="icon" onClick={() => abrirComprobantePago(reserva)} aria-label="Ver comprobante de pago">
+                            <Paperclip className="h-4 w-4" />
+                          </Button>
+                        )}
                         {canChangeEstadoReservas && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -677,11 +834,11 @@ export function Reservas() {
         </div>
         
         {reservasResponse && reservasResponse.total > 0 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t">
+          <div className="flex flex-col gap-3 border-t px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
             <div className="text-sm text-muted-foreground">
               Mostrando {((page - 1) * reservasPorPagina) + 1} a {Math.min(page * reservasPorPagina, reservasResponse.total)} de {reservasResponse.total} reservas
             </div>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 gap-2 sm:flex">
               <Button 
                 variant="outline" 
                 size="sm" 
@@ -1207,6 +1364,30 @@ export function Reservas() {
                 placeholder="Número de comprobante o comentario interno"
               />
             </div>
+            <div className="space-y-2">
+              <Label>Comprobante de pago</Label>
+              <label className="flex cursor-pointer flex-col gap-2 rounded-md border border-dashed bg-muted/20 px-4 py-4 text-sm transition hover:border-primary hover:bg-primary/5">
+                <span className="flex items-center gap-2 font-medium">
+                  <UploadCloud className="h-4 w-4 text-primary" />
+                  {comprobantePago ? comprobantePago.name : "Subir foto o documento del pago"}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  Acepta imágenes, PDF y documentos. El límite se configura en el servidor.
+                </span>
+                <Input
+                  type="file"
+                  className="sr-only"
+                  accept="image/*,.pdf,.doc,.docx,.xls,.xlsx"
+                  onChange={(event) => setComprobantePago(event.target.files?.[0] ?? null)}
+                />
+              </label>
+              {reservaPago?.comprobante_pago_nombre && (
+                <Button type="button" variant="outline" size="sm" onClick={() => abrirComprobantePago(reservaPago)}>
+                  <Paperclip className="mr-2 h-4 w-4" />
+                  Ver comprobante actual
+                </Button>
+              )}
+            </div>
           </div>
 
           <DialogFooter className="gap-2 sm:justify-end">
@@ -1217,12 +1398,13 @@ export function Reservas() {
                 setIsPagoOpen(false);
                 setReservaPago(null);
                 setPagoError("");
+                setComprobantePago(null);
               }}
             >
               Cancelar
             </Button>
-            <Button type="button" onClick={confirmarPagoReserva} disabled={!reservaPago}>
-              Confirmar pago
+            <Button type="button" onClick={confirmarPagoReserva} disabled={!reservaPago || isConfirmandoPago}>
+              {isConfirmandoPago ? "Confirmando..." : "Confirmar pago"}
             </Button>
           </DialogFooter>
         </DialogContent>

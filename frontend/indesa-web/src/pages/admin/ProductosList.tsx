@@ -130,7 +130,90 @@ export function ProductosList() {
       </Card>
 
       <Card>
-        <div className="overflow-x-auto">
+        <div className="grid gap-3 p-3 md:hidden">
+          {showInitialSkeleton ? (
+            Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-md border bg-white p-3">
+                <div className="flex gap-3">
+                  <Skeleton className="h-20 w-24 shrink-0 rounded-md" />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <Skeleton className="h-4 w-4/5" />
+                    <Skeleton className="h-3 w-2/3" />
+                    <Skeleton className="h-6 w-24 rounded-full" />
+                  </div>
+                </div>
+              </div>
+            ))
+          ) : productosPagina.length === 0 ? (
+            <div className="rounded-md border border-dashed p-8 text-center text-sm text-muted-foreground">
+              No se encontraron productos que coincidan con la búsqueda.
+            </div>
+          ) : (
+            productosPagina.map((producto: Producto) => {
+              const tarifa = getTarifaPrincipal(producto);
+              const tarifas = getTarifasProducto(producto);
+
+              return (
+                <div key={producto.id} className="rounded-md border bg-white p-3 shadow-sm">
+                  <div className="flex gap-3">
+                    <div className="grid h-24 w-28 shrink-0 place-items-center overflow-hidden rounded-md border bg-white">
+                      {producto.imagen_url ? (
+                        <img
+                          src={producto.imagen_url}
+                          alt={producto.nombre}
+                          loading="lazy"
+                          decoding="async"
+                          className="h-full w-full object-contain p-1.5"
+                        />
+                      ) : (
+                        <span className="text-lg font-semibold text-muted-foreground">{getInitials(producto.nombre)}</span>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="line-clamp-2 text-sm font-semibold text-foreground">{producto.nombre}</h3>
+                        <Badge variant={producto.activo ? "success" : "secondary"} className="shrink-0">
+                          {producto.activo ? "Activo" : "Inactivo"}
+                        </Badge>
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{producto.descripcion || "Sin descripción"}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-2">
+                        <Badge variant="secondary" className="max-w-full truncate font-normal">{producto.categoria_nombre}</Badge>
+                        <span className="text-sm font-semibold">{formatCurrency(tarifa.value)}</span>
+                        <span className="text-xs text-muted-foreground">por {tarifa.suffix}</span>
+                        {tarifas.length > 1 && <span className="text-xs text-muted-foreground">{tarifas.length} tarifas</span>}
+                      </div>
+                    </div>
+                  </div>
+                  {canManageProducts && (
+                    <div className="mt-3 grid grid-cols-2 gap-2">
+                      {canEditProducts && (
+                        <Button asChild variant="outline" size="sm">
+                          <Link href={`/admin/productos/editar/${producto.id}`}>
+                            <Edit className="mr-2 h-4 w-4" /> Editar
+                          </Link>
+                        </Button>
+                      )}
+                      {canDeleteProducts && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="border-destructive/35 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          onClick={() => setProductoAEliminar(producto)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" /> Eliminar
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <div className="hidden overflow-x-auto md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -282,7 +365,7 @@ export function ProductosList() {
           <AlertDialogHeader>
             <AlertDialogTitle>Eliminar producto</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta acción retirará el producto "{productoAEliminar?.nombre}" del sistema. Si solo necesita ocultarlo del catálogo, puede editarlo y desactivar su publicación.
+              Esta acción eliminará definitivamente el producto "{productoAEliminar?.nombre}" del sistema. Si el producto ya tiene reservas registradas, se mantendrá protegido para conservar el historial.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

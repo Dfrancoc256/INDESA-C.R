@@ -114,5 +114,17 @@ export async function toggleProducto(id: number) {
 }
 
 export async function deleteProducto(id: number) {
-  await productosRepo.softDeleteProducto(id);
+  const producto = await productosRepo.findProductoById(id);
+  if (!producto) throw Object.assign(new Error("Producto no encontrado"), { status: 404 });
+
+  const reservasRegistradas = await productosRepo.countReservasByProducto(id);
+  if (reservasRegistradas > 0) {
+    throw Object.assign(
+      new Error("Este producto tiene reservas registradas. Para conservar el historial, desactive la publicación desde editar producto."),
+      { status: 409 },
+    );
+  }
+
+  const deleted = await productosRepo.hardDeleteProducto(id);
+  if (!deleted) throw Object.assign(new Error("Producto no encontrado"), { status: 404 });
 }

@@ -83,6 +83,9 @@ export async function findAllReservas(params: {
       fecha_pago: reservasTable.fechaPago,
       metodo_pago: reservasTable.metodoPago,
       referencia_pago: reservasTable.referenciaPago,
+      comprobante_pago_path: reservasTable.comprobantePagoPath,
+      comprobante_pago_nombre: reservasTable.comprobantePagoNombre,
+      comprobante_pago_tipo: reservasTable.comprobantePagoTipo,
       notas: reservasTable.notas,
       whatsapp_enviado: reservasTable.whatsappEnviado,
       created_at: reservasTable.createdAt,
@@ -127,6 +130,9 @@ export async function findReservaById(id: number) {
       fecha_pago: reservasTable.fechaPago,
       metodo_pago: reservasTable.metodoPago,
       referencia_pago: reservasTable.referenciaPago,
+      comprobante_pago_path: reservasTable.comprobantePagoPath,
+      comprobante_pago_nombre: reservasTable.comprobantePagoNombre,
+      comprobante_pago_tipo: reservasTable.comprobantePagoTipo,
       notas: reservasTable.notas,
       whatsapp_enviado: reservasTable.whatsappEnviado,
       created_at: reservasTable.createdAt,
@@ -220,6 +226,9 @@ export async function updateReservaPago(
     fechaPago?: Date | null;
     metodoPago?: string | null;
     referenciaPago?: string | null;
+    comprobantePagoPath?: string | null;
+    comprobantePagoNombre?: string | null;
+    comprobantePagoTipo?: string | null;
   },
 ) {
   const rows = await db
@@ -229,6 +238,9 @@ export async function updateReservaPago(
       fechaPago: data.fechaPago ?? null,
       metodoPago: data.metodoPago ?? null,
       referenciaPago: data.referenciaPago ?? null,
+      ...(data.comprobantePagoPath !== undefined ? { comprobantePagoPath: data.comprobantePagoPath } : {}),
+      ...(data.comprobantePagoNombre !== undefined ? { comprobantePagoNombre: data.comprobantePagoNombre } : {}),
+      ...(data.comprobantePagoTipo !== undefined ? { comprobantePagoTipo: data.comprobantePagoTipo } : {}),
       updatedAt: new Date(),
     })
     .where(eq(reservasTable.id, id))
@@ -265,6 +277,9 @@ export async function findReservasRecientes(limit = 10) {
       fecha_pago: reservasTable.fechaPago,
       metodo_pago: reservasTable.metodoPago,
       referencia_pago: reservasTable.referenciaPago,
+      comprobante_pago_path: reservasTable.comprobantePagoPath,
+      comprobante_pago_nombre: reservasTable.comprobantePagoNombre,
+      comprobante_pago_tipo: reservasTable.comprobantePagoTipo,
       notas: reservasTable.notas,
       whatsapp_enviado: reservasTable.whatsappEnviado,
       created_at: reservasTable.createdAt,
@@ -348,6 +363,9 @@ export async function findReservasParaReporte(params: {
       fecha_pago: reservasTable.fechaPago,
       metodo_pago: reservasTable.metodoPago,
       referencia_pago: reservasTable.referenciaPago,
+      comprobante_pago_path: reservasTable.comprobantePagoPath,
+      comprobante_pago_nombre: reservasTable.comprobantePagoNombre,
+      comprobante_pago_tipo: reservasTable.comprobantePagoTipo,
       notas: reservasTable.notas,
       whatsapp_enviado: reservasTable.whatsappEnviado,
       created_at: reservasTable.createdAt,
