@@ -84,6 +84,7 @@ export function Reservas() {
   });
   const [comprobantePago, setComprobantePago] = useState<File | null>(null);
   const [isConfirmandoPago, setIsConfirmandoPago] = useState(false);
+  const [isActualizandoPagoDetalle, setIsActualizandoPagoDetalle] = useState(false);
   const [editarForm, setEditarForm] = useState({
     precio_unitario: "",
     descuento: "",
@@ -467,6 +468,54 @@ export function Reservas() {
     setIsPagoOpen(true);
   };
 
+  const abrirConfirmacionPagoDesdeDetalle = () => {
+    const reservaActual = reservaDetalle ?? reservaSeleccionada;
+    if (!reservaActual) return;
+    setIsDetalleOpen(false);
+    abrirConfirmacionPago(reservaActual);
+  };
+
+  const marcarPagoPendienteDesdeDetalle = async () => {
+    const reservaActual = reservaDetalle ?? reservaSeleccionada;
+    if (!reservaActual) return;
+
+    setIsActualizandoPagoDetalle(true);
+    try {
+      const response = await apiFetch(`/api/reservas/${reservaActual.id}/pago`, {
+        method: "PATCH",
+        body: JSON.stringify({ estado_pago: "pendiente" }),
+      });
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => null);
+        throw new Error(payload?.error ?? "No fue posible actualizar el estado de pago");
+      }
+
+      setReservaSeleccionada((prev: any) => prev ? {
+        ...prev,
+        estado_pago: "pendiente",
+        fecha_pago: null,
+        metodo_pago: null,
+        referencia_pago: null,
+      } : prev);
+      toast({
+        title: "Pago actualizado",
+        description: "La reserva quedó marcada como pago pendiente.",
+      });
+      await invalidateCatalogData(queryClient);
+      await refetch();
+      await queryClient.invalidateQueries({ queryKey: getGetReservaQueryKey(reservaActual.id) });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "No fue posible actualizar el pago",
+        description: getFriendlyApiErrorMessage(error, "Intenta nuevamente."),
+      });
+    } finally {
+      setIsActualizandoPagoDetalle(false);
+    }
+  };
+
   const confirmarPagoReserva = async () => {
     if (!reservaPago) return;
 
@@ -641,17 +690,17 @@ export function Reservas() {
                   </div>
                 </div>
 
-                <div className="mt-3 grid grid-cols-2 gap-2">
-                  <Button variant="outline" size="icon" onClick={() => verDetalle(reserva)} aria-label="Ver detalle">
+                <div className="mt-3 flex items-center gap-2 overflow-x-auto pb-1">
+                  <Button className="h-10 w-10 shrink-0" variant="outline" size="icon" onClick={() => verDetalle(reserva)} aria-label="Ver detalle">
                     <Eye className="h-4 w-4" />
                   </Button>
                   {canEditReservas && (
-                    <Button variant="outline" size="icon" onClick={() => abrirEdicionReserva(reserva)} aria-label="Editar reserva">
+                    <Button className="h-10 w-10 shrink-0" variant="outline" size="icon" onClick={() => abrirEdicionReserva(reserva)} aria-label="Editar reserva">
                       <PencilLine className="h-4 w-4" />
                     </Button>
                   )}
                   {canChangeEstadoReservas && (reserva as any).estado_pago !== "pagada" && reserva.estado !== "cancelada" && (
-                    <Button variant="outline" size="icon" onClick={() => abrirConfirmacionPago(reserva)} aria-label="Confirmar pago">
+                    <Button className="h-10 w-10 shrink-0" variant="outline" size="icon" onClick={() => abrirConfirmacionPago(reserva)} aria-label="Confirmar pago">
                       <CreditCard className="h-4 w-4" />
                     </Button>
                   )}
@@ -659,6 +708,7 @@ export function Reservas() {
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button
+                          className="h-10 w-10 shrink-0"
                           variant="outline"
                           size="icon"
                           aria-label="Cambiar estado"
@@ -761,7 +811,7 @@ export function Reservas() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1">
+                      <div className="flex flex-nowrap items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" onClick={() => verDetalle(reserva)} aria-label="Ver detalle">
                           <Eye className="h-4 w-4" />
                         </Button>
@@ -1185,6 +1235,53 @@ export function Reservas() {
                   </div>
                   <div className="text-sm font-medium pl-6">
                     {formatDate(reservaDetalle?.created_at ?? reservaSeleccionada.created_at)}
+                  </div>
+                </div>
+
+                <div className="border-t pt-4">
+                  <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold">
+                    <CreditCard className="h-4 w-4 text-primary" />
+                    Estado de pago
+                  </h3>
+                  <div className="rounded-md border bg-white p-3 text-sm">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="space-y-1">
+                        <PagoBadge estadoPago={(reservaDetalle as any)?.estado_pago ?? reservaSeleccionada.estado_pago ?? "pendiente"} />
+                        {((reservaDetalle as any)?.fecha_pago ?? reservaSeleccionada.fecha_pago) && (
+                          <div className="text-xs text-muted-foreground">
+                            Confirmado: {formatDate((reservaDetalle as any)?.fecha_pago ?? reservaSeleccionada.fecha_pago)}
+                          </div>
+                        )}
+                        {((reservaDetalle as any)?.metodo_pago ?? reservaSeleccionada.metodo_pago) && (
+                          <div className="text-xs text-muted-foreground">
+                            Método: {(reservaDetalle as any)?.metodo_pago ?? reservaSeleccionada.metodo_pago}
+                          </div>
+                        )}
+                      </div>
+                      {canChangeEstadoReservas && (
+                        ((reservaDetalle as any)?.estado_pago ?? reservaSeleccionada.estado_pago) === "pagada" ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full sm:w-auto"
+                            onClick={marcarPagoPendienteDesdeDetalle}
+                            disabled={isActualizandoPagoDetalle}
+                          >
+                            {isActualizandoPagoDetalle ? "Actualizando..." : "Marcar pendiente"}
+                          </Button>
+                        ) : (
+                          <Button
+                            type="button"
+                            size="sm"
+                            className="w-full sm:w-auto"
+                            onClick={abrirConfirmacionPagoDesdeDetalle}
+                          >
+                            Confirmar pago
+                          </Button>
+                        )
+                      )}
+                    </div>
                   </div>
                 </div>
 

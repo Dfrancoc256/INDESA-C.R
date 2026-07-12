@@ -43,7 +43,10 @@ export function Login() {
       await login(data);
     } catch (error: any) {
       const apiStatus = Number(error?.status || error?.response?.status) || 0;
-      const friendlyMessage = getFriendlyApiErrorMessage(error, errorMessages.generic);
+      const friendlyMessage =
+        apiStatus === 401
+          ? errorMessages.login401
+          : getFriendlyApiErrorMessage(error, errorMessages.generic);
 
       if (apiStatus === 401) {
         form.setError("email", {

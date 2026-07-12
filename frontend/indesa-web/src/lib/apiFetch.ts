@@ -1,3 +1,31 @@
+export const SESSION_EXPIRED_EVENT = "indesa:session-expired";
+
+let sessionExpiredEventDispatched = false;
+
+export function resetSessionExpiredEvent() {
+  sessionExpiredEventDispatched = false;
+}
+
+function resolveRequestUrl(input: RequestInfo | URL) {
+  if (typeof input === "string") return input;
+  if (input instanceof URL) return input.toString();
+  return input.url;
+}
+
+function shouldNotifySessionExpired(input: RequestInfo | URL) {
+  const url = resolveRequestUrl(input);
+  return !url.includes("/api/auth/login") && !url.includes("/api/auth/logout");
+}
+
+function notifySessionExpired(input: RequestInfo | URL) {
+  if (typeof window === "undefined" || sessionExpiredEventDispatched || !shouldNotifySessionExpired(input)) {
+    return;
+  }
+
+  sessionExpiredEventDispatched = true;
+  window.dispatchEvent(new CustomEvent(SESSION_EXPIRED_EVENT));
+}
+
 export async function apiFetch(input: RequestInfo | URL, init: RequestInit = {}) {
   const headers = new Headers(init.headers ?? {});
 
@@ -7,9 +35,15 @@ export async function apiFetch(input: RequestInfo | URL, init: RequestInit = {})
     headers.set("Content-Type", "application/json");
   }
 
-  return fetch(input, {
+  const response = await fetch(input, {
     ...init,
     credentials: "include",
     headers,
   });
+
+  if (response.status === 401) {
+    notifySessionExpired(input);
+  }
+
+  return response;
 }

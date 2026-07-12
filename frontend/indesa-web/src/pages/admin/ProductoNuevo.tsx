@@ -126,22 +126,22 @@ export function ProductoNuevo() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="icon" asChild>
+    <div className="mx-auto max-w-4xl space-y-6 overflow-x-hidden">
+      <div className="flex items-start gap-3 sm:items-center sm:gap-4">
+        <Button variant="outline" size="icon" asChild className="shrink-0">
           <Link href="/admin/productos">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Nuevo Producto</h1>
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Nuevo Producto</h1>
           <p className="text-muted-foreground">Añadir un nuevo producto al catálogo e inventario inicial.</p>
         </div>
       </div>
 
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid min-w-0 grid-cols-1 gap-6 md:grid-cols-3">
             
             {/* Main info col */}
             <div className="md:col-span-2 space-y-6">
@@ -209,13 +209,13 @@ export function ProductoNuevo() {
                           <FormMessage />
                           <div className="mt-3 rounded-md border bg-muted/40 p-3">
                             <div className="mb-2 text-xs font-semibold text-muted-foreground">Crear categoría rápida</div>
-                            <div className="flex gap-2">
+                            <div className="flex flex-col gap-2 sm:flex-row">
                               <Input
                                 value={nuevaCategoria}
                                 onChange={(event) => setNuevaCategoria(event.target.value)}
                                 placeholder="Ej. Maquinaria pesada"
                               />
-                              <Button type="button" variant="outline" onClick={crearCategoriaRapida} disabled={createCategoriaMutation.isPending}>
+                              <Button type="button" variant="outline" className="sm:w-auto" onClick={crearCategoriaRapida} disabled={createCategoriaMutation.isPending}>
                                 Crear
                               </Button>
                             </div>
@@ -365,8 +365,8 @@ export function ProductoNuevo() {
                     control={form.control}
                     name="activo"
                     render={({ field }) => (
-                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
+                      <FormItem className="flex items-center justify-between gap-3 rounded-lg border p-4">
+                        <div className="min-w-0 space-y-0.5">
                           <FormLabel className="text-base">Catálogo Público</FormLabel>
                           <FormDescription>
                             El producto será visible
@@ -385,8 +385,8 @@ export function ProductoNuevo() {
                     control={form.control}
                     name="advertencia_precio"
                     render={({ field }) => (
-                      <FormItem className="mt-4 flex flex-row items-center justify-between rounded-lg border p-4">
-                        <div className="space-y-0.5">
+                      <FormItem className="mt-4 flex items-center justify-between gap-3 rounded-lg border p-4">
+                        <div className="min-w-0 space-y-0.5">
                           <FormLabel className="text-base">Mostrar advertencia de precio</FormLabel>
                           <FormDescription>
                             Activa una nota visible junto a las tarifas del producto.

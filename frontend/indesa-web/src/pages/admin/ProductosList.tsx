@@ -80,14 +80,14 @@ export function ProductosList() {
 
   // Mantiene la página dentro del rango cuando cambian los filtros o el total
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
+    <div className="max-w-full space-y-6 overflow-x-hidden">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
           <h1 className="text-3xl font-bold tracking-tight">Productos</h1>
           <p className="text-muted-foreground">Gestiona el catálogo de productos de INDESA.</p>
         </div>
         {canCreateProducts && (
-          <Button asChild>
+          <Button asChild className="w-full sm:w-auto">
             <Link href="/admin/productos/nuevo">
               <Plus className="mr-2 h-4 w-4" /> Nuevo Producto
             </Link>
@@ -96,7 +96,7 @@ export function ProductosList() {
       </div>
 
       <Card>
-        <CardContent className="p-4 flex flex-col md:flex-row gap-4">
+        <CardContent className="flex flex-col gap-3 p-3 sm:p-4 md:flex-row md:gap-4">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -106,8 +106,8 @@ export function ProductosList() {
               onChange={(e) => setBusqueda(e.target.value)}
             />
           </div>
-          <div className="w-full md:w-64 flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
+          <div className="flex w-full items-center gap-2 md:w-64">
+            <Filter className="hidden h-4 w-4 shrink-0 text-muted-foreground sm:block" />
             <Select 
               value={categoriaId?.toString() || "todas"} 
               onValueChange={(val) => {
@@ -154,39 +154,39 @@ export function ProductosList() {
               const tarifas = getTarifasProducto(producto);
 
               return (
-                <div key={producto.id} className="rounded-md border bg-white p-3 shadow-sm">
-                  <div className="flex gap-3">
-                    <div className="grid h-24 w-28 shrink-0 place-items-center overflow-hidden rounded-md border bg-white">
+                <div key={producto.id} className="min-w-0 overflow-hidden rounded-md border bg-white p-3 shadow-sm">
+                  <div className="grid gap-3 sm:grid-cols-[8rem_minmax(0,1fr)]">
+                    <div className="grid aspect-[4/3] w-full place-items-center overflow-hidden rounded-md border bg-white sm:h-28 sm:w-32">
                       {producto.imagen_url ? (
                         <img
                           src={producto.imagen_url}
                           alt={producto.nombre}
                           loading="lazy"
                           decoding="async"
-                          className="h-full w-full object-contain p-1.5"
+                          className="h-full w-full object-contain p-2"
                         />
                       ) : (
                         <span className="text-lg font-semibold text-muted-foreground">{getInitials(producto.nombre)}</span>
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="line-clamp-2 text-sm font-semibold text-foreground">{producto.nombre}</h3>
+                      <h3 className="line-clamp-2 break-words text-sm font-semibold text-foreground">{producto.nombre}</h3>
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{producto.descripcion || "Sin descripción"}</p>
+                      <div className="mt-2 flex flex-wrap items-center gap-1.5">
                         <Badge variant={producto.activo ? "success" : "secondary"} className="shrink-0">
                           {producto.activo ? "Activo" : "Inactivo"}
                         </Badge>
-                      </div>
-                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{producto.descripcion || "Sin descripción"}</p>
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
                         <Badge variant="secondary" className="max-w-full truncate font-normal">{producto.categoria_nombre}</Badge>
-                        <span className="text-sm font-semibold">{formatCurrency(tarifa.value)}</span>
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-baseline gap-x-1.5 gap-y-1">
+                        <span className="text-base font-semibold">{formatCurrency(tarifa.value)}</span>
                         <span className="text-xs text-muted-foreground">por {tarifa.suffix}</span>
-                        {tarifas.length > 1 && <span className="text-xs text-muted-foreground">{tarifas.length} tarifas</span>}
+                        {tarifas.length > 1 && <span className="text-xs text-muted-foreground">({tarifas.length} tarifas)</span>}
                       </div>
                     </div>
                   </div>
                   {canManageProducts && (
-                    <div className="mt-3 grid grid-cols-2 gap-2">
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
                       {canEditProducts && (
                         <Button asChild variant="outline" size="sm">
                           <Link href={`/admin/productos/editar/${producto.id}`}>

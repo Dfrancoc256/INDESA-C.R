@@ -4,13 +4,14 @@ import { setAuthTokenGetter, setUnauthorizedHandler } from "@workspace/api-clien
 import { useGetMe, login as apiLogin, logout as apiLogout, refreshToken as apiRefreshToken, LoginInput, UsuarioMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import { toast } from "@/hooks/use-toast";
 import { errorMessages } from "@/lib/errorMessages";
+import { resetSessionExpiredEvent, SESSION_EXPIRED_EVENT } from "@/lib/apiFetch";
 
 const SESSION_MARKER_KEY = "indesa_session_active";
 const LAST_ACTIVITY_KEY = "indesa_last_activity_at";
 const LAST_REFRESH_KEY = "indesa_last_refresh_at";
 const INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000;
 const SESSION_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
-const ACTIVITY_REFRESH_THROTTLE_MS = 60 * 1000;
+const ACTIVITY_REFRESH_THROTTLE_MS = 5 * 60 * 1000;
 
 const clearLegacyVisibleTokens = () => {
   if (typeof window === "undefined") return;
@@ -96,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     unauthorizedHandledRef.current = false;
 
     clearStoredSession();
+    resetSessionExpiredEvent();
     setHasStoredToken(false);
     setUsuario(null);
     setIsLoading(false);
@@ -115,12 +117,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }, 0);
   }, [setLocation]);
 
-  const refreshSession = useCallback(async () => {
+  const refreshSession = useCallback(async (options?: { notifyOnFailure?: boolean }) => {
     if (refreshInProgressRef.current) {
       return true;
     }
 
     if (!hasSessionMarker()) {
+      if (options?.notifyOnFailure) {
+        toast({
+          variant: "destructive",
+          title: "Sesión finalizada",
+          description: errorMessages.sessionExpired,
+        });
+      }
       logout({ remote: false });
       return false;
     }
@@ -131,12 +140,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await apiRefreshToken({ refresh_token: "" });
       markSessionActive();
       markRefresh();
+      resetSessionExpiredEvent();
       unauthorizedHandledRef.current = false;
       setHasStoredToken(true);
       setUsuario(response.usuario);
       setIsLoading(false);
       return true;
     } catch {
+      if (options?.notifyOnFailure) {
+        toast({
+          variant: "destructive",
+          title: "Sesión finalizada",
+          description: errorMessages.sessionExpired,
+        });
+      }
       logout({ remote: false });
       return false;
     } finally {
@@ -176,7 +193,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (error) {
       if (!isRefreshingSession) {
-        void refreshSession();
+        void refreshSession({ notifyOnFailure: true });
         return;
       }
 
@@ -195,14 +212,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const events: Array<keyof WindowEventMap> = ["click", "keydown", "mousemove", "scroll", "touchstart", "input", "pointerdown", "focus"];
     let timeoutId = window.setTimeout(() => {
-      logout();
+      toast({
+        variant: "destructive",
+        title: "Sesión finalizada",
+        description: "Cerramos la sesión por 20 minutos de inactividad.",
+      });
+      logout({ remote: false });
     }, INACTIVITY_TIMEOUT_MS);
 
     const resetTimer = () => {
       markActivity();
       window.clearTimeout(timeoutId);
       timeoutId = window.setTimeout(() => {
-        logout();
+        toast({
+          variant: "destructive",
+          title: "Sesión finalizada",
+          description: "Cerramos la sesión por 20 minutos de inactividad.",
+        });
+        logout({ remote: false });
       }, INACTIVITY_TIMEOUT_MS);
 
       const lastRefresh = getLastRefresh();
@@ -211,11 +238,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
-    events.forEach((eventName) => window.addEventListener(eventName, resetTimer, { passive: true }));
+    const documentEvents: Array<keyof DocumentEventMap> = [
+      "click",
+      "keydown",
+      "mousedown",
+      "mousemove",
+      "pointerdown",
+      "pointermove",
+      "scroll",
+      "touchstart",
+      "touchmove",
+      "wheel",
+      "input",
+      "focusin",
+    ];
+
+    events.forEach((eventName) => window.addEventListener(eventName, resetTimer, { passive: true, capture: true }));
+    documentEvents.forEach((eventName) => document.addEventListener(eventName, resetTimer, { passive: true, capture: true }));
 
     return () => {
       window.clearTimeout(timeoutId);
-      events.forEach((eventName) => window.removeEventListener(eventName, resetTimer));
+      events.forEach((eventName) => window.removeEventListener(eventName, resetTimer, { capture: true }));
+      documentEvents.forEach((eventName) => document.removeEventListener(eventName, resetTimer, { capture: true }));
     };
   }, [hasStoredToken, usuario]);
 
@@ -252,7 +296,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       unauthorizedHandledRef.current = true;
       const lastActivity = getLastActivity();
       if (!lastActivity || Date.now() - lastActivity <= INACTIVITY_TIMEOUT_MS) {
-        void refreshSession();
+        void refreshSession({ notifyOnFailure: true });
         return;
       }
 
@@ -269,12 +313,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [logout, refreshSession]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleSessionExpired = () => {
+      if (logoutInProgressRef.current || unauthorizedHandledRef.current) {
+        return;
+      }
+
+      unauthorizedHandledRef.current = true;
+      void refreshSession({ notifyOnFailure: true });
+    };
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+
+    return () => {
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleSessionExpired);
+    };
+  }, [refreshSession]);
+
   const login = async (data: LoginInput) => {
     try {
       const response = await apiLogin(data);
       markSessionActive();
       markRefresh();
       markActivity();
+      resetSessionExpiredEvent();
       unauthorizedHandledRef.current = false;
       setHasStoredToken(true);
       setUsuario(response.usuario);
