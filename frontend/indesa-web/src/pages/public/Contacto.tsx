@@ -70,7 +70,7 @@ export function Contacto() {
                   <div>
                     <h3 className="mb-1 text-lg font-bold">Dirección Principal</h3>
                     <p className="leading-relaxed text-muted-foreground">
-                    29 calle 14-24, zona 13. Col. La libertad<br />
+                    29 calle 14-24, zona 13. Col. La libertad ll<br />
                     Ciudad de Guatemala, Guatemala
                     </p>
                   </div>

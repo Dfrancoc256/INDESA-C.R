@@ -12,7 +12,7 @@ import logoIndesaCompleto from "@/assets/logo-indesa-transparent.png";
 
 const companyInfo = {
   addressLines: [
-    "29 calle 14-24, zona 13. Col. La libertad",
+    "29 calle 14-24, zona 13. Col. La libertad ll",
     "Ciudad de Guatemala, Guatemala",
   ],
   phones: [
