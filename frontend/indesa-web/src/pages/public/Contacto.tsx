@@ -3,7 +3,7 @@ import { MapPin, Phone, Mail, Clock } from "lucide-react";
 
 export function Contacto() {
   const googleMapsUrl = "https://maps.app.goo.gl/thbNvAJQZdETskmB7?g_st=ic";
-  const embeddedMapUrl = "https://www.google.com/maps?q=29+calle+14-24,+zona+13,+Col.+La+libertad,+Ciudad+de+Guatemala,+Guatemala&z=16&output=embed";
+  const embeddedMapUrl = "https://www.google.com/maps/embed?pb=!1m13!1m8!1m3!1d482.7009292695111!2d-90.5287608!3d14.5644276!3m2!1i1024!2i768!4f13.1!3m2!1m1!2s!5e0!3m2!1ses!2sgt!4v1783892620163!5m2!1ses!2sgt";
 
   return (
     <div className="min-h-screen bg-white">
@@ -127,7 +127,7 @@ export function Contacto() {
               src={embeddedMapUrl}
               className="h-[340px] w-full border-0 md:h-[420px]"
               loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
+              referrerPolicy="strict-origin-when-cross-origin"
             />
           </div>
 
