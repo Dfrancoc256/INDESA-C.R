@@ -573,24 +573,25 @@ export function Reservas() {
     }
   };
 
-  const abrirComprobantePago = async (reserva: any) => {
-    try {
-      const response = await apiFetch(`/api/reservas/${reserva.id}/pago/comprobante`);
-      if (!response.ok) {
-        const payload = await response.json().catch(() => null);
-        throw new Error(payload?.error ?? "No fue posible abrir el comprobante");
-      }
-
-      const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      window.open(url, "_blank", "noopener,noreferrer");
-      setTimeout(() => URL.revokeObjectURL(url), 30000);
-    } catch (error: any) {
+  const abrirComprobantePago = (reserva: any) => {
+    if (!reserva?.id) {
       toast({
         variant: "destructive",
         title: "No fue posible abrir el comprobante",
-        description: getFriendlyApiErrorMessage(error, "Intenta nuevamente."),
+        description: "La reserva no tiene un comprobante disponible.",
       });
+      return;
+    }
+
+    const url = `/api/reservas/${reserva.id}/pago/comprobante`;
+    const openedWindow = window.open(url, "_blank", "noopener,noreferrer");
+
+    if (!openedWindow) {
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.click();
     }
   };
 
