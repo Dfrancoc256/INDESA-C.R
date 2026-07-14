@@ -16,6 +16,7 @@ CREATE TABLE IF NOT EXISTS usuarios (
   apellido TEXT,
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
+  password_temporal BOOLEAN NOT NULL DEFAULT FALSE,
   role_id INTEGER NOT NULL REFERENCES roles(id),
   activo BOOLEAN NOT NULL DEFAULT TRUE,
   last_login TIMESTAMPTZ,

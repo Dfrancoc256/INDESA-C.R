@@ -9,6 +9,7 @@ export const usuariosTable = pgTable("usuarios", {
   apellido: text("apellido"),
   email: text("email").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
+  passwordTemporal: boolean("password_temporal").notNull().default(false),
   roleId: integer("role_id").notNull().references(() => rolesTable.id),
   activo: boolean("activo").notNull().default(true),
   lastLogin: timestamp("last_login", { withTimezone: true }),

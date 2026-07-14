@@ -36,6 +36,7 @@ export async function createUsuario(data: {
     apellido: data.apellido,
     email: data.email,
     passwordHash,
+    passwordTemporal: true,
     roleId: data.roleId,
   });
 }
@@ -80,6 +81,6 @@ export async function deleteUsuario(id: number) {
 
 export async function resetPassword(id: number, nuevaPassword: string) {
   const passwordHash = await bcrypt.hash(nuevaPassword, SALT_ROUNDS);
-  const updated = await repo.updateUsuario(id, { passwordHash });
+  const updated = await repo.updateUsuario(id, { passwordHash, passwordTemporal: true });
   if (!updated) throw Object.assign(new Error("Usuario no encontrado"), { status: 404 });
 }

@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { errorMessages } from "@/lib/errorMessages";
 import { getFriendlyApiErrorMessage } from "@/lib/apiErrorMessage";
+import { apiFetch } from "@/lib/apiFetch";
 import {
   Form,
   FormControl,
@@ -26,7 +27,12 @@ export function Login() {
   const { login } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [temporaryLogin, setTemporaryLogin] = useState<LoginValues | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -43,6 +49,19 @@ export function Login() {
       await login(data);
     } catch (error: any) {
       const apiStatus = Number(error?.status || error?.response?.status) || 0;
+      const requiresPasswordChange = apiStatus === 428 || error?.data?.requires_password_change;
+
+      if (requiresPasswordChange) {
+        setTemporaryLogin(data);
+        setNewPassword("");
+        setConfirmPassword("");
+        toast({
+          title: "Contraseña temporal detectada",
+          description: "Por seguridad, crea una nueva contraseña para continuar.",
+        });
+        return;
+      }
+
       const friendlyMessage =
         apiStatus === 401
           ? errorMessages.login401
@@ -69,6 +88,62 @@ export function Login() {
     }
   };
 
+  const handlePasswordChange = async () => {
+    if (!temporaryLogin) return;
+
+    if (newPassword.length < 8) {
+      toast({
+        variant: "destructive",
+        title: "Contraseña muy corta",
+        description: "La nueva contraseña debe tener al menos 8 caracteres.",
+      });
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        variant: "destructive",
+        title: "Las contraseñas no coinciden",
+        description: "Confirma nuevamente la contraseña para continuar.",
+      });
+      return;
+    }
+
+    try {
+      setIsChangingPassword(true);
+      const response = await apiFetch("/api/auth/complete-password-change", {
+        method: "POST",
+        body: JSON.stringify({
+          email: temporaryLogin.email,
+          current_password: temporaryLogin.password,
+          new_password: newPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw Object.assign(new Error(data?.error || "No fue posible actualizar la contraseña"), {
+          status: response.status,
+          data,
+        });
+      }
+
+      await login({ email: temporaryLogin.email, password: newPassword });
+      toast({
+        title: "Contraseña actualizada",
+        description: "Tu contraseña definitiva fue guardada correctamente.",
+      });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "No fue posible cambiar la contraseña",
+        description: getFriendlyApiErrorMessage(error, "Intenta nuevamente con una contraseña válida."),
+      });
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   return (
     <div className="grid min-h-[100dvh] bg-[radial-gradient(circle_at_top_left,rgba(255,40,0,0.30),transparent_28%),radial-gradient(circle_at_center,rgba(255,40,0,0.14),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,40,0,0.18),transparent_26%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--muted)))] lg:grid-cols-[1.05fr_0.95fr]">
       <section className="flex min-h-[100dvh] items-center justify-center px-4 py-6 sm:px-6 lg:px-10 animate-route-enter">
@@ -91,10 +166,74 @@ export function Login() {
 
           <Card className="overflow-hidden border shadow-xl animate-route-enter">
             <CardHeader className="space-y-2 border-b bg-card px-6 pb-6 pt-7 text-center sm:px-8">
-              <CardTitle className="text-2xl font-bold tracking-tight">Acceso administrativo</CardTitle>
-              <CardDescription>Ingresa tus credenciales para continuar.</CardDescription>
+              <CardTitle className="text-2xl font-bold tracking-tight">
+                {temporaryLogin ? "Crear nueva contraseña" : "Acceso administrativo"}
+              </CardTitle>
+              <CardDescription>
+                {temporaryLogin
+                  ? "Esta contraseña será la definitiva para tus próximos ingresos."
+                  : "Ingresa tus credenciales para continuar."}
+              </CardDescription>
             </CardHeader>
             <CardContent className="px-6 py-7 sm:px-8">
+              {temporaryLogin ? (
+                <div className="space-y-5">
+                  <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-muted-foreground">
+                    Usuario: <span className="font-semibold text-foreground">{temporaryLogin.email}</span>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium" htmlFor="new-password">Nueva contraseña</label>
+                    <div className="relative">
+                      <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="new-password"
+                        placeholder="Mínimo 8 caracteres"
+                        type={showNewPassword ? "text" : "password"}
+                        autoComplete="new-password"
+                        disabled={isChangingPassword}
+                        className="h-12 pl-10 pr-11"
+                        value={newPassword}
+                        onChange={(event) => setNewPassword(event.target.value)}
+                      />
+                      <button
+                        type="button"
+                        className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        onClick={() => setShowNewPassword((value) => !value)}
+                        aria-label={showNewPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                        disabled={isChangingPassword}
+                      >
+                        {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium" htmlFor="confirm-password">Confirmar contraseña</label>
+                    <Input
+                      id="confirm-password"
+                      placeholder="Repite la nueva contraseña"
+                      type="password"
+                      autoComplete="new-password"
+                      disabled={isChangingPassword}
+                      className="h-12"
+                      value={confirmPassword}
+                      onChange={(event) => setConfirmPassword(event.target.value)}
+                    />
+                  </div>
+                  <Button type="button" className="h-12 w-full gap-2 text-base font-semibold" disabled={isChangingPassword} onClick={handlePasswordChange}>
+                    {isChangingPassword && <Loader2 className="h-4 w-4 animate-spin" />}
+                    {isChangingPassword ? "Guardando..." : "Guardar y continuar"}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    disabled={isChangingPassword}
+                    onClick={() => setTemporaryLogin(null)}
+                  >
+                    Volver al login
+                  </Button>
+                </div>
+              ) : (
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
                   <FormField
@@ -160,6 +299,7 @@ export function Login() {
                   </Button>
                 </form>
               </Form>
+              )}
             </CardContent>
           </Card>
 

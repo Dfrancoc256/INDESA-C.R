@@ -4,6 +4,8 @@ import * as usuariosRepo from "../repositories/usuarios.repository";
 import { db, refreshTokensTable, rolesTable } from "@workspace/db";
 import { eq, and } from "drizzle-orm";
 
+const SALT_ROUNDS = 12;
+
 export async function login(email: string, password: string) {
   const usuario = await usuariosRepo.findUsuarioByEmail(email);
   if (!usuario || !usuario.activo) {
@@ -13,6 +15,13 @@ export async function login(email: string, password: string) {
   const valid = await bcrypt.compare(password, usuario.passwordHash);
   if (!valid) {
     throw Object.assign(new Error("Credenciales inválidas"), { status: 401 });
+  }
+
+  if (usuario.passwordTemporal) {
+    throw Object.assign(new Error("Debe cambiar la contraseña temporal"), {
+      status: 428,
+      code: "PASSWORD_CHANGE_REQUIRED",
+    });
   }
 
   // Obtener rol con permisos desde BD
@@ -52,6 +61,27 @@ export async function login(email: string, password: string) {
       rol: { id: rol.id, nombre: rol.nombre, descripcion: rol.descripcion, permisos: rol.permisos },
     },
   };
+}
+
+export async function completePasswordChange(email: string, currentPassword: string, newPassword: string) {
+  const usuario = await usuariosRepo.findUsuarioByEmail(email);
+  if (!usuario || !usuario.activo) {
+    throw Object.assign(new Error("Credenciales inválidas"), { status: 401 });
+  }
+
+  if (!usuario.passwordTemporal) {
+    throw Object.assign(new Error("La contraseña temporal ya fue actualizada"), { status: 400 });
+  }
+
+  const valid = await bcrypt.compare(currentPassword, usuario.passwordHash);
+  if (!valid) {
+    throw Object.assign(new Error("La contraseña temporal no es correcta"), { status: 401 });
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await usuariosRepo.updateUsuario(usuario.id, { passwordHash, passwordTemporal: false });
+
+  return login(email, newPassword);
 }
 
 export async function refresh(refreshToken: string) {

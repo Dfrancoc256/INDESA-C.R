@@ -23,7 +23,12 @@ const refreshCookieOptions = {
   maxAge: 7 * 24 * 60 * 60 * 1000,
 };
 
-function setSessionCookies(res: Response, result: Awaited<ReturnType<typeof authService.login>>) {
+function setSessionCookies(res: Response, result: {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  usuario: unknown;
+}) {
   res.cookie(ACCESS_COOKIE, result.access_token, accessCookieOptions);
   res.cookie(REFRESH_COOKIE, result.refresh_token, refreshCookieOptions);
 }
@@ -44,7 +49,27 @@ export async function login(req: Request, res: Response): Promise<void> {
     setSessionCookies(res, result);
     res.json({ expires_in: result.expires_in, usuario: result.usuario });
   } catch (err: any) {
-    res.status(err.status ?? 500).json({ error: err.message });
+    res.status(err.status ?? 500).json({
+      error: err.message,
+      code: err.code,
+      requires_password_change: err.code === "PASSWORD_CHANGE_REQUIRED",
+    });
+  }
+}
+
+export async function completePasswordChange(req: Request, res: Response): Promise<void> {
+  try {
+    const { email, current_password, new_password } = req.body;
+    if (!email || !current_password || !new_password || String(new_password).length < 8) {
+      res.status(400).json({ error: "Debe ingresar la contraseña temporal y una nueva contraseña de al menos 8 caracteres" });
+      return;
+    }
+
+    const result = await authService.completePasswordChange(email, current_password, new_password);
+    setSessionCookies(res, result);
+    res.json({ expires_in: result.expires_in, usuario: result.usuario });
+  } catch (err: any) {
+    res.status(err.status ?? 500).json({ error: err.message, code: err.code });
   }
 }
 

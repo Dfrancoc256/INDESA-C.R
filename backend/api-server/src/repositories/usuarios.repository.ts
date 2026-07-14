@@ -47,6 +47,7 @@ export async function findUsuarioByEmail(email: string) {
       apellido: usuariosTable.apellido,
       email: usuariosTable.email,
       passwordHash: usuariosTable.passwordHash,
+      passwordTemporal: usuariosTable.passwordTemporal,
       role_id: usuariosTable.roleId,
       rol_nombre: rolesTable.nombre,
       activo: usuariosTable.activo,
@@ -63,6 +64,7 @@ export async function createUsuario(data: {
   apellido?: string;
   email: string;
   passwordHash: string;
+  passwordTemporal?: boolean;
   roleId: number;
 }) {
   const rows = await db.insert(usuariosTable).values({
@@ -70,6 +72,7 @@ export async function createUsuario(data: {
     apellido: data.apellido ?? null,
     email: data.email,
     passwordHash: data.passwordHash,
+    passwordTemporal: data.passwordTemporal ?? true,
     roleId: data.roleId,
     activo: true,
   }).returning();
@@ -83,6 +86,7 @@ export async function updateUsuario(id: number, data: Partial<{
   roleId: number;
   activo: boolean;
   passwordHash: string;
+  passwordTemporal: boolean;
   lastLogin: Date;
 }>) {
   const rows = await db
