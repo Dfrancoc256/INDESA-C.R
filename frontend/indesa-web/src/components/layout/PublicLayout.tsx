@@ -7,6 +7,7 @@ import { FaFacebookF, FaInstagram, FaTiktok, FaWhatsapp } from "react-icons/fa";
 import { getListProductosQueryKey, useListProductos, type Producto } from "@workspace/api-client-react";
 import { formatCurrency, getInitials, getTarifaPrincipal } from "@/lib/utils";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
+import { getAdminHomePath } from "@/lib/adminNavigation";
 import logoIndesa from "@/assets/logo-indesa-wordmark.png";
 import logoIndesaCompleto from "@/assets/logo-indesa-transparent.png";
 
@@ -29,7 +30,7 @@ const companyInfo = {
 };
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, usuario } = useAuth();
   const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [headerSearch, setHeaderSearch] = useState("");
@@ -282,7 +283,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                 size="icon"
                 className="h-11 w-11 rounded-full bg-white text-[#FF2800] shadow-[0_8px_18px_rgba(255,40,0,0.18)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-[#FF2800] hover:shadow-[0_10px_22px_rgba(255,40,0,0.22)] focus-visible:ring-2 focus-visible:ring-white/70"
               >
-                <Link href="/admin/dashboard" aria-label="Abrir panel administrativo" title="Panel administrativo">
+                <Link href={getAdminHomePath(usuario)} aria-label="Abrir panel administrativo" title="Panel administrativo">
                   <LayoutDashboard className="h-5 w-5" />
                   <span className="sr-only">Panel administrativo</span>
                 </Link>
@@ -354,7 +355,7 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
               <div className="pt-3 mt-2 border-t">
                 {isAuthenticated ? (
                   <Button asChild className="w-full gap-2 bg-white text-[#FF2800] hover:bg-[rgba(255,40,0,0.10)]">
-                    <Link href="/admin/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Link href={getAdminHomePath(usuario)} onClick={() => setIsMobileMenuOpen(false)}>
                       <LayoutDashboard className="h-4 w-4" />
                       Panel Admin
                     </Link>

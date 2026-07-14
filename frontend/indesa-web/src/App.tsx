@@ -6,6 +6,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { AdminLayout } from '@/components/layout/AdminLayout';
 import { hasPermission } from '@/lib/permissions';
+import { getAdminHomePath } from '@/lib/adminNavigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { Component, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -125,6 +126,19 @@ function ScrollToTop() {
   return null;
 }
 
+function AdminHomeRedirect() {
+  const { usuario, isLoading } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading) {
+      setLocation(getAdminHomePath(usuario));
+    }
+  }, [isLoading, setLocation, usuario]);
+
+  return null;
+}
+
 function PublicRoutes() {
   return (
     <Switch>
@@ -205,7 +219,7 @@ function Router() {
         <AdminLayout><RequirePermission permission="finanzas.ver" fallback="/admin/productos"><Finanzas /></RequirePermission></AdminLayout>
       </Route>
       <Route path="/admin">
-        <Redirect to="/admin/dashboard" />
+        <AdminHomeRedirect />
       </Route>
 
       {/* Public routes keep one shared layout mounted */}

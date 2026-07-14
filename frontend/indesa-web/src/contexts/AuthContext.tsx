@@ -5,6 +5,7 @@ import { useGetMe, logout as apiLogout, refreshToken as apiRefreshToken, LoginIn
 import { toast } from "@/hooks/use-toast";
 import { errorMessages } from "@/lib/errorMessages";
 import { apiFetch, resetSessionExpiredEvent, SESSION_EXPIRED_EVENT } from "@/lib/apiFetch";
+import { getAdminHomePath } from "@/lib/adminNavigation";
 
 const SESSION_MARKER_KEY = "indesa_session_active";
 const LAST_ACTIVITY_KEY = "indesa_last_activity_at";
@@ -370,7 +371,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setHasStoredToken(true);
       setUsuario(response.usuario);
       setIsLoading(false);
-      setLocation("/admin/dashboard");
+      setLocation(getAdminHomePath(response.usuario));
     } catch (err) {
       throw err;
     }

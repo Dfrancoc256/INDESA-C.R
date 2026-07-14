@@ -8,6 +8,7 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { getInitials } from "@/lib/utils";
 import { hasPermission } from "@/lib/permissions";
+import { adminNavigationItems, getAdminHomePath } from "@/lib/adminNavigation";
 import logoIndesa from "@/assets/logo-indesa-wordmark.png";
 import {
   DropdownMenu,
@@ -37,17 +38,20 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     return <AdminStatus title="Redirigiendo al acceso" description="Inicia sesión para entrar al panel." />;
   }
 
-  const navLinks = [
-    { href: "/admin/dashboard", label: "Dashboard", icon: Home, permiso: "dashboard.ver" },
-    { href: "/admin/finanzas", label: "Finanzas", icon: Landmark, permiso: "finanzas.ver" },
-    { href: "/admin/productos", label: "Productos", icon: Package, permiso: "productos.ver" },
-    { href: "/admin/reservas", label: "Reservas", icon: Calendar, permiso: "reservas.ver" },
-    { href: "/admin/inventario", label: "Inventario", icon: ClipboardList, permiso: "inventario.ver" },
-    { href: "/admin/categorias", label: "Categorías", icon: Tags, permiso: "categorias.ver" },
-    { href: "/admin/usuarios", label: "Usuarios", icon: Users, permiso: "usuarios.ver" },
-  ].filter((link) => hasPermission(usuario, link.permiso));
+  const iconByPermission = {
+    "dashboard.ver": Home,
+    "finanzas.ver": Landmark,
+    "productos.ver": Package,
+    "reservas.ver": Calendar,
+    "inventario.ver": ClipboardList,
+    "categorias.ver": Tags,
+    "usuarios.ver": Users,
+  } as const;
+  const navLinks = adminNavigationItems
+    .map((link) => ({ ...link, icon: iconByPermission[link.permiso] }))
+    .filter((link) => hasPermission(usuario, link.permiso));
 
-  const homeHref = navLinks[0]?.href ?? "/admin/login";
+  const homeHref = getAdminHomePath(usuario);
 
   return (
     <div className="min-h-[100dvh] overflow-hidden bg-gray-100 font-sans md:flex">
