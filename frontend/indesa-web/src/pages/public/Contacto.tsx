@@ -1,9 +1,13 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Phone, Mail, Clock } from "lucide-react";
+import { FaFacebookF, FaInstagram, FaTiktok } from "react-icons/fa";
 
 export function Contacto() {
   const googleMapsUrl = "https://maps.app.goo.gl/thbNvAJQZdETskmB7?g_st=ic";
   const embeddedMapUrl = "https://www.google.com/maps/embed?pb=!1m17!1m12!1m3!1d3861.604553806485!2d-90.53107002489455!3d14.56459208591748!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m2!1m1!2zMTTCsDMzJzUyLjUiTiA5MMKwMzEnNDIuNiJX!5e0!3m2!1ses!2sgt!4v1783893165764!5m2!1ses!2sgt";
+  const facebookUrl = "https://www.facebook.com/profile.php?id=61591360179036";
+  const instagramUrl = "https://www.instagram.com/somosindesa?igsh=MTBlbzl1d3NncmF1dA==";
+  const tiktokUrl = "https://www.tiktok.com/@indesa.renta.de.ma?_r=1&_t=ZS-981vbVE9hKC";
 
   return (
     <div className="min-h-screen bg-white">
@@ -115,6 +119,44 @@ export function Contacto() {
                       Sábados: 8:00 AM - 12:00 PM<br />
                       Domingos: Cerrado
                     </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-4">
+                  <div className="h-fit rounded-full bg-primary/10 p-3 text-primary">
+                    <FaFacebookF className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <h3 className="mb-2 text-lg font-bold">Redes Sociales</h3>
+                    <div className="flex flex-wrap gap-3">
+                      <a
+                        href={facebookUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold transition-colors hover:border-primary hover:text-primary"
+                      >
+                        <FaFacebookF className="h-4 w-4 text-[#1877F2]" />
+                        Facebook
+                      </a>
+                      <a
+                        href={instagramUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold transition-colors hover:border-primary hover:text-primary"
+                      >
+                        <FaInstagram className="h-4 w-4 text-[#E4405F]" />
+                        Instagram
+                      </a>
+                      <a
+                        href={tiktokUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm font-semibold transition-colors hover:border-primary hover:text-primary"
+                      >
+                        <FaTiktok className="h-4 w-4 text-black" />
+                        TikTok
+                      </a>
+                    </div>
                   </div>
                 </div>
               </div>

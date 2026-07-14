@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, LayoutDashboard, LockKeyhole, Mail, Menu, Phone, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import { FaFacebookF, FaWhatsapp } from "react-icons/fa";
+import { FaFacebookF, FaInstagram, FaTiktok, FaWhatsapp } from "react-icons/fa";
 import { getListProductosQueryKey, useListProductos, type Producto } from "@workspace/api-client-react";
 import { formatCurrency, getInitials, getTarifaPrincipal } from "@/lib/utils";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -24,6 +24,8 @@ const companyInfo = {
     { label: "Gerencia", value: "gerencia@somosindesa.com" },
   ],
   facebook: "https://www.facebook.com/profile.php?id=61591360179036",
+  instagram: "https://www.instagram.com/somosindesa?igsh=MTBlbzl1d3NncmF1dA==",
+  tiktok: "https://www.tiktok.com/@indesa.renta.de.ma?_r=1&_t=ZS-981vbVE9hKC",
 };
 
 export function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -482,6 +484,32 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
                       <FaFacebookF className="h-4 w-4" />
                     </span>
                     Facebook
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={companyInfo.instagram}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 font-medium hover:text-primary"
+                  >
+                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#E4405F] text-white">
+                      <FaInstagram className="h-4 w-4" />
+                    </span>
+                    Instagram
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href={companyInfo.tiktok}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-2 font-medium hover:text-primary"
+                  >
+                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-black text-white">
+                      <FaTiktok className="h-4 w-4" />
+                    </span>
+                    TikTok
                   </a>
                 </li>
               </ul>
