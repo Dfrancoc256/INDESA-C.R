@@ -85,7 +85,7 @@ export function Login() {
           : getFriendlyApiErrorMessage(error, errorMessages.generic);
 
       if (apiStatus === 429) {
-        const retrySeconds = Number(error?.data?.retryAfterSeconds || 8 * 60);
+        const retrySeconds = Number(error?.data?.retryAfterSeconds || 5 * 60);
         const safeRetrySeconds = Math.max(1, retrySeconds);
         setRetryCountdown(safeRetrySeconds);
         const minutes = Math.floor(safeRetrySeconds / 60);
