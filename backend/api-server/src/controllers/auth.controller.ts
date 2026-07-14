@@ -49,10 +49,29 @@ export async function login(req: Request, res: Response): Promise<void> {
     setSessionCookies(res, result);
     res.json({ expires_in: result.expires_in, usuario: result.usuario });
   } catch (err: any) {
+    if (err.code === "PASSWORD_CHANGE_REQUIRED") {
+      res.json({
+        message: "Debe cambiar la contraseña temporal",
+        code: err.code,
+        requires_password_change: true,
+      });
+      return;
+    }
+
+    if (err.status === 401) {
+      res.json({
+        message: "El correo o la contraseña no son correctos",
+        code: "INVALID_CREDENTIALS",
+        login_failed: true,
+        requires_password_change: false,
+      });
+      return;
+    }
+
     res.status(err.status ?? 500).json({
       error: err.message,
       code: err.code,
-      requires_password_change: err.code === "PASSWORD_CHANGE_REQUIRED",
+      requires_password_change: false,
     });
   }
 }

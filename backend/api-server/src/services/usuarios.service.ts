@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { db, rolesTable } from "@workspace/db";
+import { db, movimientosTable, refreshTokensTable, rolesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import * as repo from "../repositories/usuarios.repository";
 
@@ -76,6 +76,8 @@ export async function toggleUsuario(id: number) {
 export async function deleteUsuario(id: number) {
   const usuario = await repo.findUsuarioById(id);
   if (!usuario) throw Object.assign(new Error("Usuario no encontrado"), { status: 404 });
+  await db.delete(refreshTokensTable).where(eq(refreshTokensTable.usuarioId, id));
+  await db.update(movimientosTable).set({ usuarioId: null }).where(eq(movimientosTable.usuarioId, id));
   await repo.deleteUsuario(id);
 }
 

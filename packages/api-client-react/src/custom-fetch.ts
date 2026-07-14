@@ -20,6 +20,7 @@ let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
 let _unauthorizedHandler: UnauthorizedHandler | null = null;
 const pendingGetRequests = new Map<string, Promise<unknown>>();
+let pendingRefreshRequest: Promise<boolean> | null = null;
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -88,6 +89,31 @@ function resolveUrl(input: RequestInfo | URL): string {
   if (typeof input === "string") return input;
   if (isUrl(input)) return input.toString();
   return input.url;
+}
+
+function isAuthEndpoint(url: string): boolean {
+  return url.includes("/api/auth/login") || url.includes("/api/auth/logout") || url.includes("/api/auth/refresh");
+}
+
+async function refreshCookieSession(): Promise<boolean> {
+  if (typeof fetch === "undefined") return false;
+  if (pendingRefreshRequest) return pendingRefreshRequest;
+
+  pendingRefreshRequest = fetch(applyBaseUrl("/api/auth/refresh"), {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ refresh_token: "" }),
+  })
+    .then((response) => response.ok)
+    .catch(() => false)
+    .finally(() => {
+      pendingRefreshRequest = null;
+    });
+
+  return pendingRefreshRequest;
 }
 
 function mergeHeaders(...sources: Array<HeadersInit | undefined>): Headers {
@@ -372,18 +398,24 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const executeRequest = async (): Promise<T> => {
+  const executeRequest = async (allowSessionRefresh = true): Promise<T> => {
     const response = await fetch(input, { ...init, credentials: "include", method, headers });
 
     if (!response.ok) {
+      if (response.status === 401 && allowSessionRefresh && !isAuthEndpoint(requestInfo.url)) {
+        const refreshed = await refreshCookieSession();
+        if (refreshed) {
+          return executeRequest(false);
+        }
+      }
+
       const errorData = await parseErrorBody(response, method);
       const error = new ApiError(response, errorData, requestInfo);
 
       if (
         response.status === 401 &&
         _unauthorizedHandler &&
-        !requestInfo.url.includes("/api/auth/login") &&
-        !requestInfo.url.includes("/api/auth/logout")
+        !isAuthEndpoint(requestInfo.url)
       ) {
         void _unauthorizedHandler(error);
       }

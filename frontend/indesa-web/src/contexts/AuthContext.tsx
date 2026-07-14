@@ -1,10 +1,10 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { setAuthTokenGetter, setUnauthorizedHandler } from "@workspace/api-client-react";
-import { useGetMe, login as apiLogin, logout as apiLogout, refreshToken as apiRefreshToken, LoginInput, UsuarioMe, getGetMeQueryKey } from "@workspace/api-client-react";
+import { useGetMe, logout as apiLogout, refreshToken as apiRefreshToken, LoginInput, UsuarioMe, getGetMeQueryKey, type AuthResponse } from "@workspace/api-client-react";
 import { toast } from "@/hooks/use-toast";
 import { errorMessages } from "@/lib/errorMessages";
-import { resetSessionExpiredEvent, SESSION_EXPIRED_EVENT } from "@/lib/apiFetch";
+import { apiFetch, resetSessionExpiredEvent, SESSION_EXPIRED_EVENT } from "@/lib/apiFetch";
 
 const SESSION_MARKER_KEY = "indesa_session_active";
 const LAST_ACTIVITY_KEY = "indesa_last_activity_at";
@@ -334,7 +334,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (data: LoginInput) => {
     try {
-      const response = await apiLogin(data);
+      const loginResponse = await apiFetch("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+      const responseData = await loginResponse.json().catch(() => null);
+
+      if (!loginResponse.ok) {
+        throw Object.assign(new Error(responseData?.error || "No fue posible iniciar sesión"), {
+          status: loginResponse.status,
+          data: responseData,
+        });
+      }
+
+      if (responseData?.requires_password_change) {
+        throw Object.assign(new Error(responseData.message || "Debe cambiar la contraseña temporal"), {
+          status: 428,
+          data: responseData,
+        });
+      }
+
+      if (responseData?.login_failed) {
+        throw Object.assign(new Error(responseData.message || "Credenciales inválidas"), {
+          status: 401,
+          data: responseData,
+        });
+      }
+
+      const response = responseData as AuthResponse;
       markSessionActive();
       markRefresh();
       markActivity();

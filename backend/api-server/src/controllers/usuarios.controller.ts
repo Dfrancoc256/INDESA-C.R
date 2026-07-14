@@ -116,7 +116,13 @@ export async function update(req: Request, res: Response): Promise<void> {
 
 export async function remove(req: Request, res: Response): Promise<void> {
   try {
-    await service.deleteUsuario(Number(req.params["id"]));
+    const usuarioId = Number(req.params["id"]);
+    if (req.usuario?.sub === usuarioId) {
+      res.status(400).json({ error: "No puedes eliminar el usuario con el que tienes la sesión activa" });
+      return;
+    }
+
+    await service.deleteUsuario(usuarioId);
     res.json({ message: "Usuario eliminado" });
   } catch (err: any) {
     reportControllerError(req, err, "Error eliminando usuario");

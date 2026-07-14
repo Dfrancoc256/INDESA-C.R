@@ -1,6 +1,7 @@
 export const SESSION_EXPIRED_EVENT = "indesa:session-expired";
 
 let sessionExpiredEventDispatched = false;
+let pendingRefreshRequest: Promise<boolean> | null = null;
 
 export function resetSessionExpiredEvent() {
   sessionExpiredEventDispatched = false;
@@ -14,7 +15,29 @@ function resolveRequestUrl(input: RequestInfo | URL) {
 
 function shouldNotifySessionExpired(input: RequestInfo | URL) {
   const url = resolveRequestUrl(input);
-  return !url.includes("/api/auth/login") && !url.includes("/api/auth/logout");
+  return !isAuthEndpoint(url);
+}
+
+function isAuthEndpoint(url: string) {
+  return url.includes("/api/auth/login") || url.includes("/api/auth/logout") || url.includes("/api/auth/refresh");
+}
+
+async function refreshCookieSession() {
+  if (pendingRefreshRequest) return pendingRefreshRequest;
+
+  pendingRefreshRequest = fetch("/api/auth/refresh", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refresh_token: "" }),
+  })
+    .then((response) => response.ok)
+    .catch(() => false)
+    .finally(() => {
+      pendingRefreshRequest = null;
+    });
+
+  return pendingRefreshRequest;
 }
 
 function notifySessionExpired(input: RequestInfo | URL) {
@@ -35,11 +58,23 @@ export async function apiFetch(input: RequestInfo | URL, init: RequestInit = {})
     headers.set("Content-Type", "application/json");
   }
 
-  const response = await fetch(input, {
+  let response = await fetch(input, {
     ...init,
     credentials: "include",
     headers,
   });
+
+  if (response.status === 401 && !isAuthEndpoint(resolveRequestUrl(input))) {
+    const refreshed = await refreshCookieSession();
+    if (refreshed) {
+      resetSessionExpiredEvent();
+      response = await fetch(input, {
+        ...init,
+        credentials: "include",
+        headers,
+      });
+    }
+  }
 
   if (response.status === 401) {
     notifySessionExpired(input);
