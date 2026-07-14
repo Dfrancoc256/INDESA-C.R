@@ -11,7 +11,7 @@ import { getAdminHomePath } from "@/lib/adminNavigation";
 const SESSION_MARKER_KEY = "indesa_session_active";
 const LAST_ACTIVITY_KEY = "indesa_last_activity_at";
 const LAST_REFRESH_KEY = "indesa_last_refresh_at";
-const INACTIVITY_TIMEOUT_MS = 20 * 60 * 1000;
+const INACTIVITY_TIMEOUT_MS = 15 * 60 * 1000;
 const SESSION_REFRESH_INTERVAL_MS = 10 * 60 * 1000;
 const ACTIVITY_REFRESH_THROTTLE_MS = 5 * 60 * 1000;
 
@@ -83,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logoutInProgressRef = useRef(false);
   const refreshInProgressRef = useRef(false);
   const [, setLocation] = useLocation();
+  const isSessionReady = hasStoredToken && Boolean(usuario);
 
   const { data: meData, error, isLoading: isMeLoading } = useGetMe({
     query: {
@@ -210,16 +211,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    if (!hasStoredToken || !usuario) return;
+    if (!isSessionReady) return;
 
-    markActivity();
+    if (!getLastActivity()) {
+      markActivity();
+    }
 
     const events: Array<keyof WindowEventMap> = ["click", "keydown", "mousemove", "scroll", "touchstart", "input", "pointerdown", "focus"];
     let timeoutId = window.setTimeout(() => {
       toast({
         variant: "destructive",
         title: "Sesión finalizada",
-        description: "Cerramos la sesión por 20 minutos de inactividad.",
+        description: "Cerramos la sesión por 15 minutos de inactividad.",
       });
       logout({ remote: false });
     }, INACTIVITY_TIMEOUT_MS);
@@ -229,10 +232,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       window.clearTimeout(timeoutId);
       timeoutId = window.setTimeout(() => {
         toast({
-          variant: "destructive",
-          title: "Sesión finalizada",
-          description: "Cerramos la sesión por 20 minutos de inactividad.",
-        });
+        variant: "destructive",
+        title: "Sesión finalizada",
+        description: "Cerramos la sesión por 15 minutos de inactividad.",
+      });
         logout({ remote: false });
       }, INACTIVITY_TIMEOUT_MS);
 
@@ -265,7 +268,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       events.forEach((eventName) => window.removeEventListener(eventName, resetTimer, { capture: true }));
       documentEvents.forEach((eventName) => document.removeEventListener(eventName, resetTimer, { capture: true }));
     };
-  }, [hasStoredToken, logout, refreshSession, usuario]);
+  }, [isSessionReady, logout, refreshSession]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
