@@ -343,11 +343,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify(data),
       });
       const responseData = await loginResponse.json().catch(() => null);
+      const retryAfterSeconds = Number(loginResponse.headers.get("retry-after") || 0);
 
       if (!loginResponse.ok) {
+        const errorData = responseData && typeof responseData === "object"
+          ? { ...responseData, retryAfterSeconds }
+          : { retryAfterSeconds };
         throw Object.assign(new Error(responseData?.error || "No fue posible iniciar sesión"), {
           status: loginResponse.status,
-          data: responseData,
+          data: errorData,
         });
       }
 

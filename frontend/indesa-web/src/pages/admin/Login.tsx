@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +33,7 @@ export function Login() {
   const [temporaryLogin, setTemporaryLogin] = useState<LoginValues | null>(null);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [retryCountdown, setRetryCountdown] = useState(0);
 
   const form = useForm<LoginValues>({
     resolver: zodResolver(loginSchema),
@@ -41,6 +42,22 @@ export function Login() {
       password: "",
     },
   });
+
+  useEffect(() => {
+    if (retryCountdown <= 0) return;
+
+    const intervalId = window.setInterval(() => {
+      setRetryCountdown((seconds) => Math.max(0, seconds - 1));
+    }, 1000);
+
+    return () => window.clearInterval(intervalId);
+  }, [retryCountdown]);
+
+  const retryCountdownLabel = useMemo(() => {
+    const minutes = Math.floor(retryCountdown / 60);
+    const seconds = retryCountdown % 60;
+    return `${minutes}:${String(seconds).padStart(2, "0")}`;
+  }, [retryCountdown]);
 
   const onSubmit = async (data: LoginValues) => {
     try {
@@ -66,6 +83,21 @@ export function Login() {
         apiStatus === 401
           ? errorMessages.login401
           : getFriendlyApiErrorMessage(error, errorMessages.generic);
+
+      if (apiStatus === 429) {
+        const retrySeconds = Number(error?.data?.retryAfterSeconds || 15 * 60);
+        const safeRetrySeconds = Math.max(1, retrySeconds);
+        setRetryCountdown(safeRetrySeconds);
+        const minutes = Math.floor(safeRetrySeconds / 60);
+        const seconds = safeRetrySeconds % 60;
+        const retryLabel = `${minutes}:${String(seconds).padStart(2, "0")}`;
+        toast({
+          variant: "destructive",
+          title: "Acceso pausado temporalmente",
+          description: `Por seguridad, espera ${retryLabel} antes de volver a intentar.`,
+        });
+        return;
+      }
 
       if (apiStatus === 401) {
         form.setError("email", {
@@ -130,8 +162,8 @@ export function Login() {
 
       await login({ email: temporaryLogin.email, password: newPassword });
       toast({
-        title: "Contraseña actualizada",
-        description: "Tu contraseña definitiva fue guardada correctamente.",
+        title: "Contraseña cambiada",
+        description: "La contraseña se cambió correctamente. Ya puedes continuar con tu sesión.",
       });
     } catch (error: any) {
       toast({
@@ -236,6 +268,14 @@ export function Login() {
               ) : (
               <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+                  {retryCountdown > 0 && (
+                    <div className="rounded-md border border-primary/20 bg-primary/5 px-4 py-3 text-center">
+                      <p className="text-sm font-semibold text-foreground">Demasiados intentos de acceso</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        Podrás intentar nuevamente en <span className="font-bold text-primary">{retryCountdownLabel}</span>.
+                      </p>
+                    </div>
+                  )}
                   <FormField
                     control={form.control}
                     name="email"
@@ -293,9 +333,9 @@ export function Login() {
                     )}
                   />
 
-                  <Button type="submit" className="h-12 w-full gap-2 text-base font-semibold transition-transform duration-200 active:scale-[0.98]" disabled={isLoading}>
+                  <Button type="submit" className="h-12 w-full gap-2 text-base font-semibold transition-transform duration-200 active:scale-[0.98]" disabled={isLoading || retryCountdown > 0}>
                     {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                    {isLoading ? "Validando..." : "Ingresar"}
+                    {retryCountdown > 0 ? `Espera ${retryCountdownLabel}` : isLoading ? "Validando..." : "Ingresar"}
                   </Button>
                 </form>
               </Form>
