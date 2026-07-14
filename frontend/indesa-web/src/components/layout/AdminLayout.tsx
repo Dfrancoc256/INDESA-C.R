@@ -131,7 +131,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>Mi Cuenta</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive cursor-pointer" onClick={logout}>
+              <DropdownMenuItem className="text-destructive cursor-pointer" onClick={() => logout()}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Cerrar Sesión</span>
               </DropdownMenuItem>

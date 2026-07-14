@@ -1,4 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { setAuthTokenGetter, setUnauthorizedHandler } from "@workspace/api-client-react";
 import { useGetMe, logout as apiLogout, refreshToken as apiRefreshToken, LoginInput, UsuarioMe, getGetMeQueryKey, type AuthResponse } from "@workspace/api-client-react";
@@ -73,6 +74,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const queryClient = useQueryClient();
   const [usuario, setUsuario] = useState<UsuarioMe | null>(null);
   const [hasStoredToken, setHasStoredToken] = useState(() => Boolean(hasSessionMarker()));
   const [isLoading, setIsLoading] = useState(true);
@@ -98,6 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     unauthorizedHandledRef.current = false;
 
     clearStoredSession();
+    queryClient.clear();
     resetSessionExpiredEvent();
     setHasStoredToken(false);
     setUsuario(null);
@@ -116,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.setTimeout(() => {
       logoutInProgressRef.current = false;
     }, 0);
-  }, [setLocation]);
+  }, [queryClient, setLocation]);
 
   const refreshSession = useCallback(async (options?: { notifyOnFailure?: boolean }) => {
     if (refreshInProgressRef.current) {
@@ -262,7 +265,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       events.forEach((eventName) => window.removeEventListener(eventName, resetTimer, { capture: true }));
       documentEvents.forEach((eventName) => document.removeEventListener(eventName, resetTimer, { capture: true }));
     };
-  }, [hasStoredToken, usuario]);
+  }, [hasStoredToken, logout, refreshSession, usuario]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -363,6 +366,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       const response = responseData as AuthResponse;
+      queryClient.clear();
       markSessionActive();
       markRefresh();
       markActivity();
