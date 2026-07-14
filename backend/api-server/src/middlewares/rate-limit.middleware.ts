@@ -8,6 +8,7 @@ export const loginRateLimit = rateLimit({
   legacyHeaders: false,
   message: { error: "Demasiados intentos de acceso. Espere 15 minutos antes de volver a intentarlo." },
   skipSuccessfulRequests: true,
+  requestWasSuccessful: (_req, res) => res.statusCode < 400 && !res.locals["loginFailed"],
 });
 
 /** Rate limit general para endpoints de API */

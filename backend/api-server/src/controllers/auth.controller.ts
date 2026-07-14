@@ -59,6 +59,7 @@ export async function login(req: Request, res: Response): Promise<void> {
     }
 
     if (err.status === 401) {
+      res.locals["loginFailed"] = true;
       res.json({
         message: "El correo o la contraseña no son correctos",
         code: "INVALID_CREDENTIALS",
