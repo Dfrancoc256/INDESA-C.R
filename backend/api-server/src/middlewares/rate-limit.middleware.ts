@@ -2,11 +2,11 @@ import rateLimit from "express-rate-limit";
 
 /** Rate limit estricto para el endpoint de login (máxima seguridad) */
 export const loginRateLimit = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
+  windowMs: 8 * 60 * 1000, // 8 minutos
   max: 5,                    // máximo 5 intentos por ventana
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Demasiados intentos de acceso. Espere 15 minutos antes de volver a intentarlo." },
+  message: { error: "Demasiados intentos de acceso. Espere 8 minutos antes de volver a intentarlo." },
   skipSuccessfulRequests: true,
   requestWasSuccessful: (_req, res) => res.statusCode < 400 && !res.locals["loginFailed"],
 });
