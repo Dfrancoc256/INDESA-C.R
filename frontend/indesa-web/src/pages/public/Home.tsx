@@ -594,7 +594,7 @@ export function Home() {
       {/* CTA Section */}
       <section className="bg-primary py-16 text-white">
         <div className="container mx-auto max-w-4xl px-4 text-center md:px-8">
-          <h2 className="mb-4 text-3xl font-bold md:text-4xl">¿Necesita un pedido especial o a granel?</h2>
+          <h2 className="mb-4 text-3xl font-bold md:text-4xl">¿Necesita un pedido especial?</h2>
           <p className="mx-auto mb-10 max-w-3xl text-lg leading-relaxed text-primary-foreground/90 md:text-xl">
             Nuestro equipo está preparado para atender las necesidades específicas de su operación.
           </p>
