@@ -164,9 +164,6 @@ export function Catalogo() {
                 Encuentra maquinaria, equipos de apoyo coordinado por INDESA.
               </p>
             </div>
-            <div className="w-fit rounded-md border bg-gray-50 px-3 py-2 text-sm font-semibold text-muted-foreground">
-              {showInitialSkeleton ? "Cargando catálogo..." : isRefreshing ? "Actualizando..." : `${totalProductos} productos encontrados`}
-            </div>
           </div>
         </div>
       </div>
@@ -260,18 +257,6 @@ export function Catalogo() {
 
           {/* Product Grid */}
           <div className="flex-1" aria-busy={isRefreshing || showInitialSkeleton}>
-            {isRefreshing && (
-              <div className="mb-4 overflow-hidden rounded-md border bg-white px-4 py-3 text-sm font-medium text-muted-foreground shadow-sm">
-                <div className="mb-2 flex items-center justify-between gap-3">
-                  <span>Actualizando catálogo...</span>
-                  <span className="text-xs">{totalProductos} resultados</span>
-                </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-primary/10">
-                  <div className="h-full w-1/3 animate-pulse rounded-full bg-primary" />
-                </div>
-              </div>
-            )}
-
             {showInitialSkeleton ? (
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {Array.from({ length: pageSize }).map((_, index) => (
